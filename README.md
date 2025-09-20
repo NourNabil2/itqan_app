@@ -1,17 +1,25 @@
-# itqan_app
+# Itqan Gym
 
-Itqan Gym is a Flutter application designed for gymnastics coaches to manage training programs and track the progress of their teams. The app makes it easy to create teams by age group, add members, plan workouts, and monitor skill development for every gymnast.
+**Itqan Gym** is a Flutter application built to help gymnastics coaches organize, plan, and track the progress of their athletes. With an intuitive interface and powerful management tools, Itqan makes it simple to create teams, assign workouts, and monitor skill development across all age groups.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Team Management**: Create teams by age category and easily add or remove members.  
+- **Member Library**: Maintain a global list of gymnasts that can be assigned to multiple teams.  
+- **Training Programs**: Build and assign warm-ups, conditioning drills, and gymnastics skills.  
+- **Skill Tracking**: Monitor each athlete’s progress with clear status updates and completion percentages.  
+- **Media Support**: Add images and videos to exercises and skill templates for visual guidance.  
 
-A few resources to get you started if this is your first Flutter project:
+## Tech Stack
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Framework**: [Flutter](https://flutter.dev/)  
+- **Database**: [Sqflite](https://pub.dev/packages/sqflite) for local data storage  
+- **State Management**: [Provider](https://pub.dev/packages/provider) for reactive UI updates  
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-# itqan_app
+
+## 📸 Screenshots
+SOON...
+
+## 🤝 Contributing
+Contributions are welcome! Please open an issue or submit a pull request if you have improvements or bug fixes.
+
