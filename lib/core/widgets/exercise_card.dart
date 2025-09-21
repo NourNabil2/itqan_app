@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
-import '../data/models/exercise_template.dart';
-import '../screens/library/add_exercise_screen.dart';
+import '../../data/models/exercise_template.dart';
+import '../../screens/library/add_exercise_screen.dart';
 
 class ExerciseCard extends StatelessWidget {
   final ExerciseTemplate exercise;

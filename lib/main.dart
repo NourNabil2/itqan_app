@@ -37,7 +37,7 @@ class GymnasticsApp extends StatelessWidget {
         builder: (context, child) {
           return MaterialApp(
             title: 'Gymnastics Coach',
-            theme: AppTheme.lightTheme,
+            theme: AppTheme.light,
             debugShowCheckedModeBanner: false,
             home: const DashboardScreen(),
           );

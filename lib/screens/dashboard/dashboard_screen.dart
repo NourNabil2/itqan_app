@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
+import 'package:itqan_gym/core/widgets/team_card.dart';
 import 'package:itqan_gym/screens/library/library_screen.dart';
 import 'package:itqan_gym/screens/member/member_library_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/team_provider.dart';
-import '../../core/constants/app_constants.dart';
-import '../../widgets/team_card.dart';
 import 'add_team_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -22,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -171,7 +170,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
-
 
   Widget _buildWorkoutsTab() {
     return const LibraryScreen();

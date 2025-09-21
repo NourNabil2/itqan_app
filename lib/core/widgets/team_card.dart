@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../data/models/team.dart';
-import '../screens/team/team_detail_screen.dart';
+import '../../data/models/team.dart';
+import '../../screens/team/team_detail_screen.dart';
 
 class TeamCard extends StatelessWidget {
   final Team team;

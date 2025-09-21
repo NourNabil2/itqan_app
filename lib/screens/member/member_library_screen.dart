@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/widgets/member_card.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
-import 'package:itqan_gym/widgets/member_card.dart';
 import 'package:provider/provider.dart';
 
 import 'add_member_screen.dart';

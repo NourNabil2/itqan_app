@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../data/models/member.dart';
-import '../screens/member/member_detail_screen.dart';
+import '../../data/models/member.dart';
+import '../../screens/member/member_detail_screen.dart';
 
 class MemberCard extends StatelessWidget {
   final Member member;

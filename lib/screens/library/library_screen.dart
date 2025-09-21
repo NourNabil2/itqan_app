@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/widgets/exercise_card.dart';
+import 'package:itqan_gym/core/widgets/skill_card.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/enums.dart';
 import '../../providers/exercise_library_provider.dart';
 import '../../providers/skill_library_provider.dart';
-import '../../widgets/exercise_card.dart';
-import '../../widgets/skill_card.dart';
 import 'add_exercise_screen.dart';
 import 'add_skill_screen.dart';
 

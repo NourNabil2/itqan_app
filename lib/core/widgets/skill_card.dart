@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/screens/library/add_skill_screen.dart';
 import 'dart:io';
-import '../data/models/skill_template.dart';
+import '../../data/models/skill_template.dart';
 
 
 class SkillCard extends StatelessWidget {
