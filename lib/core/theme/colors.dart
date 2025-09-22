@@ -3,12 +3,8 @@ import 'dart:ui';
 class ColorsManager {
 
   /// --> primary colors < -- ///
-  static const Color primaryColor = Color(0xFF012941);
-  static const Color secondaryColor = Color(0xFF9EAE0D);
-  static const Color greenColor = Color(0xFF15BB54);
-  static const Color lightGreyColor = Color(0xFFE0E9EE);
-  static const Color greyColor = Color(0xFF7D9BAE);
-  static const Color yellowColor = Color(0xFFD9E021);
+  static const Color primaryColor = Color(0xFF007C77);
+  static const Color secondaryColor = Color(0xFFF4C542);
 
 // light mood
   static const Color secondLightColor = Color(0xFF042941);
@@ -54,8 +50,8 @@ class ColorsManager {
   static const Color inputBorder = Color(0xFF9CA3AF);
 
   /// ---> Background <--- ///
-  static const Color backgroundSurface = Color(0xFFFFFFFF);
-  static const Color backgroundCard = Color(0xFFF5F5F5);
+  static const Color backgroundSurface = Color(0xFFF5F5F5);
+  static const Color backgroundCard = Color(0xFFECEFF1);
 
   /// ---> Error <--- ///
   static const Color errorSurface = Color(0xFFFEE2E2);

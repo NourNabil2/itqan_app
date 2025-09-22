@@ -4,7 +4,7 @@ class SizeApp {
   static double radius = 24.0.r;
   static double radiusMed = 16.0.r;
   static double radiusSmall = 8.0.r;
-  static double padding = 8.0.w;
+  static double padding = 16.0.w;
   static double iconSize = 24.0.w;
   static double iconSizeSmall = 16.0.w;
   static double s2 = 2.0.w;

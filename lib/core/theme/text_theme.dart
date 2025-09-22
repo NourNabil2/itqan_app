@@ -54,7 +54,7 @@ class AppTextTheme {
     bodySmall: TextStyle(
       fontSize: 14.sp,
       fontFamily: fontFamily,
-      color: ColorsManager.greyColor,
+      color: ColorsManager.defaultTextSecondary,
     ),
     labelLarge: TextStyle(
       fontSize: 16.sp,
@@ -72,7 +72,7 @@ class AppTextTheme {
     fontSize: 10.sp,
     fontFamily: fontFamily,
     fontWeight: FontWeight.w400,
-    color: ColorsManager.greyColor,
+    color: ColorsManager.defaultTextSecondary,
   ),
     displaySmall: TextStyle(
       fontSize: 10.sp,
