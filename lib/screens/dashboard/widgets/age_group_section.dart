@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/utils/app_size.dart';
 
 class AgeGroupSection extends StatefulWidget {
   final String title;
@@ -66,7 +67,7 @@ class _AgeGroupSectionState extends State<AgeGroupSection>
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
         border: Border.all(color: color.withOpacity(0.25)),
         gradient: LinearGradient(
           colors: [color.withOpacity(0.12), color.withOpacity(0.06)],
