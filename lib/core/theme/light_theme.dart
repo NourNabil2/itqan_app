@@ -10,7 +10,7 @@ class LightTheme {
 
     // Primary Colors
     primaryColor: ColorsManager.primaryColor,
-    primaryColorLight: ColorsManager.secondLightColor,
+    primaryColorLight: ColorsManager.secondaryColor,
     primaryColorDark: ColorsManager.secondaryDarkColor,
     cardColor: ColorsManager.backgroundCard,
     // Background & Surface
@@ -26,7 +26,7 @@ class LightTheme {
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       selectedItemColor: ColorsManager.primaryColor,
       unselectedItemColor: ColorsManager.backgroundSurface,
-      backgroundColor: ColorsManager.primaryColor,
+      backgroundColor: ColorsManager.backgroundCard,
       elevation: 8,
       type: BottomNavigationBarType.fixed,
     ),

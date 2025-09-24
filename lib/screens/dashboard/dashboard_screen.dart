@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/theme/text_theme.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/Loading_widget.dart';
 import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
@@ -76,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       floatingActionButton: SpeedDial(
         icon: Icons.add,
         activeIcon: Icons.close,
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor:Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 6,
         spacing: 6,
@@ -90,10 +92,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           // إضافة عضو للمكتبة
           SpeedDialChild(
             label: 'إضافة عضو',
-            labelStyle: TextStyle(fontSize: 14.sp, color: Colors.white),
-            labelBackgroundColor: const Color(0xFF4CAF50),
-            child: const Icon(Icons.person_add, color: Colors.white),
-            backgroundColor: const Color(0xFF4CAF50),
+            labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
+            labelBackgroundColor: ColorsManager.secondaryColor,
+            child: const Icon(Icons.person_add, color: ColorsManager.backgroundSurface),
+            backgroundColor: ColorsManager.secondaryColor,
             onTap: () {
               Navigator.push(
                 context,
@@ -104,10 +106,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           // إنشاء فريق
           SpeedDialChild(
             label: 'إضافة فريق',
-            labelStyle: TextStyle(fontSize: 14.sp, color: Colors.white),
-            labelBackgroundColor: const Color(0xFFFF9800),
-            child: const Icon(Icons.group_add, color: Colors.white),
-            backgroundColor: const Color(0xFFFF9800),
+            labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
+            labelBackgroundColor: ColorsManager.secondLightColor,
+            child: const Icon(Icons.group_add, color: ColorsManager.backgroundSurface),
+            backgroundColor: ColorsManager.secondLightColor,
             onTap: () {
               Navigator.push(
                 context,
@@ -128,9 +130,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         notchSmoothness: NotchSmoothness.softEdge,
         leftCornerRadius: 18,
         rightCornerRadius: 18,
-        backgroundColor: Colors.white,
-        activeColor: const Color(0xFF2196F3),
-        inactiveColor: Colors.grey[600],
+        backgroundColor: Theme.of(context).cardColor,
+        activeColor: Theme.of(context).primaryColor,
+        inactiveColor: Theme.of(context).hintColor,
         elevation: 12,
         onTap: _changeTab,
       ),
@@ -160,22 +162,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           return const LoadingSpinner();
         }
 
-        if (teamProvider.teams.isEmpty) {
-          return EmptyStateWidget(
-            title: 'لا توجد فرق حتى الآن',
-            subtitle: 'ابدأ بإضافة فريقك الأول',
-            buttonText: 'إضافة فريق',
-            icon: Icons.groups_outlined,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CreateTeamFlow()),
-              );
-            },
-          );
-        }
-
-
         return CustomScrollView(
           slivers: [
             const SliverToBoxAdapter(
@@ -185,30 +171,79 @@ class _DashboardScreenState extends State<DashboardScreen>
                 assetLogo: AssetsManager.logo,
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  SizeApp.padding,
-                  0,
-                  SizeApp.padding,
-                  0,
+
+            // حالة: لا توجد فرق
+            if (teamProvider.teams.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyStateWidget(
+                  title: 'لا توجد فرق بعد',
+                  subtitle: 'ابدأ بإنشاء أول فريق لك لتنظيم الأعضاء والتمارين.',
+                  buttonText: 'إنشاء فريق',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreateTeamFlow()),
+                    );
+                  },
+                  assetSvgPath: AssetsManager.iconsTeamIcons, // أو استخدم iconData
+                  buttonIcon: Icons.group_add,
                 ),
-                child: Text(
-                  'Teams',
-                  style: Theme.of(context).textTheme.titleLarge,
+              )
+            else ...[
+              // عنوان القسم
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: SizeApp.padding),
+                  child: Row(
+                    children: [
+                      // Divider على الجهة اليسرى
+                      Expanded(
+                        child: Divider(
+                          thickness: 1,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+
+                      // مسافة صغيرة
+                      const SizedBox(width: 8),
+
+                      // النص في المنتصف
+                      Text(
+                        'Teams',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+
+                      // مسافة صغيرة
+                      const SizedBox(width: 8),
+
+                      // Divider على الجهة اليمنى
+                      Expanded(
+                        child: Divider(
+                          thickness: 1,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.all(SizeApp.padding),
-              sliver: SliverList.separated(
-                itemCount: AgeCategory.values.length,
-                separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                itemBuilder: (_, idx) => _buildAgeSection(AgeCategory.values[idx], teamProvider),
+
+
+              // الليست
+              SliverPadding(
+                padding: EdgeInsets.all(SizeApp.padding),
+                sliver: SliverList.separated(
+                  itemCount: AgeCategory.values.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                  itemBuilder: (_, idx) =>
+                      _buildAgeSection(AgeCategory.values[idx], teamProvider),
+                ),
               ),
-            ),
+            ],
           ],
         );
+
       },
     );
   }

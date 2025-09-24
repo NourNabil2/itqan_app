@@ -1,79 +1,142 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/assets/assets_manager.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/widgets/CustomIcon.dart';
 
 class EmptyStateWidget extends StatelessWidget {
-  final String title;            // العنوان الرئيسي
-  final String subtitle;         // النص التوضيحي
-  final String buttonText;       // نص زرار الإجراء
-  final IconData icon;           // الأيقونة في الدائرة
-  final VoidCallback onPressed;  // حدث الضغط على الزر
+  final String title;
+  final String subtitle;
+  final String buttonText;
+  final VoidCallback onPressed;
+
+  /// اختر أحدهما:
+  final IconData? iconData;        // في حال استخدام Material Icon
+  final String? assetSvgPath;      // في حال استخدام SVG من الأصول
+
+  /// تخصيص اختياري
+  final IconData buttonIcon;
+  final double circleSize;
+  final double iconSize;
 
   const EmptyStateWidget({
     super.key,
     required this.title,
     required this.subtitle,
     required this.buttonText,
-    required this.icon,
     required this.onPressed,
-  });
+    this.iconData,
+    this.assetSvgPath,
+    this.buttonIcon = Icons.add,
+    this.circleSize = 120,
+    this.iconSize = 60,
+  }) : assert(iconData != null || assetSvgPath != null,
+  'Provide either iconData or assetSvgPath');
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final onPrimary = theme.colorScheme.onPrimary;
+    final surface = theme.colorScheme.surface;
+    final onSurface = theme.colorScheme.onSurface.withOpacity(0.8);
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // أيقونة دائرية
-            Container(
-              width: 120.w,
-              height: 120.h,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.1),
-                shape: BoxShape.circle,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.95, end: 1),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOut,
+          builder: (context, value, child) => Opacity(
+            opacity: (value - 0.9).clamp(0, 1) / 0.1,
+            child: Transform.scale(scale: value, child: child),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // أيقونة دائرية بزخرفة خفيفة
+              Container(
+                width: circleSize.w,
+                height: circleSize.w, // مربع علشان يطلع دايرة مضبوطة
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      primary.withOpacity(0.12),
+                      primary.withOpacity(0.06),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: primary.withOpacity(0.18),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primary.withOpacity(0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: CustomIcon(
+                  color: primary,
+                  assetPath: assetSvgPath!,
+                  size: iconSize.sp,
+                )
               ),
-              child: Icon(icon, color: const Color(0xFF2196F3), size: 56.sp),
-            ),
-            SizedBox(height: 20.h),
+              SizedBox(height: 20.h),
 
-            // العنوان
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+              // العنوان
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 6.h),
+              SizedBox(height: 8.h),
 
-            // النص الإضافي
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.grey[600],
+              // النص الإضافي
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: 14.sp,
+                  color: onSurface,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24.h),
+              SizedBox(height: 24.h),
 
-            // زر الإجراء
-            ElevatedButton.icon(
-              onPressed: onPressed,
-              icon: const Icon(Icons.add),
-              label: Text(buttonText),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
-                padding: EdgeInsets.symmetric(horizontal: 22.w, vertical: 12.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+              // زر الإجراء
+              ConstrainedBox(
+                constraints: BoxConstraints(minWidth: 180.w),
+                child: ElevatedButton.icon(
+                  onPressed: onPressed,
+                  icon: Icon(buttonIcon,color: ColorsManager.backgroundSurface,),
+                  label: Text(buttonText),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: onPrimary,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 22.w,
+                      vertical: 12.h,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    elevation: 2,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

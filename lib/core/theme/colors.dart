@@ -4,10 +4,10 @@ class ColorsManager {
 
   /// --> primary colors < -- ///
   static const Color primaryColor = Color(0xFF007C77);
-  static const Color secondaryColor = Color(0xFFF4C542);
+  static const Color secondaryColor = Color(0xFFFF7043);
 
 // light mood
-  static const Color secondLightColor = Color(0xFF042941);
+  static const Color secondLightColor = Color(0xFF005F5B);
 
 
 // dark mood

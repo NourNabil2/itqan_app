@@ -1,117 +1,336 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/assets/assets_manager.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/core/widgets/CustomIcon.dart';
 import '../../data/models/team.dart';
 import '../../screens/team/team_detail_screen.dart';
 
-class TeamCard extends StatelessWidget {
+class TeamCard extends StatefulWidget {
   final Team team;
 
   const TeamCard({super.key, required this.team});
 
   @override
+  State<TeamCard> createState() => _TeamCardState();
+}
+
+class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  void _handleTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TeamDetailScreen(team: team),
+    // Get screen dimensions for responsive design
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final isMediumScreen = screenWidth >= 360 && screenWidth < 400;
+
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      TeamDetailScreen(team: widget.team),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(1.0, 0.0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      )),
+                      child: child,
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 350),
+                ),
+              );
+            },
+            onTapDown: _handleTapDown,
+            onTapUp: _handleTapUp,
+            onTapCancel: _handleTapCancel,
+            child: Container(
+              margin: EdgeInsets.only(bottom: SizeApp.padding),
+              constraints: BoxConstraints(
+                minHeight: isSmallScreen ? 100.h : 110.h,
+                maxHeight: isSmallScreen ? 120.h : 140.h,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(SizeApp.radiusMed),
+                  bottomRight: Radius.circular(SizeApp.radiusMed),
+                ),
+                color: ColorsManager.defaultSurface,
+                boxShadow: [
+                  BoxShadow(
+                    color: _isPressed
+                        ? ColorsManager.primaryColor.withOpacity(0.2)
+                        : Colors.black.withOpacity(0.06),
+                    blurRadius: _isPressed ? 20 : 12,
+                    offset: const Offset(0, 4),
+                    spreadRadius: _isPressed ? 2 : 0,
+                  ),
+                ],
+                border: Border.all(
+                  color: _isPressed
+                      ? ColorsManager.primaryColor.withOpacity(0.3)
+                      : ColorsManager.inputBorder.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  // خط ملون على الجانب الأيسر
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 4.w,
+                      decoration: BoxDecoration(
+                        color: ColorsManager.primaryColor,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(SizeApp.radiusMed),
+                          bottomLeft: Radius.circular(SizeApp.radiusMed),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Background decorative element - responsive size
+                  if (!isSmallScreen) // Hide on very small screens
+                    Positioned(
+                      right: -20,
+                      top: -20,
+                      child: Container(
+                        width: (screenWidth * 0.25).clamp(80.0, 120.0),
+                        height: (screenWidth * 0.25).clamp(80.0, 120.0),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: ColorsManager.primaryColor.withOpacity(0.03),
+                        ),
+                      ),
+                    ),
+
+                  // المحتوى الرئيسي
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? SizeApp.s16 : SizeApp.s20,
+                      vertical: isSmallScreen ? SizeApp.s12 : SizeApp.s16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // الجزء العلوي - اسم الفريق مع badge
+                        Expanded(
+                          flex: 2,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      widget.team.name,
+                                      style: TextStyle(
+                                        fontSize: isSmallScreen ? 16.sp : 18.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: ColorsManager.defaultText,
+                                        height: 1.2,
+                                      ),
+                                      maxLines: isSmallScreen ? 1 : 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 2.h),
+                                    Text(
+                                      widget.team.ageCategory.arabicName,
+                                      style: TextStyle(
+                                        fontSize: isSmallScreen ? 11.sp : 13.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: ColorsManager.defaultTextSecondary,
+                                        height: 1.3,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(width: SizeApp.s8),
+
+                              // Circular Progress Badge - responsive size
+                              _buildCircularBadge(isSmallScreen),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: SizeApp.s8),
+
+                        // الجزء السفلي - معلومات إضافية
+                        Row(
+                          children: [
+                            // عدد الأعضاء
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallScreen ? SizeApp.s8 : SizeApp.s12,
+                                vertical: isSmallScreen ? 4.h : 6.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: ColorsManager.successSurface,
+                                borderRadius: BorderRadius.circular(SizeApp.s8),
+                                border: Border.all(
+                                  color: ColorsManager.successText.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CustomIcon(
+                                    assetPath: AssetsManager.iconsTeamIcons,
+                                    size: isSmallScreen ? 12.sp : 14.sp,
+                                    color: ColorsManager.successText,
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    '${widget.team.memberCount} عضو',
+                                    style: TextStyle(
+                                      fontSize: isSmallScreen ? 10.sp : 11.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: ColorsManager.successText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const Spacer(), // هنا الـ Spacer هيشتغل
+
+                            // Arrow navigation
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: EdgeInsets.all(isSmallScreen ? 6.w : SizeApp.s8),
+                              decoration: BoxDecoration(
+                                color: _isPressed
+                                    ? ColorsManager.primaryColor.withOpacity(0.15)
+                                    : ColorsManager.defaultSurface,
+                                borderRadius: BorderRadius.circular(SizeApp.s8),
+                                border: Border.all(
+                                  color: _isPressed
+                                      ? ColorsManager.primaryColor.withOpacity(0.3)
+                                      : ColorsManager.inputBorder.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.arrow_forward_rounded,
+                                size: isSmallScreen ? 14.sp : SizeApp.iconSizeSmall,
+                                color: _isPressed
+                                    ? ColorsManager.primaryColor
+                                    : ColorsManager.defaultTextSecondary,
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
-      child: Container(
-        margin: EdgeInsets.only(bottom: 12.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+    );
+  }
+
+  Widget _buildCircularBadge(bool isSmallScreen) {
+    final circleSize = isSmallScreen ? 24.0 : 28.0;
+    final fontSize = isSmallScreen ? 7.0 : 8.0;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: circleSize.w,
+          height: circleSize.h,
+          child: CircularProgressIndicator(
+            value: widget.team.completionPercentage / 100,
+            strokeWidth: 2.0,
+            backgroundColor: _getPercentageColor(widget.team.completionPercentage).withOpacity(0.15),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              _getPercentageColor(widget.team.completionPercentage),
             ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(16.w),
-          child: Row(
-            children: [
-              Container(
-                width: 60.w,
-                height: 60.h,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF2196F3),
-                      const Color(0xFF1976D2),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Center(
-                  child: Text(
-                    team.ageCategory.code,
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      team.name,
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF2C3E50),
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      team.ageCategory.arabicName,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.people,
-                          size: 16.sp,
-                          color: Colors.grey[500],
-                        ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          '${team.memberCount} عضو',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16.sp,
-                color: Colors.grey[400],
-              ),
-            ],
+            strokeCap: StrokeCap.round,
           ),
         ),
-      ),
+        Text(
+          '${widget.team.completionPercentage}%',
+          style: TextStyle(
+            fontSize: fontSize.sp,
+            fontWeight: FontWeight.w700,
+            color: _getPercentageColor(widget.team.completionPercentage),
+          ),
+        ),
+      ],
     );
+  }
+
+  // Helper Method
+  Color _getPercentageColor(double percentage) {
+    if (percentage >= 80) return ColorsManager.successFill;
+    if (percentage >= 50) return ColorsManager.warningFill;
+    return ColorsManager.errorFill;
   }
 }
