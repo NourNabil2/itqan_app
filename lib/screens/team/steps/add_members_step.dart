@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:itqan_gym/data/database/db_helper.dart';
 import 'dart:io';
-import '../../../data/models/member.dart';
+import '../../../data/models/member/member.dart';
 
 class AddMembersStep extends StatefulWidget {
   final List<Member> members;

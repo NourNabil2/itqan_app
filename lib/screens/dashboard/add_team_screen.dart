@@ -6,7 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/enums.dart';
 import '../../data/models/team.dart';
-import '../../data/models/member.dart';
+import '../../data/models/member/member.dart';
 import '../../providers/team_provider.dart';
 import '../../data/database/db_helper.dart';
 import '../team/steps/add_members_step.dart';

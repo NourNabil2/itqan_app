@@ -6,7 +6,7 @@
 // "addTeam": "إضافة فريق",
 // "teamName": "اسم الفريق",
 // "ageCategory": "الفئة العمرية",
-// "members": "الأعضاء",
+// "member": "الأعضاء",
 // "content": "المحتوى",
 // "warmUp": "الإحماء",
 // "stretching": "الإطالة",
