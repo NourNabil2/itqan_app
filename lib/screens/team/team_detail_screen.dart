@@ -8,8 +8,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
+import 'package:itqan_gym/core/widgets/Loading_widget.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
+import 'package:itqan_gym/data/models/member/member.dart';
+import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
+import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:itqan_gym/screens/team/manage_assignments_screen.dart';
 import 'package:itqan_gym/screens/team/widgets/team_members_manager.dart';
 import 'package:provider/provider.dart';
@@ -392,7 +396,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   List<Widget> _buildExercisesList(List exercises) {
     return exercises.map<Widget>((exercise) {
       return InkWell(
-        onTap: () => ExerciseDetailSheet.show(context, exercise),
+        onTap: () => ExerciseDetailSheet.show(context, exercise,teamId: widget.team.id,),
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         child: Container(
           margin: EdgeInsets.only(bottom: SizeApp.s8),
@@ -597,10 +601,51 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
 
 
 
-class ExerciseDetailSheet extends StatelessWidget {
-  final ExerciseTemplate exercise;
+// ============= تحديث ExerciseDetailSheet مع زر التعيين =============
+// أضف هذه التحديثات في ExerciseDetailSheet
 
-  const ExerciseDetailSheet({super.key, required this.exercise});
+class ExerciseDetailSheet extends StatefulWidget {
+  final ExerciseTemplate exercise;
+  final String? teamId; // إضافة معرف الفريق
+
+  const ExerciseDetailSheet({
+    super.key,
+    required this.exercise,
+    this.teamId,
+  });
+
+  @override
+  State<ExerciseDetailSheet> createState() => _ExerciseDetailSheetState();
+
+  static void show(BuildContext context, ExerciseTemplate exercise, {required String teamId}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ExerciseDetailSheet(exercise: exercise,teamId: teamId,),
+    );
+  }
+
+
+
+}
+
+class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
+  late Future<List<Member>> _membersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _membersFuture = Provider.of<ExerciseAssignmentProvider>(context, listen: false)
+        .loadExerciseMembers(widget.exercise.id);
+  }
+
+  Future<void> _refreshMembers() async {
+    setState(() {
+      _membersFuture = Provider.of<ExerciseAssignmentProvider>(context, listen: false)
+          .loadExerciseMembers(widget.exercise.id);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -612,13 +657,6 @@ class ExerciseDetailSheet extends StatelessWidget {
           topLeft: Radius.circular(SizeApp.radiusMed),
           topRight: Radius.circular(SizeApp.radiusMed),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -633,8 +671,8 @@ class ExerciseDetailSheet extends StatelessWidget {
             ),
           ),
 
-          // Header
-          _buildHeader(),
+          // Header مع زر التعيين
+          _buildHeaderWithActions(context),
 
           // Content
           Expanded(
@@ -643,11 +681,14 @@ class ExerciseDetailSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // قسم الأعضاء المعينين
+                  if (widget.teamId != null) _buildAssignedMembersSection(context),
+
                   // Media Section
-                  if (exercise.hasMedia) _buildMediaSection(),
+                  if (widget.exercise.hasMedia) _buildMediaSection(),
 
                   // Description Section
-                  if (exercise.description != null) _buildDescriptionSection(),
+                  if (widget.exercise.description != null) _buildDescriptionSection(),
 
                   // Exercise Type Info
                   _buildTypeInfoSection(),
@@ -659,18 +700,19 @@ class ExerciseDetailSheet extends StatelessWidget {
             ),
           ),
 
-          // Close Button
-          _buildCloseButton(context),
+          // Bottom Actions
+          _buildBottomActions(context),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeaderWithActions(BuildContext context) {
+    final exerciseColor = _getExerciseColor();
     return Container(
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: _getExerciseColor().withOpacity(0.1),
+        color: exerciseColor.withOpacity(0.1),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(SizeApp.radiusMed),
           topRight: Radius.circular(SizeApp.radiusMed),
@@ -681,12 +723,12 @@ class ExerciseDetailSheet extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(SizeApp.s12),
             decoration: BoxDecoration(
-              color: _getExerciseColor().withOpacity(0.2),
+              color: exerciseColor.withOpacity(0.2),
               borderRadius: BorderRadius.circular(SizeApp.s10),
             ),
             child: Icon(
               _getExerciseIcon(),
-              color: _getExerciseColor(),
+              color: exerciseColor,
               size: 24.sp,
             ),
           ),
@@ -696,11 +738,11 @@ class ExerciseDetailSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  exercise.title,
+                  widget.exercise.title,
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
-                    color: _getExerciseColor(),
+                    color: exerciseColor,
                   ),
                 ),
                 SizedBox(height: SizeApp.s4),
@@ -710,11 +752,11 @@ class ExerciseDetailSheet extends StatelessWidget {
                     vertical: SizeApp.s4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getExerciseColor(),
+                    color: exerciseColor,
                     borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
                   ),
                   child: Text(
-                    exercise.type.arabicName,
+                    widget.exercise.type.arabicName,
                     style: TextStyle(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
@@ -725,17 +767,291 @@ class ExerciseDetailSheet extends StatelessWidget {
               ],
             ),
           ),
+          // زر التعيين للأعضاء
+          if (widget.teamId != null) ...[
+            IconButton(
+              onPressed: () => _showAssignmentSheet(context),
+              icon: Container(
+                padding: EdgeInsets.all(SizeApp.s8),
+                decoration: BoxDecoration(
+                  color: ColorsManager.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                ),
+                child: Icon(
+                  Icons.person_add_rounded,
+                  color: ColorsManager.primaryColor,
+                  size: 20.sp,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
+  Widget _buildAssignedMembersSection(BuildContext context) {
+    return FutureBuilder<List<Member>>(
+      future: _membersFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingSection();
+        }
+        final members = snapshot.data ?? const <Member>[];
+        if (members.isEmpty) {
+          return _buildEmptyMembersSection(context);
+        }
+        return Container(
+          margin: EdgeInsets.only(bottom: SizeApp.s20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.groups_rounded, color: ColorsManager.primaryColor, size: 20.sp),
+                  SizedBox(width: SizeApp.s8),
+                  Text(
+                    'الأعضاء المعينون (${members.length})',
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: ColorsManager.defaultText),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => _showAssignmentSheet(context),
+                    child: Row(
+                      children: [
+                        Icon(Icons.add_circle_outline_rounded, size: 16.sp),
+                        SizedBox(width: SizeApp.s4),
+                        Text('إضافة', style: TextStyle(fontSize: 14.sp)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: SizeApp.s12),
+              SizedBox(
+                height: 90.h,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: members.length,
+                  itemBuilder: (context, index) => _buildMemberCard(members[index]),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
+  Widget _buildMemberCard(Member member) {
+    return Container(
+      width: 140.w,
+      margin: EdgeInsets.only(left: SizeApp.s8),
+      padding: EdgeInsets.all(SizeApp.s12),
+      decoration: BoxDecoration(
+        color: ColorsManager.backgroundCard,
+        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+        border: Border.all(
+          color: ColorsManager.inputBorder.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Avatar
+          Container(
+            width: 36.w,
+            height: 36.w,
+            decoration: BoxDecoration(
+              color: ColorsManager.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                member.name.substring(0, 1),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color: ColorsManager.primaryColor,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: SizeApp.s8),
+          // Name
+          Text(
+            member.name,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: ColorsManager.defaultText,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          // Progress
+          if ((member.overallProgress ??  0)> 0) ...[
+            SizedBox(height: SizeApp.s4),
+            LinearProgressIndicator(
+              value: member.overallProgress??0 / 100,
+              backgroundColor: ColorsManager.inputBorder.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation(ColorsManager.primaryColor),
+              minHeight: 3,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyMembersSection(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: SizeApp.s20),
+      padding: EdgeInsets.all(SizeApp.s16),
+      decoration: BoxDecoration(
+        color: ColorsManager.backgroundCard,
+        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+        border: Border.all(
+          color: ColorsManager.inputBorder.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.group_add_rounded,
+            size: 48.sp,
+            color: ColorsManager.defaultTextSecondary.withOpacity(0.5),
+          ),
+          SizedBox(height: SizeApp.s12),
+          Text(
+            'لم يتم تعيين أي عضو لهذا التمرين',
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: ColorsManager.defaultTextSecondary,
+            ),
+          ),
+          SizedBox(height: SizeApp.s12),
+          ElevatedButton.icon(
+            onPressed: () => _showAssignmentSheet(context),
+            icon: Icon(Icons.person_add_rounded, size: 18.sp),
+            label: Text('تعيين أعضاء'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColorsManager.primaryColor,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                horizontal: SizeApp.s16,
+                vertical: SizeApp.s8,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingSection() {
+    return Container(
+      margin: EdgeInsets.only(bottom: SizeApp.s20),
+      padding: EdgeInsets.all(SizeApp.s16),
+      child: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation(ColorsManager.primaryColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActions(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(SizeApp.s16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: ColorsManager.inputBorder.withOpacity(0.3),
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Close Button
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _getExerciseColor(),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  ),
+                ),
+                child: Text(
+                  'إغلاق',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            // Assign Members Button
+            if (widget.teamId != null) ...[
+              SizedBox(width: SizeApp.s12),
+              Expanded(
+                flex: 3,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showAssignmentSheet(context),
+                  icon: Icon(Icons.person_add_rounded),
+                  label: Text('تعيين للأعضاء'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ColorsManager.primaryColor,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    ),
+                    side: BorderSide(color: ColorsManager.primaryColor),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAssignmentSheet(BuildContext context) async {
+    if (widget.teamId == null) return;
+
+    final result = await AssignExerciseToMembersSheet.show(context, widget.exercise, widget.teamId!);
+
+    if (result == true) {
+      // إعادة تحميل الأعضاء المعينين
+      if (context.mounted) {
+        final provider = Provider.of<ExerciseAssignmentProvider>(
+          context,
+          listen: false,
+        );
+        provider.loadExerciseMembers(widget.exercise.id);
+      }
+    }
+  }
+
   Widget _buildMediaSection() {
     // Debug prints
-    log('DEBUG: ExerciseDetailSheet for ${exercise.title}:');
-    log('- Thumbnail: ${exercise.thumbnailPath}');
-    log('- Media Gallery: ${exercise.mediaGallery.length} items');
-    log('- Legacy Media: ${exercise.mediaPath}');
+    log('DEBUG: ExerciseDetailSheet for ${widget.exercise.title}:');
+    log('- Thumbnail: ${widget.exercise.thumbnailPath}');
+    log('- Media Gallery: ${widget.exercise.mediaGallery.length} items');
+    log('- Legacy Media: ${widget.exercise.mediaPath}');
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s20),
       child: Column(
@@ -752,13 +1068,13 @@ class ExerciseDetailSheet extends StatelessWidget {
           SizedBox(height: SizeApp.s12),
 
           // Display thumbnail if available
-          if (exercise.thumbnailPath != null) _buildThumbnailSection(),
+          if (widget.exercise.thumbnailPath != null) _buildThumbnailSection(),
 
           // Display media gallery
-          if (exercise.mediaGallery.isNotEmpty) _buildMediaGallerySection(),
+          if (widget.exercise.mediaGallery.isNotEmpty) _buildMediaGallerySection(),
 
           // Legacy media support
-          if (exercise.mediaPath != null && exercise.thumbnailPath == null && exercise.mediaGallery.isEmpty)
+          if (widget.exercise.mediaPath != null && widget.exercise.thumbnailPath == null && widget.exercise.mediaGallery.isEmpty)
             _buildLegacyMediaSection(),
         ],
       ),
@@ -790,7 +1106,7 @@ class ExerciseDetailSheet extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
               child: Image.file(
-                File(exercise.thumbnailPath!),
+                File(widget.exercise.thumbnailPath!),
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
@@ -837,7 +1153,7 @@ class ExerciseDetailSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'معرض الوسائط (${exercise.mediaGallery.length})',
+            'معرض الوسائط (${widget.exercise.mediaGallery.length})',
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
@@ -849,9 +1165,9 @@ class ExerciseDetailSheet extends StatelessWidget {
             height: 120.h,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: exercise.mediaGallery.length,
+              itemCount: widget.exercise.mediaGallery.length,
               itemBuilder: (context, index) {
-                final media = exercise.mediaGallery[index];
+                final media = widget.exercise.mediaGallery[index];
                 return Container(
                   width: 140.w,
                   margin: EdgeInsets.only(right: SizeApp.s8),
@@ -924,11 +1240,11 @@ class ExerciseDetailSheet extends StatelessWidget {
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         color: ColorsManager.backgroundCard,
       ),
-      child: exercise.mediaType == MediaType.image
+      child: widget.exercise.mediaType == MediaType.image
           ? ClipRRect(
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         child: Image.file(
-          File(exercise.mediaPath!),
+          File(widget.exercise.mediaPath!),
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
@@ -1034,7 +1350,7 @@ class ExerciseDetailSheet extends StatelessWidget {
           ),
           SizedBox(height: SizeApp.s12),
           Text(
-            exercise.description!,
+            widget.exercise.description!,
             style: TextStyle(
               fontSize: 14.sp,
               color: ColorsManager.defaultTextSecondary,
@@ -1079,11 +1395,11 @@ class ExerciseDetailSheet extends StatelessWidget {
             ],
           ),
           SizedBox(height: SizeApp.s12),
-          _buildInfoRow('النوع', exercise.type.arabicName, _getExerciseIcon()),
+          _buildInfoRow('النوع', widget.exercise.type.arabicName, _getExerciseIcon()),
           SizedBox(height: SizeApp.s8),
-          _buildInfoRow('تاريخ الإضافة', _formatDate(exercise.createdAt), Icons.calendar_today_rounded),
+          _buildInfoRow('تاريخ الإضافة', _formatDate(widget.exercise.createdAt), Icons.calendar_today_rounded),
           SizedBox(height: SizeApp.s8),
-          _buildInfoRow('آخر تحديث', _formatDate(exercise.updatedAt), Icons.update_rounded),
+          _buildInfoRow('آخر تحديث', _formatDate(widget.exercise.updatedAt), Icons.update_rounded),
         ],
       ),
     );
@@ -1156,7 +1472,7 @@ class ExerciseDetailSheet extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   'الفرق المعينة',
-                  '${exercise.assignedTeamsCount ?? 0}',
+                  '${widget.exercise.assignedTeamsCount ?? 0}',
                   Icons.groups_rounded,
                   ColorsManager.primaryColor,
                 ),
@@ -1165,7 +1481,7 @@ class ExerciseDetailSheet extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   'الإضافة',
-                  _formatShortDate(exercise.createdAt),
+                  _formatShortDate(widget.exercise.createdAt),
                   Icons.add_circle_outline_rounded,
                   ColorsManager.secondaryColor,
                 ),
@@ -1214,47 +1530,9 @@ class ExerciseDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildCloseButton(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: ColorsManager.inputBorder.withOpacity(0.3),
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _getExerciseColor(),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 16.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              ),
-            ),
-            child: Text(
-              'إغلاق',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   // Helper Methods
   Color _getExerciseColor() {
-    switch (exercise.type) {
+    switch (widget.exercise.type) {
       case ExerciseType.warmup:
         return const Color(0xFFFF5722);
       case ExerciseType.stretching:
@@ -1265,7 +1543,7 @@ class ExerciseDetailSheet extends StatelessWidget {
   }
 
   IconData _getExerciseIcon() {
-    switch (exercise.type) {
+    switch (widget.exercise.type) {
       case ExerciseType.warmup:
         return Icons.whatshot_rounded;
       case ExerciseType.stretching:
@@ -1281,15 +1559,6 @@ class ExerciseDetailSheet extends StatelessWidget {
 
   String _formatShortDate(DateTime date) {
     return '${date.day}/${date.month}';
-  }
-
-  static void show(BuildContext context, ExerciseTemplate exercise) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ExerciseDetailSheet(exercise: exercise),
-    );
   }
 }
 
@@ -1794,4 +2063,682 @@ class SkillDetailSheet extends StatelessWidget {
       builder: (context) => SkillDetailSheet(skill: skill),
     );
   }
+}
+
+// ============= واجهة تعيين التمارين للأعضاء =============
+class AssignExerciseToMembersSheet extends StatefulWidget {
+  final ExerciseTemplate exercise;
+  final String teamId;
+
+  const AssignExerciseToMembersSheet({
+    super.key,
+    required this.exercise,
+    required this.teamId,
+  });
+
+  static Future<bool?> show(BuildContext context, ExerciseTemplate exercise, String teamId) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AssignExerciseToMembersSheet(
+        exercise: exercise,
+        teamId: teamId,
+      ),
+    );
+  }
+
+
+  @override
+  State<AssignExerciseToMembersSheet> createState() => _AssignExerciseToMembersSheetState();
+}
+
+class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSheet> {
+  final Set<String> _selectedMemberIds = {};
+  List<Member> _availableMembers = [];
+  List<Member> _assignedMembers = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+
+
+  Future<void> _loadMembers() async {
+    try {
+      // جلب الأعضاء من الفريق
+      final memberProvider = Provider.of<MemberProvider>(context, listen: false);
+      final exerciseProvider = Provider.of<ExerciseAssignmentProvider>(context, listen: false);
+
+      // جلب أعضاء الفريق
+      await memberProvider.loadTeamMembers(widget.teamId);
+      final teamMembers = memberProvider.members;
+
+      // جلب الأعضاء المعينين مسبقاً لهذا التمرين
+      final assignedMemberIds = await exerciseProvider.getExerciseAssignedMemberIds(widget.exercise.id);
+
+      setState(() {
+        _assignedMembers = teamMembers.where((m) => assignedMemberIds.contains(m.id)).toList();
+        _availableMembers = teamMembers.where((m) => !assignedMemberIds.contains(m.id)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ في تحميل الأعضاء: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  List<Member> get _filteredMembers {
+    if (_searchQuery.isEmpty) return _availableMembers;
+    final q = _searchQuery.toLowerCase();
+    return _availableMembers.where((m) {
+      final name = m.name.toLowerCase();
+      final level = (m.level ?? '').toLowerCase();
+      return name.contains(q) || level.contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(SizeApp.radiusMed),
+          topRight: Radius.circular(SizeApp.radiusMed),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Handle
+          Container(
+            margin: EdgeInsets.only(top: SizeApp.s12),
+            width: 40.w,
+            height: 4.h,
+            decoration: BoxDecoration(
+              color: ColorsManager.inputBorder.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2.r),
+            ),
+          ),
+
+          // Header
+          _buildHeader(),
+
+          // Search Bar
+          _buildSearchBar(),
+
+          // Content
+          Expanded(
+            child: _isLoading
+                ? const LoadingSpinner()
+                : _buildContent(),
+          ),
+
+          // Bottom Actions
+          _buildBottomActions(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: EdgeInsets.all(SizeApp.s16),
+      decoration: BoxDecoration(
+        color: ColorsManager.primaryColor.withOpacity(0.05),
+        border: Border(
+          bottom: BorderSide(
+            color: ColorsManager.inputBorder.withOpacity(0.2),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.assignment_ind_rounded,
+            color: ColorsManager.primaryColor,
+            size: 24.sp,
+          ),
+          SizedBox(width: SizeApp.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'تعيين التمرين للأعضاء',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: ColorsManager.defaultText,
+                  ),
+                ),
+                SizedBox(height: SizeApp.s4),
+                Text(
+                  widget.exercise.title,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: ColorsManager.defaultTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: EdgeInsets.all(SizeApp.s16),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        decoration: InputDecoration(
+          hintText: 'البحث عن عضو...',
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: ColorsManager.defaultTextSecondary,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+            icon: Icon(
+              Icons.clear_rounded,
+              color: ColorsManager.defaultTextSecondary,
+            ),
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+              });
+            },
+          )
+              : null,
+          filled: true,
+          fillColor: ColorsManager.backgroundCard,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: SizeApp.s16,
+            vertical: SizeApp.s12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // الأعضاء المعينين مسبقاً
+          if (_assignedMembers.isNotEmpty) ...[
+            _buildSectionTitle('الأعضاء المعينين مسبقاً', Icons.check_circle_rounded),
+            SizedBox(height: SizeApp.s8),
+            ..._assignedMembers.map((member) => _buildAssignedMemberCard(member)),
+            SizedBox(height: SizeApp.s20),
+          ],
+
+          // الأعضاء المتاحين
+          if (_filteredMembers.isNotEmpty) ...[
+            _buildSectionTitle('الأعضاء المتاحين', Icons.people_rounded),
+            SizedBox(height: SizeApp.s8),
+            ..._filteredMembers.map((member) => _buildMemberSelectionCard(member)),
+          ] else ...[
+            _buildEmptyState(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20.sp,
+          color: ColorsManager.primaryColor,
+        ),
+        SizedBox(width: SizeApp.s8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w600,
+            color: ColorsManager.defaultText,
+          ),
+        ),
+        if (title.contains('المتاحين') && _selectedMemberIds.isNotEmpty) ...[
+          const Spacer(),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: SizeApp.s12,
+              vertical: SizeApp.s4,
+            ),
+            decoration: BoxDecoration(
+              color: ColorsManager.primaryColor,
+              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+            ),
+            child: Text(
+              '${_selectedMemberIds.length} محدد',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAssignedMemberCard(Member member) {
+    return Container(
+      margin: EdgeInsets.only(bottom: SizeApp.s8),
+      padding: EdgeInsets.all(SizeApp.s12),
+      decoration: BoxDecoration(
+        color: ColorsManager.successFill.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+        border: Border.all(
+          color: ColorsManager.successFill.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 40.w,
+            height: 40.w,
+            decoration: BoxDecoration(
+              color: ColorsManager.successFill.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                member.name.substring(0, 1),
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: ColorsManager.successFill,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: SizeApp.s12),
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.name,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: ColorsManager.defaultText,
+                  ),
+                ),
+                Text(
+                  '${member.age} سنة • ${member.level}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: ColorsManager.defaultTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Assigned Badge
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: SizeApp.s8,
+              vertical: SizeApp.s4,
+            ),
+            decoration: BoxDecoration(
+              color: ColorsManager.successFill,
+              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_rounded,
+                  size: 14.sp,
+                  color: Colors.white,
+                ),
+                SizedBox(width: SizeApp.s4),
+                Text(
+                  'معين',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemberSelectionCard(Member member) {
+    final isSelected = _selectedMemberIds.contains(member.id);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selectedMemberIds.remove(member.id);
+          } else {
+            _selectedMemberIds.add(member.id);
+          }
+        });
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: SizeApp.s8),
+        padding: EdgeInsets.all(SizeApp.s12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? ColorsManager.primaryColor.withOpacity(0.1)
+              : ColorsManager.backgroundCard,
+          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+          border: Border.all(
+            color: isSelected
+                ? ColorsManager.primaryColor
+                : ColorsManager.inputBorder.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Checkbox
+            Container(
+              width: 24.w,
+              height: 24.w,
+              decoration: BoxDecoration(
+                color: isSelected ? ColorsManager.primaryColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(4.r),
+                border: Border.all(
+                  color: isSelected
+                      ? ColorsManager.primaryColor
+                      : ColorsManager.defaultTextSecondary,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Icon(
+                Icons.check_rounded,
+                size: 16.sp,
+                color: Colors.white,
+              )
+                  : null,
+            ),
+            SizedBox(width: SizeApp.s12),
+            // Avatar
+            Container(
+              width: 40.w,
+              height: 40.w,
+              decoration: BoxDecoration(
+                color: ColorsManager.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  member.name.substring(0, 1),
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: ColorsManager.primaryColor,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: SizeApp.s12),
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member.name,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: ColorsManager.defaultText,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '${member.age} سنة',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: ColorsManager.defaultTextSecondary,
+                        ),
+                      ),
+                      SizedBox(width: SizeApp.s8),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: SizeApp.s6,
+                          vertical: SizeApp.s2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getLevelColor(member.level).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                        child: Text(
+                          member.level,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: _getLevelColor(member.level),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Progress if exists
+            if ((member.overallProgress ?? 0) > 0) ...[
+              Container(
+                width: 50.w,
+                height: 50.w,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: member.overallProgress??0 / 100,
+                      backgroundColor: ColorsManager.inputBorder.withOpacity(0.2),
+                      valueColor: AlwaysStoppedAnimation(ColorsManager.primaryColor),
+                      strokeWidth: 3,
+                    ),
+                    Text(
+                      '${member.overallProgress??0.toInt()}%',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.bold,
+                        color: ColorsManager.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: EdgeInsets.all(SizeApp.s32),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.people_outline_rounded,
+              size: 64.sp,
+              color: ColorsManager.defaultTextSecondary.withOpacity(0.5),
+            ),
+            SizedBox(height: SizeApp.s16),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'لا يوجد أعضاء متطابقين مع البحث'
+                  : 'جميع الأعضاء معينين لهذا التمرين',
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: ColorsManager.defaultTextSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActions() {
+    return Container(
+      padding: EdgeInsets.all(SizeApp.s16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: ColorsManager.inputBorder.withOpacity(0.3),
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Cancel
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  ),
+                  side: BorderSide(color: ColorsManager.inputBorder),
+                ),
+                child: Text(
+                  'إلغاء',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: ColorsManager.defaultTextSecondary,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: SizeApp.s12),
+            // Assign
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _selectedMemberIds.isEmpty
+                    ? null
+                    : () => _assignExercise(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColorsManager.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  ),
+                ),
+                child: Text(
+                  _selectedMemberIds.isEmpty
+                      ? 'حدد الأعضاء'
+                      : 'تعيين (${_selectedMemberIds.length})',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _assignExercise() async {
+    try {
+      final provider = Provider.of<ExerciseAssignmentProvider>(context, listen: false);
+
+      await provider.assignExerciseToMembers(
+        widget.exercise.id,
+        _selectedMemberIds.toList(),
+      );
+
+      if (mounted) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تعيين التمرين لـ ${_selectedMemberIds.length} عضو بنجاح'),
+            backgroundColor: ColorsManager.successFill,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ في تعيين التمرين: ${e.toString()}'),
+            backgroundColor: ColorsManager.errorFill,
+          ),
+        );
+      }
+    }
+  }
+
+  Color _getLevelColor(String level) {
+    switch (level.toLowerCase()) {
+      case 'مبتدئ':
+        return ColorsManager.successFill;
+      case 'متوسط':
+        return ColorsManager.warningFill;
+      case 'متقدم':
+        return ColorsManager.errorFill;
+      default:
+        return ColorsManager.primaryColor;
+    }
+  }
+
+
 }

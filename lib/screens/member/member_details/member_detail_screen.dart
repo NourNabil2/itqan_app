@@ -306,6 +306,5 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
     );
   }
 
-  Color _getLevelColor(String level) => MemberUtils.getLevelColor(level);
 
 }

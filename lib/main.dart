@@ -1,6 +1,7 @@
 // ============= main.dart - محسن =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -39,6 +40,10 @@ class GymnasticsApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SkillLibraryProvider()),
         ChangeNotifierProvider(create: (_) => MemberLibraryProvider()),
         ChangeNotifierProvider(create: (_) => MemberNotesProvider()),
+        ChangeNotifierProvider(create: (_) => MemberNotesProvider()),
+        ChangeNotifierProvider<ExerciseAssignmentProvider>(
+          create: (_) => ExerciseAssignmentProvider(),
+        ),
       ],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),

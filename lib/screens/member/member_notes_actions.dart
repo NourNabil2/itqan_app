@@ -10,6 +10,7 @@ import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:itqan_gym/screens/member/edit_member/edit_member_screen.dart';
 import 'package:itqan_gym/screens/member/member_notes/member_notes_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 ///  Member Notes Actions - عمليات الملاحظات
 class MemberNotesActions {
@@ -369,13 +370,9 @@ class MemberProfileActions {
     );
   }
 
-  static void _shareMember(BuildContext context, Member member) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('سيتم مشاركة ملف العضو ${member.name}'),
-        backgroundColor: ColorsManager.primaryColor,
-      ),
-    );
+  static Future<void> _shareMember(BuildContext context, Member member) async {
+    final text = '${member.name} • العمر: ${member.age} • المستوى: ${member.level} , ${member.notes} ';
+    await Share.share(text, subject: 'بيانات العضو: ${member.name}');
   }
 
   static void _showRemoveFromTeamDialog(BuildContext context, Member member, String teamId) {

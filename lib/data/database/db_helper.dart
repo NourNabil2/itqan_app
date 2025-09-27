@@ -135,6 +135,41 @@ class DatabaseHelper {
   )
 ''');
 
+    // جدول ربط الأعضاء بالتمارين
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS member_exercise (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id TEXT NOT NULL,
+    exercise_template_id TEXT NOT NULL,
+    assigned_at TEXT NOT NULL DEFAULT (datetime('now')),
+    assigned_by TEXT,
+    status TEXT DEFAULT 'not_started',
+    progress REAL DEFAULT 0.0,
+    completed_at TEXT,
+    notes TEXT,
+    UNIQUE(member_id, exercise_template_id),
+    FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE,
+    FOREIGN KEY (exercise_template_id) REFERENCES exercise_template (id) ON DELETE CASCADE
+  )
+''');
+
+// جدول ربط الأعضاء بالمهارات
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS member_skill (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id TEXT NOT NULL,
+    skill_template_id TEXT NOT NULL,
+    assigned_at TEXT NOT NULL DEFAULT (datetime('now')),
+    assigned_by TEXT,
+    status TEXT DEFAULT 'not_started',
+    progress REAL DEFAULT 0.0,
+    completed_at TEXT,
+    notes TEXT,
+    UNIQUE(member_id, skill_template_id),
+    FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE,
+    FOREIGN KEY (skill_template_id) REFERENCES skill_template (id) ON DELETE CASCADE
+  )
+''');
 
     // Global Skill Template
     await db.execute('''
@@ -763,6 +798,236 @@ class DatabaseHelper {
       progress.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  static Future<void> assignExerciseToMembers(
+      Database db,
+      String exerciseId,
+      List<String> memberIds, {
+        String? assignedBy,
+      }) async {
+    final batch = db.batch();
+
+    for (final memberId in memberIds) {
+      batch.insert(
+        'member_exercise',
+        {
+          'member_id': memberId,
+          'exercise_template_id': exerciseId,
+          'assigned_at': DateTime.now().toIso8601String(),
+          'assigned_by': assignedBy,
+          'status': 'not_started',
+          'progress': 0.0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+
+  /// جلب التمارين المعينة لعضو
+  static Future<List<Map<String, dynamic>>> getMemberAssignedExercises(
+      Database db,
+      String memberId,
+      ) async {
+    return await db.rawQuery('''
+      SELECT 
+        et.*,
+        me.status,
+        me.progress,
+        me.assigned_at,
+        me.completed_at,
+        me.notes as member_notes
+      FROM member_exercise me
+      JOIN exercise_template et ON et.id = me.exercise_template_id
+      WHERE me.member_id = ?
+      ORDER BY me.assigned_at DESC
+    ''', [memberId]);
+  }
+
+  /// جلب الأعضاء المعينين لتمرين
+  static Future<List<Map<String, dynamic>>> getExerciseAssignedMembers(
+      Database db,
+      String exerciseId,
+      ) async {
+    return await db.rawQuery('''
+      SELECT 
+        m.*,
+        me.status,
+        me.progress,
+        me.assigned_at,
+        me.completed_at
+      FROM member_exercise me
+      JOIN members m ON m.id = me.member_id
+      WHERE me.exercise_template_id = ?
+      ORDER BY m.name ASC
+    ''', [exerciseId]);
+  }
+
+  /// تحديث تقدم العضو في التمرين
+  static Future<void> updateMemberExerciseProgress(
+      Database db,
+      String memberId,
+      String exerciseId,
+      double progress, {
+        String? status,
+        String? notes,
+      }) async {
+    final updates = <String, dynamic>{
+      'progress': progress,
+      'status': status ?? (progress >= 100 ? 'completed' :
+      progress > 0 ? 'in_progress' : 'not_started'),
+    };
+
+    if (progress >= 100) {
+      updates['completed_at'] = DateTime.now().toIso8601String();
+    }
+
+    if (notes != null) {
+      updates['notes'] = notes;
+    }
+
+    await db.update(
+      'member_exercise',
+      updates,
+      where: 'member_id = ? AND exercise_template_id = ?',
+      whereArgs: [memberId, exerciseId],
+    );
+  }
+
+  /// إلغاء تعيين تمرين من عضو
+  static Future<void> unassignExerciseFromMember(
+      Database db,
+      String memberId,
+      String exerciseId,
+      ) async {
+    await db.delete(
+      'member_exercise',
+      where: 'member_id = ? AND exercise_template_id = ?',
+      whereArgs: [memberId, exerciseId],
+    );
+  }
+
+  /// جلب الأعضاء المتاحين لتعيين تمرين (من فريق معين)
+  static Future<List<Map<String, dynamic>>> getAvailableMembersForExercise(
+      Database db,
+      String exerciseId,
+      String teamId,
+      ) async {
+    return await db.rawQuery('''
+      SELECT m.*
+      FROM team_member tm
+      JOIN members m ON m.id = tm.member_id
+      WHERE tm.team_id = ?
+      AND m.id NOT IN (
+        SELECT member_id 
+        FROM member_exercise 
+        WHERE exercise_template_id = ?
+      )
+      ORDER BY m.name ASC
+    ''', [teamId, exerciseId]);
+  }
+
+  // ===== Member Skill Assignment (مشابه للتمارين) =====
+
+  /// تعيين مهارة لعضو أو أكثر
+  static Future<void> assignSkillToMembers(
+      Database db,
+      String skillId,
+      List<String> memberIds, {
+        String? assignedBy,
+      }) async {
+    final batch = db.batch();
+
+    for (final memberId in memberIds) {
+      batch.insert(
+        'member_skill',
+        {
+          'member_id': memberId,
+          'skill_template_id': skillId,
+          'assigned_at': DateTime.now().toIso8601String(),
+          'assigned_by': assignedBy,
+          'status': 'not_started',
+          'progress': 0.0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+
+  /// جلب المهارات المعينة لعضو
+  static Future<List<Map<String, dynamic>>> getMemberAssignedSkills(
+      Database db,
+      String memberId,
+      ) async {
+    return await db.rawQuery('''
+      SELECT 
+        st.*,
+        ms.status,
+        ms.progress,
+        ms.assigned_at,
+        ms.completed_at,
+        ms.notes as member_notes
+      FROM member_skill ms
+      JOIN skill_template st ON st.id = ms.skill_template_id
+      WHERE ms.member_id = ?
+      ORDER BY ms.assigned_at DESC
+    ''', [memberId]);
+  }
+
+  /// حساب التقدم الكلي للعضو
+  static Future<double> calculateMemberOverallProgress(
+      Database db,
+      String memberId,
+      ) async {
+    final result = await db.rawQuery('''
+      SELECT 
+        AVG(progress) as overall_progress
+      FROM (
+        SELECT progress FROM member_exercise WHERE member_id = ?
+        UNION ALL
+        SELECT progress FROM member_skill WHERE member_id = ?
+      )
+    ''', [memberId, memberId]);
+
+    if (result.isNotEmpty && result.first['overall_progress'] != null) {
+      return (result.first['overall_progress'] as num).toDouble();
+    }
+    return 0.0;
+  }
+
+  /// إحصائيات العضو
+  static Future<Map<String, dynamic>> getMemberStatistics(
+      Database db,
+      String memberId,
+      ) async {
+    final exerciseStats = await db.rawQuery('''
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+        COUNT(CASE WHEN status = 'not_started' THEN 1 END) as not_started
+      FROM member_exercise
+      WHERE member_id = ?
+    ''', [memberId]);
+
+    final skillStats = await db.rawQuery('''
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+        COUNT(CASE WHEN status = 'not_started' THEN 1 END) as not_started
+      FROM member_skill
+      WHERE member_id = ?
+    ''', [memberId]);
+
+    return {
+      'exercises': exerciseStats.first,
+      'skills': skillStats.first,
+    };
   }
 
   // إعادة تعيين الداتابيس في حالة المشاكل
