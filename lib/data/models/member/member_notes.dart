@@ -79,26 +79,3 @@ class MemberNote {
   }
 }
 
-// Enums for better type safety
-enum NoteType {
-  general('general', 'عام', Icons.note_outlined),
-  performance('performance', 'الأداء', Icons.trending_up_rounded),
-  behavior('behavior', 'السلوك', Icons.psychology_outlined),
-  health('health', 'الصحة', Icons.health_and_safety_outlined);
-
-  const NoteType(this.value, this.arabicName, this.icon);
-  final String value;
-  final String arabicName;
-  final IconData icon;
-}
-
-enum NotePriority {
-  low('low', 'منخفضة', Colors.green),
-  normal('normal', 'عادية', Colors.blue),
-  high('high', 'عالية', Colors.red);
-
-  const NotePriority(this.value, this.arabicName, this.color);
-  final String value;
-  final String arabicName;
-  final Color color;
-}

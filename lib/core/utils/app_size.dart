@@ -8,7 +8,9 @@ class SizeApp {
   static double iconSize = 24.0.w;
   static double iconSizeSmall = 16.0.w;
   static double s2 = 2.0.w;
+  static double s4 = 4.0.w;
   static double s5 = 5.0.w;
+  static double s6 = 6.0.w;
   static double s8 = 8.0.w;
   static double s10 = 10.0.w;
   static double s12 = 12.0.w;

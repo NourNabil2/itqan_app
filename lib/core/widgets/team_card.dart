@@ -5,7 +5,9 @@ import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/CustomIcon.dart';
+import 'package:provider/provider.dart';
 import '../../data/models/team.dart';
+import '../../providers/team_provider.dart';
 import '../../screens/team/team_detail_screen.dart';
 
 class TeamCard extends StatefulWidget {
@@ -59,12 +61,264 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
     _controller.reverse();
   }
 
+  void _handleLongPress() async {
+    HapticFeedback.mediumImpact();
+    final shouldDelete = await _showDeleteDialog();
+    if (shouldDelete == true) {
+      await _deleteTeam();
+    }
+  }
+
+  Future<bool?> _showDeleteDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        contentPadding: EdgeInsets.zero,
+        content: Container(
+          width: 320.w,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Section
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(24.w),
+                decoration: BoxDecoration(
+                  color: ColorsManager.errorFill.withOpacity(0.1),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16.r),
+                    topRight: Radius.circular(16.r),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: ColorsManager.errorFill.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48.w,
+                      height: 48.h,
+                      decoration: BoxDecoration(
+                        color: ColorsManager.errorFill.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: ColorsManager.errorFill.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: ColorsManager.errorFill,
+                        size: 24.sp,
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'تأكيد الحذف',
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: ColorsManager.defaultText,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'هذا الإجراء لا يمكن التراجع عنه',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: ColorsManager.defaultTextSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content Section
+              Padding(
+                padding: EdgeInsets.all(24.w),
+                child: Column(
+                  children: [
+                    Text(
+                      'هل أنت متأكد من حذف فريق "${widget.team.name}"؟',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: ColorsManager.defaultText,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Warning container
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: ColorsManager.warningSurface,
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: ColorsManager.warningFill.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: ColorsManager.warningFill,
+                            size: 18.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              'سيتم حذف جميع البيانات المرتبطة بالفريق',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                color: ColorsManager.warningText,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Actions Section
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(24.w),
+                decoration: BoxDecoration(
+                  color: ColorsManager.defaultSurface,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(16.r),
+                    bottomRight: Radius.circular(16.r),
+                  ),
+                  border: Border(
+                    top: BorderSide(
+                      color: ColorsManager.inputBorder.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: ColorsManager.defaultTextSecondary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                            side: BorderSide(
+                              color: ColorsManager.inputBorder.withOpacity(0.5),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'إلغاء',
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ColorsManager.errorFill,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.delete_rounded,
+                              size: 18.sp,
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              'حذف',
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteTeam() async {
+    try {
+      final teamProvider = Provider.of<TeamProvider>(context, listen: false);
+      await teamProvider.deleteTeam(widget.team.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف الفريق بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في حذف الفريق: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get screen dimensions for responsive design
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
-    final isMediumScreen = screenWidth >= 360 && screenWidth < 400;
 
     return AnimatedBuilder(
       animation: _scaleAnimation,
@@ -98,11 +352,12 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
             onTapDown: _handleTapDown,
             onTapUp: _handleTapUp,
             onTapCancel: _handleTapCancel,
+            onLongPress: _handleLongPress,
             child: Container(
               margin: EdgeInsets.only(bottom: SizeApp.padding),
               constraints: BoxConstraints(
-                minHeight: isSmallScreen ? 100.h : 110.h,
-                maxHeight: isSmallScreen ? 120.h : 140.h,
+                minHeight: 110.h,
+                maxHeight: 170.h,
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.only(
@@ -182,24 +437,14 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                                   children: [
                                     Text(
                                       widget.team.name,
-                                      style: TextStyle(
-                                        fontSize: isSmallScreen ? 16.sp : 18.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: ColorsManager.defaultText,
-                                        height: 1.2,
-                                      ),
+                                      style: Theme.of(context).textTheme.titleMedium,
                                       maxLines: isSmallScreen ? 1 : 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     SizedBox(height: 2.h),
                                     Text(
                                       widget.team.ageCategory.arabicName,
-                                      style: TextStyle(
-                                        fontSize: isSmallScreen ? 11.sp : 13.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: ColorsManager.defaultTextSecondary,
-                                        height: 1.3,
-                                      ),
+                                      style: Theme.of(context).textTheme.bodySmall,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -255,7 +500,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                               ),
                             ),
 
-                            const Spacer(), // هنا الـ Spacer هيشتغل
+                            const Spacer(),
 
                             // Arrow navigation
                             AnimatedContainer(

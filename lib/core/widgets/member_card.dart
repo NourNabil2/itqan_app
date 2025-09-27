@@ -6,7 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import '../../data/models/member/member.dart';
-import '../../screens/member/member_detail_screen.dart';
+import '../../screens/member/member_details/member_detail_screen.dart';
 
 class MemberCard extends StatefulWidget {
   final Member member;
@@ -299,7 +299,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
                         Expanded(
                           child: _buildStatItem(
                             'الحضور',
-                            '${(widget.member.overallProgress * 0.8).toInt()}%',
+                            '${(widget.member.overallProgress ?? 0 * 0.8).toInt()}%',
                             Icons.calendar_today_outlined,
                             ColorsManager.successFill,
                           ),
@@ -314,7 +314,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
                         Expanded(
                           child: _buildStatItem(
                             'الأداء',
-                            '${(widget.member.overallProgress * 0.9).toInt()}%',
+                            '${(widget.member.overallProgress ?? 0 * 0.9).toInt()}%',
                             Icons.trending_up_rounded,
                             ColorsManager.warningFill,
                           ),
@@ -329,7 +329,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
                         Expanded(
                           child: _buildStatItem(
                             'النشاط',
-                            '${widget.member.overallProgress.toInt()}%',
+                            '${widget.member.overallProgress?? 0.toInt()}%',
                             Icons.fitness_center_outlined,
                             ColorsManager.primaryColor,
                           ),

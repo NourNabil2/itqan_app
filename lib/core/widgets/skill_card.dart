@@ -47,7 +47,7 @@ class SkillCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8.r),
                   color: skill.thumbnailPath != null
                       ? null
-                      : _getApparatusColor(skill.apparatus).withOpacity(0.1),
+                      : getApparatusColor(skill.apparatus).withOpacity(0.1),
                   image: (skill.thumbnailPath != null && File(skill.thumbnailPath!).existsSync())
                       ? DecorationImage(
                     image: FileImage(File(skill.thumbnailPath!)),
@@ -57,8 +57,8 @@ class SkillCard extends StatelessWidget {
                 ),
                 child: skill.thumbnailPath == null
                     ? Icon(
-                  _getApparatusIcon(skill.apparatus),
-                  color: _getApparatusColor(skill.apparatus),
+                  getApparatusIcon(skill.apparatus),
+                  color: getApparatusColor(skill.apparatus),
                   size: 28.sp,
                 )
                     : null,
@@ -83,14 +83,14 @@ class SkillCard extends StatelessWidget {
                         vertical: 2.h,
                       ),
                       decoration: BoxDecoration(
-                        color: _getApparatusColor(skill.apparatus).withOpacity(0.1),
+                        color: getApparatusColor(skill.apparatus).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Text(
                         skill.apparatus.arabicName,
                         style: TextStyle(
                           fontSize: 11.sp,
-                          color: _getApparatusColor(skill.apparatus),
+                          color: getApparatusColor(skill.apparatus),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -145,29 +145,4 @@ class SkillCard extends StatelessWidget {
     );
   }
 
-  Color _getApparatusColor(Apparatus apparatus) {
-    switch (apparatus) {
-      case Apparatus.floor:
-        return Colors.green;
-      case Apparatus.beam:
-        return Colors.orange;
-      case Apparatus.bars:
-        return Colors.blue;
-      case Apparatus.vault:
-        return Colors.purple;
-    }
-  }
-
-  IconData _getApparatusIcon(Apparatus apparatus) {
-    switch (apparatus) {
-      case Apparatus.floor:
-        return Icons.sports_gymnastics;
-      case Apparatus.beam:
-        return Icons.linear_scale;
-      case Apparatus.bars:
-        return Icons.fitness_center;
-      case Apparatus.vault:
-        return Icons.directions_run;
-    }
-  }
 }

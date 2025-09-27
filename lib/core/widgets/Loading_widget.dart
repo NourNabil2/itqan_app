@@ -15,7 +15,7 @@ class LoadingSpinner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SpinKitCircle(
-      color: color ?? ColorsManager.secondaryColor, // Use passed color or theme's primary color
+      color: color ?? ColorsManager.primaryColor, // Use passed color or theme's primary color
       size: size,
     );
   }

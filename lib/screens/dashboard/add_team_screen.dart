@@ -1,8 +1,9 @@
-// lib/screens/teams/create_team_flow.dart
+// ============= create_team_flow.dart =============
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/enums.dart';
 import '../../data/models/team.dart';
@@ -12,7 +13,6 @@ import '../../data/database/db_helper.dart';
 import '../team/steps/add_members_step.dart';
 import '../team/steps/select_content_step.dart';
 import '../team/steps/team_info_step.dart';
-
 
 class CreateTeamFlow extends StatefulWidget {
   const CreateTeamFlow({super.key});
@@ -27,7 +27,7 @@ class _CreateTeamFlowState extends State<CreateTeamFlow> {
   // حالة التجميعة
   String _teamName = '';
   AgeCategory? _ageCategory;
-  final List<Member> _members = [];
+  final List<Member> _selectedMembers = []; // ✅ أعضاء مختارين من المكتبة
   final List<String> _selectedExerciseIds = [];
   final List<String> _selectedSkillIds = [];
 
@@ -44,9 +44,9 @@ class _CreateTeamFlowState extends State<CreateTeamFlow> {
       }
     }
     if (_currentStep == 1) {
-      if (_members.isEmpty) {
+      if (_selectedMembers.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('أضف عضو واحد على الأقل')),
+          const SnackBar(content: Text('اختر عضو واحد على الأقل من المكتبة')),
         );
         return;
       }
@@ -72,30 +72,24 @@ class _CreateTeamFlowState extends State<CreateTeamFlow> {
       // 1) إنشاء الفريق
       final team = Team(
         name: _teamName.trim(),
-        ageCategory: _ageCategory!,      // بقى جاهز من الخطوة 1
+        ageCategory: _ageCategory!,
         createdAt: DateTime.now(),
       );
       final teamProvider = context.read<TeamProvider>();
-      final String newTeamId = await teamProvider.addTeam(team);
+      final String? newTeamId = await teamProvider.addTeam(team);
 
-      // 2) إضافة الأعضاء وربط الـteamId
+      // 2) ✅ تعيين الأعضاء المختارين للفريق (بدلاً من إنشاءهم)
       final db = DatabaseHelper.instance;
-      for (final m in _members) {
-        final member = Member(
-          // لو Member عندك له id تلقائي في DB سيبه null/مش تبعته
-          teamId: newTeamId,
-          name: m.name,
-          age: m.age,
-          level: m.level,
-          photoPath: m.photoPath,
-          createdAt: DateTime.now(),
-        );
-        await db.createMember(member);
-      }
+      final memberIds = _selectedMembers.map((m) => m.id).toList();
+      await db.assignMembersToTeam(newTeamId!, memberIds);
 
       // 3) التعيينات (تمارين/مهارات) – IDs من المكتبتين العالمية
-      await teamProvider.assignExercisesToTeam(newTeamId, _selectedExerciseIds);
-      await teamProvider.assignSkillsToTeam(newTeamId, _selectedSkillIds);
+      if (_selectedExerciseIds.isNotEmpty) {
+        await db.assignExercisesToTeam(newTeamId, _selectedExerciseIds);
+      }
+      if (_selectedSkillIds.isNotEmpty) {
+        await db.assignSkillsToTeam(newTeamId, _selectedSkillIds);
+      }
 
       if (mounted) {
         Navigator.pop(context);
@@ -125,9 +119,9 @@ class _CreateTeamFlowState extends State<CreateTeamFlow> {
         onAgeCategoryChanged: (v) => _ageCategory = v,
       ),
       AddMembersStep(
-        members: _members,
+        members: _selectedMembers, // ✅ الأعضاء المختارين
         onMembersChanged: (list) {
-          _members
+          _selectedMembers
             ..clear()
             ..addAll(list);
           setState(() {});
@@ -152,13 +146,7 @@ class _CreateTeamFlowState extends State<CreateTeamFlow> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إنشاء فريق جديد'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _back,
-        ),
-      ),
+      appBar: const CustomAppBar(title: 'إنشاء فريق جديد'),
       body: steps[_currentStep],
       bottomNavigationBar: Container(
         color: Colors.white,
@@ -187,3 +175,4 @@ class _CreateTeamFlowState extends State<CreateTeamFlow> {
     );
   }
 }
+

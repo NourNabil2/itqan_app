@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/exercise_card.dart';
+import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:itqan_gym/core/widgets/skill_card.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/enums.dart';
@@ -8,6 +11,7 @@ import '../../providers/exercise_library_provider.dart';
 import '../../providers/skill_library_provider.dart';
 import 'add_exercise_screen.dart';
 import 'add_skill_screen.dart';
+import 'library_tab_bar.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -21,10 +25,34 @@ class _LibraryScreenState extends State<LibraryScreen>
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
 
+  // Tab Configuration
+  static const List<LibraryTab> _tabs = [
+    LibraryTab(
+      title: 'الإحماء',
+      icon: Icons.whatshot_rounded,
+      exerciseType: ExerciseType.warmup,
+    ),
+    LibraryTab(
+      title: 'الإطالة',
+      icon: Icons.accessibility_new_rounded,
+      exerciseType: ExerciseType.stretching,
+    ),
+    LibraryTab(
+      title: 'اللياقة',
+      icon: Icons.fitness_center_rounded,
+      exerciseType: ExerciseType.conditioning,
+    ),
+    LibraryTab(
+      title: 'المهارات',
+      icon: Icons.star_rounded,
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _loadInitialData();
   }
 
   @override
@@ -34,108 +62,165 @@ class _LibraryScreenState extends State<LibraryScreen>
     super.dispose();
   }
 
+  void _loadInitialData() {
+    // Load initial data for all providers
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ExerciseLibraryProvider>().loadExercises();
+      context.read<SkillLibraryProvider>().loadSkills();
+    });
+  }
+
+  void _onTabChanged(int index) {
+    _searchController.clear();
+
+    if (index < 3) {
+      // Exercise tabs
+      final type = _tabs[index].exerciseType!;
+      context.read<ExerciseLibraryProvider>().filterByType(type);
+    } else {
+      // Skills tab
+      context.read<SkillLibraryProvider>().clearSearch();
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    if (_tabController.index < 3) {
+      context.read<ExerciseLibraryProvider>().searchExercises(query);
+    } else {
+      context.read<SkillLibraryProvider>().searchSkills(query);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Search Bar
-        Container(
-          color: Colors.white,
-          padding: EdgeInsets.all(16.w),
-          child: TextField(
+    return Scaffold(
+      backgroundColor: ColorsManager.backgroundSurface,
+      body: Column(
+        children: [
+          // Library Header
+          _buildLibraryHeader(),
+
+          // Tab Bar
+          LibraryTabBar(
+            controller: _tabController,
+            tabs: _tabs,
+            onTap: _onTabChanged,
+          ),
+
+          // Search Header
+          LibrarySearchHeader(
             controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'بحث...',
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: Colors.grey[100],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-                borderSide: BorderSide.none,
-              ),
+            onChanged: _onSearchChanged,
+            hintText: _getSearchHint(),
+          ),
+
+          // Content
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildExerciseList(ExerciseType.warmup),
+                _buildExerciseList(ExerciseType.stretching),
+                _buildExerciseList(ExerciseType.conditioning),
+                _buildSkillsList(),
+              ],
             ),
-            onChanged: (query) {
-              if (_tabController.index < 3) {
-                Provider.of<ExerciseLibraryProvider>(context, listen: false)
-                    .searchExercises(query);
-              } else {
-                Provider.of<SkillLibraryProvider>(context, listen: false)
-                    .searchSkills(query);
-              }
-            },
           ),
-        ),
-        // Tabs
-        Container(
-          color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFF2196F3),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: const Color(0xFF2196F3),
-            tabs: const [
-              Tab(text: 'الإحماء'),
-              Tab(text: 'الإطالة'),
-              Tab(text: 'اللياقة'),
-              Tab(text: 'المهارات'),
-            ],
-            onTap: (index) {
-              _searchController.clear();
-              if (index < 3) {
-                final type = [
-                  ExerciseType.warmup,
-                  ExerciseType.stretching,
-                  ExerciseType.conditioning,
-                ][index];
-                Provider.of<ExerciseLibraryProvider>(context, listen: false)
-                    .filterByType(type);
-              }
-            },
-          ),
-        ),
-        // Content
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildExerciseList(ExerciseType.warmup),
-              _buildExerciseList(ExerciseType.stretching),
-              _buildExerciseList(ExerciseType.conditioning),
-              _buildSkillsList(),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  Widget _buildLibraryHeader() {
+    return SectionHeader(
+      title: 'مكتبة التمارين والمهارات',
+      subtitle: 'إدارة وتنظيم جميع التمارين والمهارات',
+      leading: Container(
+        padding: EdgeInsets.all(SizeApp.s8),
+        decoration: BoxDecoration(
+          color: ColorsManager.primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(SizeApp.s8),
+        ),
+        child: Icon(
+          Icons.library_books_rounded,
+          color: ColorsManager.primaryColor,
+          size: SizeApp.iconSize,
+        ),
+      ),
+      trailing: _buildStatsButton(),
+      padding: EdgeInsets.all(SizeApp.s16),
+      showDivider: true,
+    );
+  }
+
+  Widget _buildStatsButton() {
+    return IconButton(
+      onPressed: _showLibraryStats,
+      icon: Icon(
+        Icons.analytics_rounded,
+        color: ColorsManager.primaryColor,
+        size: SizeApp.iconSize,
+      ),
+      tooltip: 'إحصائيات المكتبة',
+    );
+  }
+
+  String _getSearchHint() {
+    if (_tabController.index < 3) {
+      return 'البحث في ${_tabs[_tabController.index].title}...';
+    }
+    return 'البحث في المهارات...';
   }
 
   Widget _buildExerciseList(ExerciseType type) {
     return Consumer<ExerciseLibraryProvider>(
       builder: (context, provider, child) {
         final exercises = provider.getExercisesByType(type);
+        final isLoading = provider.isLoading;
 
-        if (exercises.isEmpty) {
-          return _buildEmptyState(type.arabicName);
+        if (isLoading) {
+          return _buildLoadingState();
         }
 
-        return ListView.builder(
-          padding: EdgeInsets.all(16.w),
-          itemCount: exercises.length + 1,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return _buildAddButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddExerciseScreen(type: type),
-                    ),
-                  );
-                },
-              );
-            }
-            return ExerciseCard(exercise: exercises[index - 1]);
-          },
+        if (exercises.isEmpty) {
+          return LibraryEmptyState(
+            category: type.arabicName,
+            icon: _getExerciseTypeIcon(type),
+            iconColor: _getExerciseTypeColor(type),
+            onAddPressed: () => _navigateToAddExercise(type),
+            addButtonText: 'إضافة أول ${type.arabicName}',
+          );
+        }
+
+        return LibraryListContainer(
+          child: Column(
+            children: [
+              // Add Button
+              LibraryAddButton(
+                onPressed: () => _navigateToAddExercise(type),
+                text: 'إضافة ${type.arabicName} جديد',
+                icon: Icons.add_rounded,
+                color: _getExerciseTypeColor(type),
+              ),
+
+              // Exercises List
+              Expanded(
+                child: ListView.builder(
+                  itemCount: exercises.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: SizeApp.s12),
+                      child: InkWell(
+                        onTap: () => _navigateToEditExercise(exercises[index]),
+                        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                        child: ExerciseCard(exercise: exercises[index]),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -144,103 +229,251 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _buildSkillsList() {
     return Consumer<SkillLibraryProvider>(
       builder: (context, provider, child) {
-        if (provider.skills.isEmpty) {
-          return _buildEmptyState('المهارات');
+        final skills = provider.skills;
+        final isLoading = provider.isLoading;
+
+        if (isLoading) {
+          return _buildLoadingState();
         }
 
-        return ListView.builder(
-          padding: EdgeInsets.all(16.w),
-          itemCount: provider.skills.length + 1,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return _buildAddButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AddSkillScreen(),
-                    ),
-                  );
-                },
-              );
-            }
-            return SkillCard(skill: provider.skills[index - 1]);
-          },
+        if (skills.isEmpty) {
+          return LibraryEmptyState(
+            category: 'المهارات',
+            icon: Icons.star_rounded,
+            iconColor: ColorsManager.secondaryColor,
+            onAddPressed: _navigateToAddSkill,
+            addButtonText: 'إضافة أول مهارة',
+          );
+        }
+
+        return LibraryListContainer(
+          child: Column(
+            children: [
+              // Add Button
+              LibraryAddButton(
+                onPressed: _navigateToAddSkill,
+                text: 'إضافة مهارة جديدة',
+                icon: Icons.star_rounded,
+                color: ColorsManager.secondaryColor,
+              ),
+
+              // Skills List
+              Expanded(
+                child: ListView.builder(
+                  itemCount: skills.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: SizeApp.s12),
+                      child: InkWell(
+                        onTap: () => _navigateToEditSkill(skills[index]),
+                        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                        child: SkillCard(skill: skills[index]),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildAddButton({required VoidCallback onPressed}) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.add),
-        label: const Text('إنشاء جديد'),
-        style: OutlinedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 16.h),
-          side: const BorderSide(
-            color: Color(0xFF2196F3),
-            width: 2,
-            style: BorderStyle.solid,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.r),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String category) {
+  Widget _buildLoadingState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.folder_open,
-            size: 80.sp,
-            color: Colors.grey[300],
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(ColorsManager.primaryColor),
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: SizeApp.s16),
           Text(
-            'لا توجد عناصر في $category',
+            'جاري تحميل المحتوى...',
             style: TextStyle(
-              fontSize: 18.sp,
-              color: Colors.grey[600],
+              fontSize: 16.sp,
+              color: ColorsManager.defaultTextSecondary,
             ),
-          ),
-          SizedBox(height: 24.h),
-          ElevatedButton.icon(
-            onPressed: () {
-              if (_tabController.index < 3) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddExerciseScreen(
-                      type: [
-                        ExerciseType.warmup,
-                        ExerciseType.stretching,
-                        ExerciseType.conditioning,
-                      ][_tabController.index],
-                    ),
-                  ),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AddSkillScreen(),
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('إضافة أول عنصر'),
           ),
         ],
       ),
+    );
+  }
+
+  // Navigation Methods
+  void _navigateToAddExercise(ExerciseType type) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddExerciseScreen(type: type),
+      ),
+    ).then((result) {
+      if (result == true) {
+        // Refresh data after successful operation
+        context.read<ExerciseLibraryProvider>().refresh();
+      }
+    });
+  }
+
+  void _navigateToEditExercise(exercise) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddExerciseScreen(
+          type: exercise.type,
+          exerciseToEdit: exercise,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        // Refresh data after successful operation
+        context.read<ExerciseLibraryProvider>().refresh();
+      }
+    });
+  }
+
+  void _navigateToAddSkill() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddSkillScreen(),
+      ),
+    ).then((result) {
+      if (result == true) {
+        // Refresh data after successful operation
+        context.read<SkillLibraryProvider>().refresh();
+      }
+    });
+  }
+
+  void _navigateToEditSkill(skill) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddSkillScreen(skillToEdit: skill),
+      ),
+    ).then((result) {
+      if (result == true) {
+        // Refresh data after successful operation
+        context.read<SkillLibraryProvider>().refresh();
+      }
+    });
+  }
+
+  // Helper Methods
+  IconData _getExerciseTypeIcon(ExerciseType type) {
+    switch (type) {
+      case ExerciseType.warmup:
+        return Icons.whatshot_rounded;
+      case ExerciseType.stretching:
+        return Icons.accessibility_new_rounded;
+      case ExerciseType.conditioning:
+        return Icons.fitness_center_rounded;
+      default:
+        return Icons.fitness_center_rounded;
+    }
+  }
+
+  Color _getExerciseTypeColor(ExerciseType type) {
+    switch (type) {
+      case ExerciseType.warmup:
+        return const Color(0xFFFF5722); // Deep Orange
+      case ExerciseType.stretching:
+        return const Color(0xFF4CAF50); // Green
+      case ExerciseType.conditioning:
+        return const Color(0xFF2196F3); // Blue
+      default:
+        return ColorsManager.primaryColor;
+    }
+  }
+
+  // Stats Dialog
+  void _showLibraryStats() {
+    showDialog(
+      context: context,
+      builder: (context) => _LibraryStatsDialog(),
+    );
+  }
+}
+
+/// ✅ Library Stats Dialog - مربع حوار الإحصائيات
+class _LibraryStatsDialog extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+      ),
+      title: Row(
+        children: [
+          Icon(
+            Icons.analytics_rounded,
+            color: ColorsManager.primaryColor,
+            size: SizeApp.iconSize,
+          ),
+          SizedBox(width: SizeApp.s8),
+          Text(
+            'إحصائيات المكتبة',
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+      content: Consumer2<ExerciseLibraryProvider, SkillLibraryProvider>(
+        builder: (context, exerciseProvider, skillProvider, child) {
+          return SizedBox(
+            width: double.maxFinite,
+            child: GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              childAspectRatio: 1.2,
+              mainAxisSpacing: SizeApp.s12,
+              crossAxisSpacing: SizeApp.s12,
+              children: [
+                LibraryStatsCard(
+                  title: 'الإحماء',
+                  count: exerciseProvider.getExercisesByType(ExerciseType.warmup).length,
+                  icon: Icons.whatshot_rounded,
+                  color: const Color(0xFFFF5722),
+                ),
+                LibraryStatsCard(
+                  title: 'الإطالة',
+                  count: exerciseProvider.getExercisesByType(ExerciseType.stretching).length,
+                  icon: Icons.accessibility_new_rounded,
+                  color: const Color(0xFF4CAF50),
+                ),
+                LibraryStatsCard(
+                  title: 'اللياقة',
+                  count: exerciseProvider.getExercisesByType(ExerciseType.conditioning).length,
+                  icon: Icons.fitness_center_rounded,
+                  color: const Color(0xFF2196F3),
+                ),
+                LibraryStatsCard(
+                  title: 'المهارات',
+                  count: skillProvider.skills.length,
+                  icon: Icons.star_rounded,
+                  color: ColorsManager.secondaryColor,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'إغلاق',
+            style: TextStyle(
+              color: ColorsManager.primaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

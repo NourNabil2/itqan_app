@@ -17,7 +17,7 @@ import '../../core/widgets/team_card.dart';
 import '../../providers/team_provider.dart';
 import '../../screens/library/library_screen.dart';
 import '../../screens/member/member_library_screen.dart';
-import '../member/add_member_screen.dart';
+import '../member/add_member_screen/add_member_screen.dart';
 import 'add_team_screen.dart';
 import 'widgets/logo_box_header.dart'; // يحتوي CreateTeamFlow
 

@@ -32,9 +32,6 @@ class DatabaseHelper {
     );
   }
 
-
-// في DatabaseHelper.dart - صحح اسم الجدول في _createDB
-
   Future _createDB(Database db, int version) async {
     // Teams
     await db.execute('''
@@ -47,20 +44,17 @@ class DatabaseHelper {
     )
   ''');
 
-    // Members - غير من "member" لـ "members"
+    // Members - كل الأعضاء global
     await db.execute('''
     CREATE TABLE IF NOT EXISTS members (
       id TEXT PRIMARY KEY,
-      team_id TEXT,
       name TEXT NOT NULL,
       age INTEGER NOT NULL,
       level TEXT NOT NULL,
       photo_path TEXT,
       notes TEXT,
-      is_global INTEGER DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE SET NULL
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   ''');
 
@@ -93,7 +87,7 @@ class DatabaseHelper {
     )
   ''');
 
-    // Progress - غير الـ FOREIGN KEY reference
+    // Progress
     await db.execute('''
     CREATE TABLE IF NOT EXISTS progress (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,20 +119,22 @@ class DatabaseHelper {
     )
   ''');
 
-
     // Global Exercise Template
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS exercise_template (
-      id TEXT PRIMARY KEY,
-      type TEXT NOT NULL,
-      title TEXT NOT NULL,
-      description TEXT,
-      media_path TEXT,
-      media_type TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-  ''');
+  CREATE TABLE IF NOT EXISTS exercise_template (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    thumbnail_path TEXT,
+    media_gallery TEXT,
+    media_path TEXT,
+    media_type TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )
+''');
+
 
     // Global Skill Template
     await db.execute('''
@@ -184,45 +180,48 @@ class DatabaseHelper {
     await _insertSeedData(db);
   }
 
-// اضيف method جديدة لتصحيح الجداول الموجودة
+  // إصلاح الداتابيس الموجودة لإزالة team_id و is_global
   Future<void> fixExistingDatabase() async {
     final db = await database;
 
     try {
-      // تحقق من وجود الجدول الخطأ
-      final wrongTable = await db.rawQuery(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='member'"
-      );
+      // تحقق من البنية الحالية
+      final tableInfo = await db.rawQuery("PRAGMA table_info(members)");
+      final columns = tableInfo.map((row) => row['name'] as String).toSet();
 
-      if (wrongTable.isNotEmpty) {
-        print("Found table 'member', renaming to 'members'");
+      if (columns.contains('team_id') || columns.contains('is_global')) {
+        print("Updating members table structure...");
 
-        // أنشئ الجدول الصحيح
+        // إنشاء جدول مؤقت بالبنية الجديدة
         await db.execute('''
-        CREATE TABLE IF NOT EXISTS members (
+        CREATE TABLE IF NOT EXISTS members_new (
           id TEXT PRIMARY KEY,
-          team_id TEXT,
           name TEXT NOT NULL,
           age INTEGER NOT NULL,
           level TEXT NOT NULL,
           photo_path TEXT,
           notes TEXT,
-          is_global INTEGER DEFAULT 0,
           created_at TEXT NOT NULL DEFAULT (datetime('now')),
           updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )
       ''');
 
-        // انقل البيانات
+        // نقل البيانات (بدون team_id و is_global)
         await db.execute('''
-        INSERT INTO members 
-        SELECT * FROM member
+        INSERT INTO members_new (id, name, age, level, photo_path, notes, created_at, updated_at)
+        SELECT id, name, age, level, photo_path, notes, 
+               COALESCE(created_at, datetime('now')), 
+               COALESCE(updated_at, datetime('now'))
+        FROM members
       ''');
 
-        // احذف الجدول الخطأ
-        await db.execute('DROP TABLE member');
+        // حذف الجدول القديم
+        await db.execute('DROP TABLE members');
 
-        print("Successfully migrated data from 'member' to 'members'");
+        // إعادة تسمية الجدول الجديد
+        await db.execute('ALTER TABLE members_new RENAME TO members');
+
+        print("Successfully updated members table structure");
       }
 
       // تأكد من وجود جدول member_notes
@@ -240,26 +239,23 @@ class DatabaseHelper {
         FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE
       )
     ''');
-
     } catch (e) {
       print("Error fixing database: $e");
     }
   }
 
-// اضيف في getAllTeams method تصحيح للـ JOIN
   Future<List<Team>> getAllTeams() async {
     final db = await database;
     final result = await db.rawQuery('''
-    SELECT t.*, COUNT(m.id) as member_count
+    SELECT t.*, COUNT(tm.member_id) as member_count
     FROM teams t
-    LEFT JOIN members m ON t.id = m.team_id
+    LEFT JOIN team_member tm ON t.id = tm.team_id
     GROUP BY t.id
   ''');
 
     return result.map((map) => Team.fromMap(map)).toList();
   }
 
-// صحح كل الـ progress methods
   Future<double> getMemberOverallProgress(String memberId) async {
     final db = await database;
     final result = await db.rawQuery('''
@@ -294,10 +290,11 @@ class DatabaseHelper {
       e.category,
       COUNT(CASE WHEN p.status = 'Mastered' THEN 1 END) * 100.0 / 
       COUNT(*) as progress_percentage
-    FROM members m
+    FROM team_member tm
+    JOIN members m ON tm.member_id = m.id
     JOIN progress p ON m.id = p.member_id
     JOIN exercises e ON p.exercise_id = e.id
-    WHERE m.team_id = ?
+    WHERE tm.team_id = ?
     GROUP BY e.category
   ''', [teamId]);
 
@@ -309,8 +306,7 @@ class DatabaseHelper {
     return progressMap;
   }
 
-// اضيف في getTeamAssignedMembers تصحيح للـ JOIN
-  Future<List<Member>> getTeamAssignedMembers(String teamId) async {
+  Future<List<Member>> getTeamMembers(String teamId) async {
     final db = await database;
     final maps = await db.rawQuery('''
     SELECT m.*
@@ -321,7 +317,6 @@ class DatabaseHelper {
   ''', [teamId]);
     return maps.map((m) => Member.fromMap(m)).toList();
   }
-
 
   Future<void> _insertSeedData(Database db) async {
     // Seed exercises for different age groups
@@ -356,7 +351,6 @@ class DatabaseHelper {
         'difficulty': 'Beginner',
         'age_group': 'under_6',
       },
-      // Add more exercises as needed
     ];
 
     for (var exercise in seedExercises) {
@@ -373,9 +367,6 @@ class DatabaseHelper {
     await db.insert('teams', team.toMap());
     return team.id;
   }
-
-
-
 
   Future<Team?> getTeam(int id) async {
     final db = await database;
@@ -410,71 +401,51 @@ class DatabaseHelper {
     );
   }
 
-
-// Assign member to team
-  Future<void> assignMembersToTeam(String teamId, List<String> memberIds) async {
+  // تعيين الأعضاء للفريق
+  Future<void> assignMembersToTeam(
+      String teamId, List<String> memberIds) async {
     final db = await database;
     final batch = db.batch();
 
-    // Clear existing assignments
+    // حذف التعيينات السابقة
     await db.delete('team_member', where: 'team_id = ?', whereArgs: [teamId]);
 
-    // Add new assignments
+    // إضافة التعيينات الجديدة
     for (final memberId in memberIds) {
-      batch.insert('team_member', {
-        'team_id': teamId,
-        'member_id': memberId,
-        'joined_at': DateTime.now().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      batch.insert(
+          'team_member',
+          {
+            'team_id': teamId,
+            'member_id': memberId,
+            'joined_at': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.ignore);
     }
 
     await batch.commit(noResult: true);
   }
 
-  // CRUD Operations for Members - Fixed table name
+  // CRUD Operations for Members - كل الأعضاء global
   Future<String> createMember(Member member) async {
     final db = await database;
-    // تأكد إن اسم الجدول "members" مش "member"
     await db.insert('members', member.toMap());
-
-    // If member has a teamId, also create assignment
-    if (member.teamId != null && !member.isGlobal) {
-      await db.insert('team_member', {
-        'team_id': member.teamId,
-        'member_id': member.id,
-        'joined_at': DateTime.now().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
-    }
-
     return member.id;
   }
 
-
-//////////////////////////////////////////////////////////-------------------------------------
-  Future<List<Member>> getGlobalMembers() async {
+  // جلب كل الأعضاء (كلهم global الآن)
+  Future<List<Member>> getAllMembers() async {
     final db = await database;
     final maps = await db.query(
-      'members', // تأكد إن اسم الجدول صحيح
-      where: 'is_global = 1',
+      'members',
       orderBy: 'name ASC',
     );
     return maps.map((map) => Member.fromMap(map)).toList();
   }
 
-  Future<List<Member>> getTeamMembers(String? teamId) async {
+  Future<Member?> getMember(String id) async {
     final db = await database;
     final maps = await db.query(
-      'members', // تأكد إن اسم الجدول صحيح
-      where: 'team_id = ?',
-      whereArgs: [teamId],
-    );
-    return maps.map((map) => Member.fromMap(map)).toList();
-  }
-
-  Future<Member?> getMember(String id) async { // غيرت من int لـ String
-    final db = await database;
-    final maps = await db.query(
-      'members', // تأكد إن اسم الجدول صحيح
+      'members',
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -488,7 +459,7 @@ class DatabaseHelper {
   Future<void> updateMember(Member member) async {
     final db = await database;
     await db.update(
-      'members', // تأكد إن اسم الجدول صحيح
+      'members',
       member.toMap(),
       where: 'id = ?',
       whereArgs: [member.id],
@@ -504,86 +475,59 @@ class DatabaseHelper {
     );
   }
 
-  /// حذف نهائي (مع الكاسكيد)
-  Future<void> hardDeleteMember(String id) async {
-    final db = await database;
-    await db.transaction((txn) async {
-      // مع تمكين FK، مش لازم تحذف من team_member يدويًا
-      // لكن لو حابب أمان إضافي:
-      await txn.delete('team_member', where: 'member_id = ?', whereArgs: [id]);
-
-      final deleted = await txn.delete('members', where: 'id = ?', whereArgs: [id]);
-      if (deleted == 0) {
-        throw Exception('No member found with id $id');
-      }
-    });
-  }
-
-  /// بدّل دالتك الحالية إلى:
   Future<void> deleteMember(String id) async {
-    // لو مصرّ تبقيها، خَلّها تشتغل داخل transaction وتتحقق من عدد الصفوف:
     final db = await database;
     await db.transaction((txn) async {
+      // حذف من جدول الربط
       await txn.delete('team_member', where: 'member_id = ?', whereArgs: [id]);
-      final deleted = await txn.delete('members', where: 'id = ?', whereArgs: [id]);
+      // حذف العضو
+      final deleted =
+          await txn.delete('members', where: 'id = ?', whereArgs: [id]);
       if (deleted == 0) throw Exception('No member deleted (id=$id)');
     });
   }
 
-
-
-  // Get all members (both global and team-specific) for a team
-  Future<List<Member>> getAllTeamMembers(String teamId) async {
+  // جلب الأعضاء غير المعينين لفريق معين
+  Future<List<Member>> getUnassignedMembers(String teamId) async {
     final db = await database;
-
-    // Get members assigned through team_member table
-    final assignedMembers = await getTeamAssignedMembers(teamId);
-
-    // Get members created directly for this team
-    final directMembers = await db.query(
-      'members', // تأكد إن اسم الجدول صحيح
-      where: 'team_id = ? AND is_global = 0',
-      whereArgs: [teamId],
-    );
-
-    final allMembers = <Member>[];
-    allMembers.addAll(assignedMembers);
-    allMembers.addAll(directMembers.map((m) => Member.fromMap(m)));
-
-    // Remove duplicates based on member id
-    final uniqueMembers = <String, Member>{};
-    for (final member in allMembers) {
-      uniqueMembers[member.id] = member;
-    }
-
-    return uniqueMembers.values.toList();
+    final maps = await db.rawQuery('''
+    SELECT m.*
+    FROM members m
+    WHERE m.id NOT IN (
+      SELECT tm.member_id 
+      FROM team_member tm 
+      WHERE tm.team_id = ?
+    )
+    ORDER BY m.name ASC
+  ''', [teamId]);
+    return maps.map((m) => Member.fromMap(m)).toList();
   }
 
-
-  // إضافة method للتحقق من وجود الجداول
-  Future<void> checkTables() async {
+  // تحقق إذا كان العضو معين لفريق معين
+  Future<bool> isMemberAssignedToTeam(String memberId, String teamId) async {
     final db = await database;
-
-    // تحقق من وجود جدول members
-    final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='members'"
+    final result = await db.query(
+      'team_member',
+      where: 'member_id = ? AND team_id = ?',
+      whereArgs: [memberId, teamId],
     );
-
-    print("Members table exists: ${tables.isNotEmpty}");
-
-    if (tables.isEmpty) {
-      print("Creating members table...");
-      await _createMembersTable(db);
-    }
-
-    // اطبع كل الجداول الموجودة
-    final allTables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    );
-    print("All tables: ${allTables.map((t) => t['name']).toList()}");
+    return result.isNotEmpty;
   }
-//////////////////////////////////////////////////////////-------------------------------------
-// CRUD Operations for Member Notes
+
+  // جلب الفرق التي ينتمي إليها العضو
+  Future<List<Team>> getMemberTeams(String memberId) async {
+    final db = await database;
+    final maps = await db.rawQuery('''
+    SELECT t.*
+    FROM team_member tm
+    JOIN teams t ON t.id = tm.team_id
+    WHERE tm.member_id = ?
+    ORDER BY t.name ASC
+  ''', [memberId]);
+    return maps.map((m) => Team.fromMap(m)).toList();
+  }
+
+  // CRUD Operations for Member Notes
   Future<String> createMemberNote(MemberNote note) async {
     final db = await database;
     await db.insert('member_notes', note.toMap());
@@ -620,8 +564,8 @@ class DatabaseHelper {
     );
   }
 
-  // Get notes by type
-  Future<List<MemberNote>> getMemberNotesByType(String memberId, String noteType) async {
+  Future<List<MemberNote>> getMemberNotesByType(
+      String memberId, String noteType) async {
     final db = await database;
     final maps = await db.query(
       'member_notes',
@@ -632,7 +576,6 @@ class DatabaseHelper {
     return maps.map((map) => MemberNote.fromMap(map)).toList();
   }
 
-  // Get high priority notes
   Future<List<MemberNote>> getHighPriorityNotes(String memberId) async {
     final db = await database;
     final maps = await db.query(
@@ -643,7 +586,6 @@ class DatabaseHelper {
     );
     return maps.map((map) => MemberNote.fromMap(map)).toList();
   }
-
 
   // CRUD Operations for Exercises
   Future<int> createExercise(Exercise exercise) async {
@@ -676,19 +618,21 @@ class DatabaseHelper {
   // ===== Exercise Template CRUD =====
   Future<List<ExerciseTemplate>> getExerciseTemplates() async {
     final db = await database;
-    final maps = await db.query('exercise_template', orderBy: 'updated_at DESC');
+    final maps =
+        await db.query('exercise_template', orderBy: 'updated_at DESC');
     return maps.map((m) => ExerciseTemplate.fromMap(m)).toList();
   }
 
   Future<String> createExerciseTemplate(ExerciseTemplate ex) async {
     final db = await database;
     await db.insert('exercise_template', ex.toMap());
-    return ex.id; // ex.id uuid
+    return ex.id;
   }
 
   Future<void> updateExerciseTemplate(ExerciseTemplate ex) async {
     final db = await database;
-    await db.update('exercise_template', ex.toMap(), where: 'id = ?', whereArgs: [ex.id]);
+    await db.update('exercise_template', ex.toMap(),
+        where: 'id = ?', whereArgs: [ex.id]);
   }
 
   Future<void> deleteExerciseTemplate(String id) async {
@@ -711,7 +655,8 @@ class DatabaseHelper {
 
   Future<void> updateSkillTemplate(SkillTemplate sk) async {
     final db = await database;
-    await db.update('skill_template', sk.toMap(), where: 'id = ?', whereArgs: [sk.id]);
+    await db.update('skill_template', sk.toMap(),
+        where: 'id = ?', whereArgs: [sk.id]);
   }
 
   Future<void> deleteSkillTemplate(String id) async {
@@ -719,8 +664,8 @@ class DatabaseHelper {
     await db.delete('skill_template', where: 'id = ?', whereArgs: [id]);
   }
 
-// ===== Team Assignments =====
-  Future<List<ExerciseTemplate>> getTeamAssignedExercises(String  teamId) async {
+  // ===== Team Assignments =====
+  Future<List<ExerciseTemplate>> getTeamAssignedExercises(String teamId) async {
     final db = await database;
     final maps = await db.rawQuery('''
     SELECT et.*
@@ -744,31 +689,70 @@ class DatabaseHelper {
     return maps.map((m) => SkillTemplate.fromMap(m)).toList();
   }
 
-  Future<void> assignExercisesToTeam(String teamId, List<String> templateIds) async {
+  Future<void> assignExercisesToTeam(
+      String teamId, List<String> templateIds) async {
     final db = await database;
     final batch = db.batch();
-    // امسح القديم وادخل الجديد (أو اعمل upsert حسب ما تحب)
     await db.delete('team_exercise', where: 'team_id = ?', whereArgs: [teamId]);
     for (final id in templateIds) {
-      batch.insert('team_exercise', {
-        'team_id': teamId,
-        'exercise_template_id': id,
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      batch.insert(
+          'team_exercise',
+          {
+            'team_id': teamId,
+            'exercise_template_id': id,
+          },
+          conflictAlgorithm: ConflictAlgorithm.ignore);
     }
     await batch.commit(noResult: true);
   }
 
-  Future<void> assignSkillsToTeam(String teamId, List<String> templateIds) async {
+  Future<void> assignSkillsToTeam(
+      String teamId, List<String> templateIds) async {
     final db = await database;
     final batch = db.batch();
     await db.delete('team_skill', where: 'team_id = ?', whereArgs: [teamId]);
     for (final id in templateIds) {
-      batch.insert('team_skill', {
-        'team_id': teamId,
-        'skill_template_id': id,
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      batch.insert(
+          'team_skill',
+          {
+            'team_id': teamId,
+            'skill_template_id': id,
+          },
+          conflictAlgorithm: ConflictAlgorithm.ignore);
     }
     await batch.commit(noResult: true);
+  }
+
+  /// إضافة أعضاء جدد للفريق (بدون حذف الموجودين)
+  Future<void> addMembersToTeam(String teamId, List<String> memberIds) async {
+    final db = await database;
+
+    // استخدام transaction لضمان إضافة جميع الأعضاء أو فشل العملية بالكامل
+    await db.transaction((txn) async {
+      for (String memberId in memberIds) {
+        await txn.insert(
+          'team_member',
+          {
+            'team_id': teamId,
+            'member_id': memberId,
+            'joined_at': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm:
+              ConflictAlgorithm.ignore, // تجاهل إذا كان العضو مضاف بالفعل
+        );
+      }
+    });
+  }
+
+  /// إزالة عضو واحد من الفريق
+  Future<void> removeMemberFromTeam(String teamId, String memberId) async {
+    final db = await database;
+
+    await db.delete(
+      'team_member',
+      where: 'team_id = ? AND member_id = ?',
+      whereArgs: [teamId, memberId],
+    );
   }
 
   // Progress Operations
@@ -781,37 +765,15 @@ class DatabaseHelper {
     );
   }
 
-
-  Future<void> _createMembersTable(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS members (
-        id TEXT PRIMARY KEY,
-        team_id TEXT,
-        name TEXT NOT NULL,
-        age INTEGER NOT NULL,
-        level TEXT NOT NULL,
-        photo_path TEXT,
-        notes TEXT,
-        is_global INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-      )
-    ''');
-  }
-
-  // إضافة method لـ reset الداتابيس في حالة المشاكل
+  // إعادة تعيين الداتابيس في حالة المشاكل
   Future<void> resetDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'gymnastics_app.db');
 
-    // احذف الداتابيس
     await deleteDatabase(path);
-
-    // اعيد إنشاءها
     _database = null;
-    await database; // هيعيد إنشاء الداتابيس
+    await database;
   }
-
 
   Future<void> close() async {
     final db = await database;

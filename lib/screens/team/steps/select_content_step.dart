@@ -320,12 +320,12 @@ class _SelectContentStepState extends State<SelectContentStep>
                         width: 48.w,
                         height: 48.h,
                         decoration: BoxDecoration(
-                          color: _getApparatusColor(apparatus).withOpacity(0.1),
+                          color: getApparatusColor(apparatus).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Icon(
-                          _getApparatusIcon(apparatus),
-                          color: _getApparatusColor(apparatus),
+                          getApparatusIcon(apparatus),
+                          color: getApparatusColor(apparatus),
                         ),
                       ),
                       activeColor: const Color(0xFF2196F3),
@@ -352,29 +352,5 @@ class _SelectContentStepState extends State<SelectContentStep>
     }
   }
 
-  IconData _getApparatusIcon(Apparatus apparatus) {
-    switch (apparatus) {
-      case Apparatus.floor:
-        return Icons.sports_gymnastics;
-      case Apparatus.beam:
-        return Icons.linear_scale;
-      case Apparatus.bars:
-        return Icons.fitness_center;
-      case Apparatus.vault:
-        return Icons.directions_run;
-    }
-  }
 
-  Color _getApparatusColor(Apparatus apparatus) {
-    switch (apparatus) {
-      case Apparatus.floor:
-        return Colors.green;
-      case Apparatus.beam:
-        return Colors.orange;
-      case Apparatus.bars:
-        return Colors.blue;
-      case Apparatus.vault:
-        return Colors.purple;
-    }
-  }
 }

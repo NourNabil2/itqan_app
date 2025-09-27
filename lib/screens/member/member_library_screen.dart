@@ -1,13 +1,22 @@
+// ============= AddGlobalMemberScreen.dart =============
+import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/core/widgets/app_buton.dart';
+import 'package:itqan_gym/core/widgets/app_text_feild.dart';
+import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
+import 'package:itqan_gym/core/widgets/error_container_widget.dart';
 import 'package:itqan_gym/core/widgets/member_card.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../data/models/member/member.dart';
+import 'add_member_screen/add_member_screen.dart';
 
-import 'add_member_screen.dart';
-
+// ============= MemberLibraryScreen.dart =============
 class MemberLibraryScreen extends StatefulWidget {
   const MemberLibraryScreen({super.key});
 
@@ -30,63 +39,17 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
       backgroundColor: ColorsManager.backgroundSurface,
       body: Column(
         children: [
-          // Enhanced Search Section
-          Container(
-            color: Colors.white,
+          Padding(
             padding: EdgeInsets.fromLTRB(
-                SizeApp.s16,
-                SizeApp.s20,
-                SizeApp.s16,
-                SizeApp.s16
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: ColorsManager.defaultSurface,
-                borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-                border: Border.all(
-                  color: ColorsManager.inputBorder.withOpacity(0.3),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                textDirection: TextDirection.rtl,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  color: ColorsManager.defaultText,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'البحث عن عضو...',
-                  hintStyle: TextStyle(
-                    color: ColorsManager.defaultTextSecondary,
-                    fontSize: 15.sp,
-                  ),
-                  prefixIcon: Container(
-                    padding: EdgeInsets.all(SizeApp.s12),
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: ColorsManager.primaryColor,
-                      size: SizeApp.iconSize,
-                    ),
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: SizeApp.s16,
-                    vertical: SizeApp.s16,
-                  ),
-                ),
-                onChanged: (query) {
-                  Provider.of<MemberLibraryProvider>(context, listen: false)
-                      .searchMembers(query);
-                },
-              ),
+                SizeApp.s16, SizeApp.s20, SizeApp.s16, SizeApp.s16),
+            child: AppTextFieldFactory.search(
+              controller: _searchController,
+              hintText: 'البحث عن عضو...',
+              fillColor: ColorsManager.backgroundCard,
+              onChanged: (query) {
+                Provider.of<MemberLibraryProvider>(context, listen: false)
+                    .searchMembers(query);
+              },
             ),
           ),
 
@@ -140,7 +103,7 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                           ),
                           SizedBox(height: 2.h),
                           Text(
-                            '${provider.globalMembers.length} عضو نشط',
+                            '${provider.members.length} عضو نشط', // ✅ استخدم members بدلاً من globalMembers
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: ColorsManager.defaultTextSecondary,
@@ -171,7 +134,7 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                         ],
                       ),
                       child: Text(
-                        '${provider.globalMembers.length}',
+                        '${provider.members.length}', // ✅ استخدم members بدلاً من globalMembers
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
@@ -223,7 +186,8 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                   );
                 }
 
-                if (provider.globalMembers.isEmpty) {
+                if (provider.members.isEmpty) {
+                  // ✅ استخدم members بدلاً من globalMembers
                   return _buildEmptyState(context);
                 }
 
@@ -234,10 +198,12 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                     SizeApp.s16,
                     SizeApp.s20,
                   ),
-                  itemCount: provider.globalMembers.length,
+                  itemCount: provider.members
+                      .length, // ✅ استخدم members بدلاً من globalMembers
                   itemBuilder: (context, index) {
                     return MemberCard(
-                      member: provider.globalMembers[index],
+                      member: provider.members[
+                          index], // ✅ استخدم members بدلاً من globalMembers
                     );
                   },
                 );

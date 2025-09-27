@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/data/models/member/member_notes.dart';
@@ -10,7 +11,7 @@ import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
 import 'package:itqan_gym/core/widgets/error_container_widget.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:provider/provider.dart';
-import '../../providers/member_provider.dart';
+import '../../../providers/member_provider.dart';
 
 class MemberNotesScreen extends StatefulWidget {
   final Member member;

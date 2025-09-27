@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
+import 'package:itqan_gym/core/widgets/app_text_feild.dart';
+import 'package:itqan_gym/screens/team/widgets/age_category_tile.dart';
+import 'package:itqan_gym/screens/team/widgets/step_header.dart';
 
 class TeamInfoStep extends StatefulWidget {
   final String teamName;
-  final AgeCategory? selectedAgeCategory;              // قيمة ابتدائية من الأب
+  final AgeCategory? selectedAgeCategory;
   final Function(String) onTeamNameChanged;
-  final Function(AgeCategory?) onAgeCategoryChanged;   // نبلغ الأب بالتغيير
+  final Function(AgeCategory?) onAgeCategoryChanged;
 
   const TeamInfoStep({
     super.key,
@@ -21,95 +26,106 @@ class TeamInfoStep extends StatefulWidget {
 }
 
 class _TeamInfoStepState extends State<TeamInfoStep> {
-  AgeCategory? _current; // الحالة المحلية
+  AgeCategory? _currentAgeCategory;
+  late TextEditingController _teamNameController;
 
   @override
   void initState() {
     super.initState();
-    _current = widget.selectedAgeCategory;
+    _currentAgeCategory = widget.selectedAgeCategory;
+    _teamNameController = TextEditingController(text: widget.teamName);
   }
 
-  // لو الأب غيّر القيمة من برّه (مثلاً رجع خطوة للخلف)، نزامن الحالة المحلية
   @override
   void didUpdateWidget(covariant TeamInfoStep oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedAgeCategory != widget.selectedAgeCategory) {
-      _current = widget.selectedAgeCategory;
+      _currentAgeCategory = widget.selectedAgeCategory;
     }
+    if (oldWidget.teamName != widget.teamName) {
+      _teamNameController.text = widget.teamName;
+    }
+  }
+
+  @override
+  void dispose() {
+    _teamNameController.dispose();
+    super.dispose();
+  }
+
+  void _onAgeCategoryChanged(AgeCategory? category) {
+    setState(() {
+      _currentAgeCategory = category;
+    });
+    widget.onAgeCategoryChanged(category);
   }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'معلومات الفريق',
-            style: TextStyle(
-              fontSize: 24.sp,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF2C3E50),
-            ),
+          // Header Section
+          const StepHeader(
+            title: 'معلومات الفريق',
+            subtitle: 'أدخل اسم الفريق واختر الفئة العمرية',
           ),
-          SizedBox(height: 8.h),
-          Text(
-            'أدخل اسم الفريق واختر الفئة العمرية',
-            style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
-          ),
-          SizedBox(height: 32.h),
-
-          // Team Name
-          Text('اسم الفريق',
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: Colors.grey[700])),
-          SizedBox(height: 8.h),
-          TextFormField(
-            initialValue: widget.teamName,
-            onChanged: widget.onTeamNameChanged,
-            decoration: const InputDecoration(hintText: 'مثال: نجوم الجمباز'),
-          ),
-          SizedBox(height: 24.h),
-
-          // Age Category
-          Text('الفئة العمرية',
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: Colors.grey[700])),
-          SizedBox(height: 8.h),
-
-          ...AgeCategory.values.map((category) {
-            final isSelected = _current == category;
-            return Container(
-              margin: EdgeInsets.only(bottom: 8.h),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF2196F3).withOpacity(0.1) : Colors.white,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFF2196F3) : Colors.grey[300]!,
-                  width: isSelected ? 2 : 1,
-                ),
-              ),
-              child: RadioListTile<AgeCategory>(
-                value: category,
-                groupValue: _current,
-                onChanged: (v) {
-                  setState(() => _current = v);     // يحدّث الـ UI فورًا
-                  widget.onAgeCategoryChanged(v);    // يبلّغ الأب
-                },
-                title: Text(
-                  category.arabicName,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected ? const Color(0xFF2196F3) : Colors.black,
+          Padding(
+            padding: EdgeInsets.all(SizeApp.padding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Team Name Field
+                AppTextField(
+                  controller: _teamNameController,
+                  hintText: 'مثال: نجوم الجمباز',
+                  title: 'اسم الفريق',
+                  prefixIcon: Icon(
+                    Icons.groups_rounded,
+                    color: ColorsManager.primaryColor,
+                    size: SizeApp.iconSize,
+                  ),
+                  onChanged: widget.onTeamNameChanged,
+                  titleStyle: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: ColorsManager.defaultText,
                   ),
                 ),
-                subtitle: Text(category.code, style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
-                activeColor: const Color(0xFF2196F3),
-              ),
-            );
-          }).toList(),
+
+                SizedBox(height: SizeApp.s24),
+
+                // Age Category Section
+                _buildAgeCategorySection(),
+              ],
+            ),
+          )
         ],
       ),
     );
   }
+
+  Widget _buildAgeCategorySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AgeCategoryGrid(
+          selectedCategory: _currentAgeCategory,
+          onChanged: _onAgeCategoryChanged,
+        )
+
+        // Age Categories List
+        // ...AgeCategory.values
+        //     .map((category) => AgeCategoryTile(
+        //   category: category,
+        //   selectedCategory: _currentAgeCategory,
+        //   onChanged: _onAgeCategoryChanged,
+        // )),
+      ],
+    );
+  }
+
+
 }
+

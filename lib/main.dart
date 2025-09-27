@@ -1,3 +1,4 @@
+// ============= main.dart - محسن =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path/path.dart';
@@ -8,14 +9,19 @@ import 'providers/exercise_library_provider.dart';
 import 'providers/skill_library_provider.dart';
 import 'providers/team_provider.dart';
 import 'providers/member_provider.dart';
-// import 'providers/exercise_provider.dart';
-// import 'providers/progress_provider.dart';
 import 'screens/dashboard/dashboard_screen.dart';
+import 'data/database/db_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 // final dbPath = await getDatabasesPath();
 // await deleteDatabase(join(dbPath, 'gymnastics_app.db'));
+
+  try {
+    await DatabaseHelper.instance.fixExistingDatabase();
+  } catch (e) {
+    debugPrint('Database fix error: $e');
+  }
 
   runApp(const GymnasticsApp());
 }
@@ -32,7 +38,7 @@ class GymnasticsApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ExerciseLibraryProvider()),
         ChangeNotifierProvider(create: (_) => SkillLibraryProvider()),
         ChangeNotifierProvider(create: (_) => MemberLibraryProvider()),
-        ChangeNotifierProvider(create: (context) => MemberNotesProvider()),
+        ChangeNotifierProvider(create: (_) => MemberNotesProvider()),
       ],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),
@@ -40,13 +46,20 @@ class GymnasticsApp extends StatelessWidget {
         splitScreenMode: true,
         builder: (context, child) {
           return MaterialApp(
-            title: 'Gymnastics Coach',
+            title: 'Itqan',
             theme: AppTheme.light,
             debugShowCheckedModeBanner: false,
             home: const DashboardScreen(),
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                child: child!,
+              );
+            },
           );
         },
       ),
     );
   }
 }
+
