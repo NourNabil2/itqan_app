@@ -155,7 +155,7 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
   }
 
   void _handleImagePicker() {
-    ImagePickerHelper.showImageSourceDialog(
+    MediaPickerHelper.showImageSourceDialog(
       context: context,
       onImageSelected: (imagePath) {
         if (imagePath != null) {

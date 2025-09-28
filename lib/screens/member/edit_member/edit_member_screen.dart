@@ -189,7 +189,7 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
   void _pickImage() async {
     try {
       // ✅ استخدام helper للصور مع خيارات متعددة
-      ImagePickerHelper.showImageSourceDialog(
+      MediaPickerHelper.showImageSourceDialog(
         context: context,
         onImageSelected: (imagePath) {
           if (imagePath != null) {

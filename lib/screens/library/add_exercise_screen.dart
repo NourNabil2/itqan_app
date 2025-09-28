@@ -462,16 +462,33 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     );
   }
 
+// _buildMediaChip
   Widget _buildMediaChip(MediaItem media) {
+    final isVideo = MediaPickerHelper.isVideoFile(media.path);
+    final fileSize = MediaPickerHelper.getFileSize(media.path);
+
     return Chip(
       avatar: Icon(
-        media.type == MediaType.video ? Icons.videocam : Icons.image,
+        isVideo ? Icons.videocam : Icons.image,
         size: 16.sp,
-        color: _getExerciseTypeColor(),
+        color: isVideo ? ColorsManager.secondaryColor : ColorsManager.primaryColor,
       ),
-      label: Text(
-        '${media.type == MediaType.video ? 'فيديو' : 'صورة'}: ${media.path.split('/').last}',
-        style: TextStyle(fontSize: 12.sp),
+      label: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${isVideo ? 'فيديو' : 'صورة'}: ${media.path.split('/').last}',
+            style: TextStyle(fontSize: 12.sp),
+          ),
+          Text(
+            fileSize,
+            style: TextStyle(
+              fontSize: 10.sp,
+              color: ColorsManager.defaultTextSecondary,
+            ),
+          ),
+        ],
       ),
       onDeleted: () => setState(() => _mediaGallery.remove(media)),
       deleteIconColor: ColorsManager.errorFill,
@@ -507,7 +524,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   // Action Methods
   void _pickThumbnail() {
-    ImagePickerHelper.showImageSourceDialog(
+    MediaPickerHelper.showImageSourceDialog(
       context: context,
       onImageSelected: (imagePath) {
         if (imagePath != null) {
@@ -518,12 +535,13 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
   }
 
   void _addMediaToGallery(MediaType type) {
-    ImagePickerHelper.showImageSourceDialog(
+    MediaPickerHelper.showMediaTypeDialog(
       context: context,
-      onImageSelected: (imagePath) {
-        if (imagePath != null) {
+      isVideo: type == MediaType.video,
+      onMediaSelected: (mediaPath) {
+        if (mediaPath != null) {
           setState(() {
-            _mediaGallery.add(MediaItem(path: imagePath, type: type));
+            _mediaGallery.add(MediaItem(path: mediaPath, type: type));
           });
         }
       },

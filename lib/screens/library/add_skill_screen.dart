@@ -582,7 +582,7 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
 
   // Action Methods
   void _pickThumbnail() {
-    ImagePickerHelper.showImageSourceDialog(
+    MediaPickerHelper.showImageSourceDialog(
       context: context,
       onImageSelected: (imagePath) {
         if (imagePath != null) {
@@ -593,7 +593,7 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
   }
 
   void _addMediaToGallery(MediaType type) {
-    ImagePickerHelper.showImageSourceDialog(
+    MediaPickerHelper.showImageSourceDialog(
       context: context,
       onImageSelected: (imagePath) {
         if (imagePath != null) {

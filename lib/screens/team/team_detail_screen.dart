@@ -10,7 +10,9 @@ import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/Loading_widget.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
+import 'package:itqan_gym/core/widgets/full_screen_media_viewer.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
+import 'package:itqan_gym/core/widgets/video_player_widget.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
@@ -1168,62 +1170,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               itemCount: widget.exercise.mediaGallery.length,
               itemBuilder: (context, index) {
                 final media = widget.exercise.mediaGallery[index];
-                return Container(
-                  width: 140.w,
-                  margin: EdgeInsets.only(right: SizeApp.s8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                    color: ColorsManager.backgroundCard,
-                  ),
-                  child: media.type == MediaType.image
-                      ? ClipRRect(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                    child: Image.file(
-                      File(media.path),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                            color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.broken_image_rounded,
-                              size: 32.sp,
-                              color: ColorsManager.defaultTextSecondary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                      : Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                      color: _getExerciseColor().withOpacity(0.1),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.play_circle_outline_rounded,
-                          size: 40.sp,
-                          color: _getExerciseColor(),
-                        ),
-                        SizedBox(height: SizeApp.s8),
-                        Text(
-                          'فيديو',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: _getExerciseColor(),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                return _buildMediaPreview(media);
               },
             ),
           ),
@@ -1232,89 +1179,120 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
   }
 
-  Widget _buildLegacyMediaSection() {
-    return Container(
-      height: 200.h,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        color: ColorsManager.backgroundCard,
+  Widget _buildMediaPreview(MediaItem media) {
+    final isVideo = media.type == MediaType.video;
+
+    return GestureDetector(
+      onTap: () => FullScreenMediaViewer.show(
+        context,
+        filePath: media.path,
+        isVideo: isVideo,
+        accentColor: _getExerciseColor(),
       ),
-      child: widget.exercise.mediaType == MediaType.image
-          ? ClipRRect(
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        child: Image.file(
-          File(widget.exercise.mediaPath!),
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.broken_image_rounded,
-                      size: 48.sp,
-                      color: ColorsManager.defaultTextSecondary,
-                    ),
-                    SizedBox(height: SizeApp.s8),
-                    Text(
-                      'لا يمكن عرض الصورة',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: ColorsManager.defaultTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      )
-          : Container(
+      child: Container(
+        width: 140.w,
+        margin: EdgeInsets.only(right: SizeApp.s8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-          color: _getExerciseColor().withOpacity(0.1),
+          color: ColorsManager.backgroundCard,
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.play_circle_outline_rounded,
-                size: 48.sp,
-                color: _getExerciseColor(),
-              ),
-              SizedBox(height: SizeApp.s8),
-              Text(
-                'فيديو توضيحي',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: _getExerciseColor(),
-                  fontWeight: FontWeight.w500,
+        child: isVideo
+            ? VideoPlayerWidget(
+          videoPath: media.path,
+          accentColor: _getExerciseColor(),
+          height: 120.h,
+          width: 140.w,
+        )
+            : ClipRRect(
+          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+          child: Image.file(
+            File(media.path),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
                 ),
-              ),
-              SizedBox(height: SizeApp.s4),
-              Text(
-                'اضغط للتشغيل',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: ColorsManager.defaultTextSecondary,
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image_rounded,
+                    size: 32.sp,
+                    color: ColorsManager.defaultTextSecondary,
+                  ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  Widget _buildLegacyMediaSection() {
+    final isVideo = widget.exercise.mediaType == MediaType.video;
+
+    return GestureDetector(
+      onTap: () => FullScreenMediaViewer.show(
+        context,
+        filePath: widget.exercise.mediaPath!,
+        isVideo: isVideo,
+        accentColor: _getExerciseColor(),
+      ),
+      child: Container(
+        height: 200.h,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+          color: ColorsManager.backgroundCard,
+        ),
+        child: isVideo
+            ? VideoPlayerWidget(
+          videoPath: widget.exercise.mediaPath!,
+          accentColor: _getExerciseColor(),
+          height: 200.h,
+        )
+            : ClipRRect(
+          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+          child: Image.file(
+            File(widget.exercise.mediaPath!),
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.broken_image_rounded,
+                        size: 48.sp,
+                        color: ColorsManager.defaultTextSecondary,
+                      ),
+                      SizedBox(height: SizeApp.s8),
+                      Text(
+                        'لا يمكن عرض الصورة',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: ColorsManager.defaultTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildDescriptionSection() {
     return Container(
@@ -1609,7 +1587,7 @@ class SkillDetailSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Thumbnail Section
-                  if (skill.thumbnailPath != null) _buildThumbnailSection(),
+                  if (skill.thumbnailPath != null) _buildThumbnailSection(context),
 
                   // Media Gallery Section
                   if (skill.mediaGallery.isNotEmpty) _buildMediaGallerySection(),
@@ -1736,7 +1714,7 @@ class SkillDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnailSection() {
+  Widget _buildThumbnailSection(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s20),
       child: Column(
@@ -1751,20 +1729,56 @@ class SkillDetailSheet extends StatelessWidget {
             ),
           ),
           SizedBox(height: SizeApp.s12),
-          Container(
-            height: 200.h,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              color: ColorsManager.backgroundCard,
+          GestureDetector(
+            onTap: () => FullScreenMediaViewer.show(
+              context,
+              filePath: skill.thumbnailPath!,
+              isVideo: false,
+              accentColor: getApparatusColor(skill.apparatus),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              child: Image.file(
-                File(skill.thumbnailPath!),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+            child: Container(
+              height: 200.h,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                color: ColorsManager.backgroundCard,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                child: Image.file(
+                  File(skill.thumbnailPath!),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                        color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image_rounded,
+                              size: 48.sp,
+                              color: ColorsManager.defaultTextSecondary,
+                            ),
+                            SizedBox(height: SizeApp.s8),
+                            Text(
+                              'لا يمكن عرض الصورة',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: ColorsManager.defaultTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -1795,51 +1809,61 @@ class SkillDetailSheet extends StatelessWidget {
               itemCount: skill.mediaGallery.length,
               itemBuilder: (context, index) {
                 final media = skill.mediaGallery[index];
-                return Container(
-                  width: 120.w,
-                  margin: EdgeInsets.only(right: SizeApp.s8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                    color: ColorsManager.backgroundCard,
-                  ),
-                  child: media.type == MediaType.image
-                      ? ClipRRect(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                    child: Image.file(
-                      File(media.path),
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                      : Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                      color: getApparatusColor(skill.apparatus).withOpacity(0.1),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.play_circle_outline_rounded,
-                          size: 32.sp,
-                          color: getApparatusColor(skill.apparatus),
-                        ),
-                        SizedBox(height: SizeApp.s4),
-                        Text(
-                          'فيديو',
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: getApparatusColor(skill.apparatus),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                return _buildMediaPreview(media,context);
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMediaPreview(MediaItem media,BuildContext context) {
+    final isVideo = media.type == MediaType.video;
+
+    return GestureDetector(
+      onTap: () => FullScreenMediaViewer.show(
+        context,
+        filePath: media.path,
+        isVideo: isVideo,
+        accentColor: getApparatusColor(skill.apparatus),
+      ),
+      child: Container(
+        width: 120.w,
+        margin: EdgeInsets.only(right: SizeApp.s8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+          color: ColorsManager.backgroundCard,
+        ),
+        child: isVideo
+            ? VideoPlayerWidget(
+          videoPath: media.path,
+          accentColor: getApparatusColor(skill.apparatus),
+          height: 100.h,
+          width: 120.w,
+        )
+            : ClipRRect(
+          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+          child: Image.file(
+            File(media.path),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image_rounded,
+                    size: 32.sp,
+                    color: ColorsManager.defaultTextSecondary,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
