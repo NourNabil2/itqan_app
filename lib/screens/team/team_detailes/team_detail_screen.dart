@@ -469,7 +469,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   List<Widget> _buildSkillsList(List skills) {
     return skills.map<Widget>((skill) {
       return InkWell(
-        onTap: () => SkillDetailSheet.show(context, skill),
+        onTap: () => SkillDetailSheet.show(context, skill, widget.team.id),
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         child: Container(
           margin: EdgeInsets.only(bottom: SizeApp.s8),

@@ -1,4 +1,3 @@
-
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -39,7 +38,6 @@ class AssignExerciseToMembersSheet extends StatefulWidget {
     );
   }
 
-
   @override
   State<AssignExerciseToMembersSheet> createState() => _AssignExerciseToMembersSheetState();
 }
@@ -64,19 +62,14 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
     super.dispose();
   }
 
-
-
   Future<void> _loadMembers() async {
     try {
-      // جلب الأعضاء من الفريق
       final memberProvider = Provider.of<MemberProvider>(context, listen: false);
       final exerciseProvider = Provider.of<ExerciseAssignmentProvider>(context, listen: false);
 
-      // جلب أعضاء الفريق
       await memberProvider.loadTeamMembers(widget.teamId);
       final teamMembers = memberProvider.members;
 
-      // جلب الأعضاء المعينين مسبقاً لهذا التمرين
       final assignedMemberIds = await exerciseProvider.getExerciseAssignedMemberIds(widget.exercise.id);
 
       setState(() {
@@ -119,7 +112,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
       ),
       child: Column(
         children: [
-          // Handle
           Container(
             margin: EdgeInsets.only(top: SizeApp.s12),
             width: 40.w,
@@ -129,21 +121,11 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
               borderRadius: BorderRadius.circular(2.r),
             ),
           ),
-
-          // Header
           _buildHeader(),
-
-          // Search Bar
           _buildSearchBar(),
-
-          // Content
           Expanded(
-            child: _isLoading
-                ? const LoadingSpinner()
-                : _buildContent(),
+            child: _isLoading ? const LoadingSpinner() : _buildContent(),
           ),
-
-          // Bottom Actions
           _buildBottomActions(),
         ],
       ),
@@ -248,15 +230,12 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // الأعضاء المعينين مسبقاً
           if (_assignedMembers.isNotEmpty) ...[
             _buildSectionTitle('الأعضاء المعينين مسبقاً', Icons.check_circle_rounded),
             SizedBox(height: SizeApp.s8),
             ..._assignedMembers.map((member) => _buildAssignedMemberCard(member)),
             SizedBox(height: SizeApp.s20),
           ],
-
-          // الأعضاء المتاحين
           if (_filteredMembers.isNotEmpty) ...[
             _buildSectionTitle('الأعضاء المتاحين', Icons.people_rounded),
             SizedBox(height: SizeApp.s8),
@@ -324,7 +303,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
       ),
       child: Row(
         children: [
-          // Avatar
           Container(
             width: 40.w,
             height: 40.w,
@@ -344,7 +322,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
             ),
           ),
           SizedBox(width: SizeApp.s12),
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,7 +344,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
               ],
             ),
           ),
-          // Assigned Badge
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: SizeApp.s8,
@@ -396,6 +372,19 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
                 ),
               ],
             ),
+          ),
+          SizedBox(width: SizeApp.s8),
+          // Unassign button
+          IconButton(
+            icon: Icon(
+              Icons.close_rounded,
+              color: ColorsManager.errorFill,
+              size: 20.sp,
+            ),
+            onPressed: () => _showUnassignConfirmation(member),
+            padding: EdgeInsets.all(4),
+            constraints: BoxConstraints(),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -431,7 +420,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
         ),
         child: Row(
           children: [
-            // Checkbox
             Container(
               width: 24.w,
               height: 24.w,
@@ -454,7 +442,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
                   : null,
             ),
             SizedBox(width: SizeApp.s12),
-            // Avatar
             Container(
               width: 40.w,
               height: 40.w,
@@ -474,7 +461,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
               ),
             ),
             SizedBox(width: SizeApp.s12),
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,7 +506,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
                 ],
               ),
             ),
-            // Progress if exists
             if ((member.overallProgress ?? 0) > 0) ...[
               Container(
                 width: 50.w,
@@ -595,7 +580,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
         top: false,
         child: Row(
           children: [
-            // Cancel
             Expanded(
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context),
@@ -617,7 +601,6 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
               ),
             ),
             SizedBox(width: SizeApp.s12),
-            // Assign
             Expanded(
               child: ElevatedButton(
                 onPressed: _selectedMemberIds.isEmpty
@@ -646,6 +629,62 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
         ),
       ),
     );
+  }
+
+  Future<void> _showUnassignConfirmation(Member member) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('إلغاء التعيين'),
+        content: Text('هل تريد إلغاء تعيين هذا التمرين من ${member.name}؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColorsManager.errorFill,
+            ),
+            child: Text('نعم، إلغاء التعيين'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _unassignExercise(member);
+    }
+  }
+
+  Future<void> _unassignExercise(Member member) async {
+    try {
+      final provider = Provider.of<ExerciseAssignmentProvider>(context, listen: false);
+
+      await provider.unassignExerciseFromMember(member.id, widget.exercise.id);
+
+      // Reload members to update the UI
+      await _loadMembers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم إلغاء تعيين التمرين من ${member.name}'),
+            backgroundColor: ColorsManager.successFill,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ في إلغاء التعيين: ${e.toString()}'),
+            backgroundColor: ColorsManager.errorFill,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _assignExercise() async {
@@ -690,6 +729,4 @@ class _AssignExerciseToMembersSheetState extends State<AssignExerciseToMembersSh
         return ColorsManager.primaryColor;
     }
   }
-
-
 }

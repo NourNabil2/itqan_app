@@ -392,6 +392,142 @@ class ExerciseAssignmentProvider extends ChangeNotifier {
     return skills.any((s) => s.skillId == skillId);
   }
 
+  Future<void> updateMemberSkillProgress(
+      String memberId,
+      String skillId,
+      double progress, {
+        String? status,
+        String? notes,
+      }) async {
+    try {
+      _setLoading(true);
+
+      final db = await _dbHelper.database;
+
+      final updates = <String, dynamic>{
+        'progress': progress,
+        'status': status ?? (progress >= 100 ? 'completed' :
+        progress > 0 ? 'in_progress' : 'not_started'),
+      };
+
+      if (progress >= 100) {
+        updates['completed_at'] = DateTime.now().toIso8601String();
+      }
+
+      if (notes != null) {
+        updates['notes'] = notes;
+      }
+
+      await db.update(
+        'member_skill',
+        updates,
+        where: 'member_id = ? AND skill_template_id = ?',
+        whereArgs: [memberId, skillId],
+      );
+
+      // تحديث البيانات المحلية
+      await loadMemberSkills(memberId);
+
+      notifyListeners();
+    } catch (e) {
+      _setError('حدث خطأ في تحديث التقدم: ${e.toString()}');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// إلغاء تعيين مهارة من عضو
+  Future<void> unassignSkillFromMember(String memberId, String skillId) async {
+    try {
+      _setLoading(true);
+
+      final db = await _dbHelper.database;
+      await db.delete(
+        'member_skill',
+        where: 'member_id = ? AND skill_template_id = ?',
+        whereArgs: [memberId, skillId],
+      );
+
+      // تحديث البيانات المحلية
+      _memberSkills[memberId]?.removeWhere((s) => s.skillId == skillId);
+      _skillMembers[skillId]?.removeWhere((m) => m.id == memberId);
+
+      notifyListeners();
+    } catch (e) {
+      _setError('حدث خطأ في إلغاء التعيين: ${e.toString()}');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// جلب الأعضاء المعينين لمهارة
+  Future<List<Member>> loadSkillMembers(String skillId) async {
+    try {
+      final db = await _dbHelper.database;
+      final results = await db.rawQuery('''
+      SELECT 
+        m.*,
+        ms.status,
+        ms.progress,
+        ms.assigned_at,
+        ms.completed_at
+      FROM member_skill ms
+      JOIN members m ON m.id = ms.member_id
+      WHERE ms.skill_template_id = ?
+      ORDER BY m.name ASC
+    ''', [skillId]);
+
+      final members = results.map((row) => Member.fromMap(row)).toList();
+      _skillMembers[skillId] = members;
+      notifyListeners();
+      return members;
+    } catch (e) {
+      _setError('حدث خطأ في جلب الأعضاء: ${e.toString()}');
+      return [];
+    }
+  }
+
+  /// جلب معرفات الأعضاء المعينين لمهارة
+  Future<List<String>> getSkillAssignedMemberIds(String skillId) async {
+    try {
+      final members = await loadSkillMembers(skillId);
+      return members.map((m) => m.id).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// إضافة ملاحظة للمهارة المعينة للعضو
+  Future<void> addNoteToMemberSkill(
+      String memberId,
+      String skillId,
+      String note,
+      ) async {
+    try {
+      _setLoading(true);
+
+      final db = await _dbHelper.database;
+      await db.update(
+        'member_skill',
+        {'notes': note},
+        where: 'member_id = ? AND skill_template_id = ?',
+        whereArgs: [memberId, skillId],
+      );
+
+      // تحديث البيانات المحلية
+      await loadMemberSkills(memberId);
+
+      notifyListeners();
+    } catch (e) {
+      _setError('حدث خطأ في إضافة الملاحظة: ${e.toString()}');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;

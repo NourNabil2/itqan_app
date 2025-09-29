@@ -82,11 +82,17 @@ class EmptyStateWidget extends StatelessWidget {
                   ],
                 ),
                 alignment: Alignment.center,
-                child: CustomIcon(
+                child: assetSvgPath != null
+                    ? CustomIcon(
                   color: primary,
                   assetPath: assetSvgPath!,
                   size: iconSize.sp,
                 )
+                    : Icon(
+                  iconData,
+                  color: primary,
+                  size: iconSize.sp,
+                ),
               ),
               SizedBox(height: 20.h),
 
@@ -119,7 +125,7 @@ class EmptyStateWidget extends StatelessWidget {
                 constraints: BoxConstraints(minWidth: 180.w),
                 child: ElevatedButton.icon(
                   onPressed: onPressed,
-                  icon: Icon(buttonIcon,color: ColorsManager.backgroundSurface,),
+                  icon: Icon(buttonIcon, color: ColorsManager.backgroundSurface),
                   label: Text(buttonText),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,

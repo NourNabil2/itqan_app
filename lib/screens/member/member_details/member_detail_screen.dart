@@ -225,10 +225,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
               ),
 
               // ✅ استخدام الكلاس الجديد للتمارين
-              MemberExercisesTab(
+              MemberSkillsTab(
                 member: _currentMember,
-                exerciseProgress: _exerciseProgress,
-                onAddExercise: _addNewExercise,
+               // exerciseProgress: _exerciseProgress,
+
               ),
 
               // ✅ استخدام الكلاس الجديد للملاحظات
