@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
+import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
+import 'package:itqan_gym/core/widgets/error_container_widget.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/enums.dart';
@@ -12,7 +16,7 @@ import '../../data/models/skill_template.dart';
 import '../../providers/exercise_library_provider.dart';
 import '../../providers/skill_library_provider.dart';
 import '../../providers/team_provider.dart';
-
+/// todo :: refactor this screen
 class ManageAssignmentsScreen extends StatefulWidget {
   final Team team;
 
@@ -27,6 +31,8 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   late TabController _tabController;
   final Set<String> _selectedExercises = {};
   final Set<String> _selectedSkills = {};
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -80,6 +86,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -94,10 +101,80 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
       body: Column(
         children: [
           // Header Section
-          _buildHeaderSection(),
+          SectionHeader(
+            title: 'تعيين المحتوى للفريق',
+            subtitle: 'اختر التمارين والمهارات المناسبة لـ ${widget.team.name}',
+            leading: Container(
+              padding: EdgeInsets.all(SizeApp.s8),
+              decoration: BoxDecoration(
+                color: ColorsManager.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(SizeApp.s8),
+              ),
+              child: Icon(
+                Icons.assignment_rounded,
+                color: ColorsManager.primaryColor,
+                size: SizeApp.iconSize,
+              ),
+            ),
+            padding: EdgeInsets.all(SizeApp.s16),
+            showDivider: true,
+          ),
 
-          // Error Display
-          if (_errorMessage != null) _buildErrorContainer(),
+          // Error Display using custom ErrorContainer
+          if (_errorMessage != null)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
+              child: ErrorContainer(
+                generalError: _errorMessage,
+                errorIcon: Icons.error_outline_rounded,
+                margin: EdgeInsets.only(bottom: SizeApp.s12),
+                padding: EdgeInsets.all(SizeApp.s12),
+                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                showIcon: true,
+                errorColor: ColorsManager.errorFill,
+                backgroundColor: ColorsManager.errorFill.withOpacity(0.1),
+                borderColor: ColorsManager.errorFill.withOpacity(0.3),
+              ),
+            ),
+
+          // Search Bar using AppTextField
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: SizeApp.s16,
+              vertical: SizeApp.s8,
+            ),
+            child: AppTextFieldFactory.search(
+              hintText: 'البحث في المحتوى...',
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+              fillColor: ColorsManager.backgroundCard,
+              focusedFillColor: ColorsManager.backgroundCard,
+              borderRadius: SizeApp.radiusSmall,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: SizeApp.s16,
+                vertical: SizeApp.s12,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                icon: Icon(
+                  Icons.clear_rounded,
+                  color: ColorsManager.defaultTextSecondary,
+                  size: 20.sp,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _searchController.clear();
+                    _searchQuery = '';
+                  });
+                },
+              )
+                  : null,
+            ),
+          ),
 
           // Tab Bar
           _buildTabBar(),
@@ -152,69 +229,6 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderSection() {
-    return SectionHeader(
-      title: 'تعيين المحتوى للفريق',
-      subtitle: 'اختر التمارين والمهارات المناسبة لـ ${widget.team.name}',
-      leading: Container(
-        padding: EdgeInsets.all(SizeApp.s8),
-        decoration: BoxDecoration(
-          color: ColorsManager.primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(SizeApp.s8),
-        ),
-        child: Icon(
-          Icons.assignment_rounded,
-          color: ColorsManager.primaryColor,
-          size: SizeApp.iconSize,
-        ),
-      ),
-      padding: EdgeInsets.all(SizeApp.s16),
-      showDivider: true,
-    );
-  }
-
-  Widget _buildErrorContainer() {
-    return Container(
-      margin: EdgeInsets.all(SizeApp.s16),
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: ColorsManager.errorFill.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        border: Border.all(
-          color: ColorsManager.errorFill.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            color: ColorsManager.errorFill,
-            size: SizeApp.iconSize,
-          ),
-          SizedBox(width: SizeApp.s12),
-          Expanded(
-            child: Text(
-              _errorMessage!,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: ColorsManager.errorFill,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => setState(() => _errorMessage = null),
-            icon: Icon(
-              Icons.close_rounded,
-              color: ColorsManager.errorFill,
-              size: 18.sp,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -316,19 +330,39 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         final exercises = provider.getExercisesByType(type);
         final tabColor = _tabs.firstWhere((tab) => tab.exerciseType == type).color;
 
-        if (exercises.isEmpty) {
-          return _buildEmptyState(
-            title: 'لا توجد تمارين ${type.arabicName}',
-            icon: _tabs.firstWhere((tab) => tab.exerciseType == type).icon,
-            color: tabColor,
+        // Apply search filter
+        final filteredExercises = _searchQuery.isEmpty
+            ? exercises
+            : exercises.where((e) =>
+        e.title.toLowerCase().contains(_searchQuery) ||
+            (e.description?.toLowerCase().contains(_searchQuery) ?? false)
+        ).toList();
+
+        if (filteredExercises.isEmpty) {
+          return EmptyStateWidget(
+            title: _searchQuery.isNotEmpty
+                ? 'لا توجد نتائج'
+                : 'لا توجد تمارين ${type.arabicName}',
+            subtitle: _searchQuery.isNotEmpty
+                ? 'جرب البحث بكلمات مختلفة'
+                : 'قم بإضافة تمارين جديدة من المكتبة',
+            buttonText: 'إضافة تمرين',
+            onPressed: () {
+              // Navigate to add exercise screen
+              Navigator.pop(context);
+            },
+            assetSvgPath: _getAssetForExerciseType(type),
+            buttonIcon: Icons.add_rounded,
+            circleSize: 100,
+            iconSize: 50,
           );
         }
 
         return ListView.builder(
           padding: EdgeInsets.all(SizeApp.s16),
-          itemCount: exercises.length,
+          itemCount: filteredExercises.length,
           itemBuilder: (context, index) {
-            final exercise = exercises[index];
+            final exercise = filteredExercises[index];
             final isSelected = _selectedExercises.contains(exercise.id);
 
             return _buildExerciseCard(exercise, isSelected, tabColor);
@@ -344,17 +378,37 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         final skills = provider.skills;
         const tabColor = Color(0xFF9C27B0);
 
-        if (skills.isEmpty) {
-          return _buildEmptyState(
-            title: 'لا توجد مهارات',
-            icon: Icons.star_rounded,
-            color: tabColor,
+        // Apply search filter
+        final filteredSkills = _searchQuery.isEmpty
+            ? skills
+            : skills.where((s) =>
+        s.skillName.toLowerCase().contains(_searchQuery) ||
+            s.apparatus.arabicName.toLowerCase().contains(_searchQuery)
+        ).toList();
+
+        if (filteredSkills.isEmpty) {
+          return EmptyStateWidget(
+            title: _searchQuery.isNotEmpty
+                ? 'لا توجد نتائج'
+                : 'لا توجد مهارات',
+            subtitle: _searchQuery.isNotEmpty
+                ? 'جرب البحث بكلمات مختلفة'
+                : 'قم بإضافة مهارات جديدة من المكتبة',
+            buttonText: 'إضافة مهارة',
+            onPressed: () {
+              // Navigate to add skill screen
+              Navigator.pop(context);
+            },
+            assetSvgPath: AssetsManager.iconsGymnastEx2,
+            buttonIcon: Icons.add_rounded,
+            circleSize: 100,
+            iconSize: 50,
           );
         }
 
         // Group skills by apparatus
         final skillsByApparatus = <Apparatus, List<SkillTemplate>>{};
-        for (final skill in skills) {
+        for (final skill in filteredSkills) {
           skillsByApparatus.putIfAbsent(skill.apparatus, () => []).add(skill);
         }
 
@@ -553,49 +607,6 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
     );
   }
 
-  Widget _buildEmptyState({
-    required String title,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(SizeApp.s20),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              size: 64.sp,
-              color: color.withOpacity(0.6),
-            ),
-          ),
-          SizedBox(height: SizeApp.s20),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
-            ),
-          ),
-          SizedBox(height: SizeApp.s8),
-          Text(
-            'لا يوجد محتوى متاح للتعيين',
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   IconData _getExerciseIcon(ExerciseType type) {
     switch (type) {
       case ExerciseType.warmup:
@@ -604,6 +615,17 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         return Icons.accessibility_new_rounded;
       case ExerciseType.conditioning:
         return Icons.fitness_center_rounded;
+    }
+  }
+
+  String _getAssetForExerciseType(ExerciseType type) {
+    switch (type) {
+      case ExerciseType.warmup:
+        return AssetsManager.iconsGymnastEx1;
+      case ExerciseType.stretching:
+        return AssetsManager.iconsGymnastEx2;
+      case ExerciseType.conditioning:
+        return AssetsManager.iconsGymnastEx2;
     }
   }
 

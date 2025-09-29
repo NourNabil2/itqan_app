@@ -8,7 +8,7 @@ import 'package:itqan_gym/core/widgets/CustomIcon.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/team.dart';
 import '../../providers/team_provider.dart';
-import '../../screens/team/team_detail_screen.dart';
+import '../../screens/team/team_detailes/team_detail_screen.dart';
 
 class TeamCard extends StatefulWidget {
   final Team team;
