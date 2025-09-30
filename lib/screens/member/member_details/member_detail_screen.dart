@@ -1,6 +1,4 @@
-// ============= MemberDetailScreen المحدث - نسخة محسنة =============
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+// ============= MemberDetailScreen المحدث - Integration =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
@@ -9,17 +7,16 @@ import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/Loading_widget.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
-import 'package:itqan_gym/core/widgets/error_container_widget.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/data/models/member/member_notes.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:itqan_gym/screens/member/member_details/taps/member_exercises_tab.dart';
-import 'package:itqan_gym/screens/member/member_details/taps/member_progress_tab.dart';
 import 'package:itqan_gym/screens/member/member_details/taps/notes_tap.dart';
 import 'package:itqan_gym/screens/member/member_details/widgets/member_header_widget.dart';
-import 'package:itqan_gym/screens/member/member_details/widgets/progress/progress_summary_card.dart';
 import 'package:itqan_gym/screens/member/member_notes_actions.dart';
-import 'package:provider/provider.dart' show Provider;
+import 'package:provider/provider.dart';
+
+import 'taps/member_progress_tab.dart';
 
 class MemberDetailScreen extends StatefulWidget {
   final Member member;
@@ -36,13 +33,13 @@ class MemberDetailScreen extends StatefulWidget {
 }
 
 class _MemberDetailScreenState extends State<MemberDetailScreen>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
   String? _error;
   late Member _currentMember;
 
-  // Mock data - replace with real data from providers
+  // Mock data - استبدله ببيانات حقيقية
   final List<Map<String, dynamic>> _exerciseProgress = [
     {
       'name': 'التوازن على العارضة',
@@ -60,33 +57,17 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
       'color': ColorsManager.primaryColor,
       'icon': Icons.schedule_rounded,
     },
-    {
-      'name': 'القفز على المهر',
-      'progress': 25.0,
-      'status': 'بداية',
-      'lastUpdated': DateTime.now().subtract(const Duration(days: 5)),
-      'color': ColorsManager.warningFill,
-      'icon': Icons.play_circle_outline_rounded,
-    },
-    {
-      'name': 'التمارين الحرة',
-      'progress': 0.0,
-      'status': 'لم يبدأ',
-      'lastUpdated': null,
-      'color': ColorsManager.errorFill,
-      'icon': Icons.radio_button_unchecked_rounded,
-    },
   ];
-
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _currentMember = widget.member;
+    _initializeScreen();
+  }
 
+  void _initializeScreen() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMemberData();
       _initializeNotesProvider();
@@ -94,7 +75,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
   }
 
   void _initializeNotesProvider() {
-    final notesProvider = Provider.of<MemberNotesProvider>(context, listen: false);
+    final notesProvider = context.read<MemberNotesProvider>();
     notesProvider.resetProvider();
     notesProvider.loadMemberNotes(_currentMember.id);
   }
@@ -114,14 +95,12 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
     });
 
     try {
-      final memberLibraryProvider = Provider.of<MemberLibraryProvider>(context, listen: false);
+      final memberLibraryProvider = context.read<MemberLibraryProvider>();
       final updatedMember = memberLibraryProvider.getMemberById(widget.member.id);
 
       if (updatedMember != null && mounted) {
-        final progress = await compute(_calculateProgress, _exerciseProgress);
-
         setState(() {
-          _currentMember = updatedMember.copyWith(overallProgress: progress);
+          _currentMember = updatedMember;
         });
       }
     } catch (e) {
@@ -132,121 +111,153 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
-  static double _calculateProgress(List<Map<String, dynamic>> exercises) {
-    if (exercises.isEmpty) return 0.0;
-    double total = exercises.map((e) => e['progress'] as double).reduce((a, b) => a + b);
-    return total / exercises.length;
-  }
-
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-
     return Scaffold(
       backgroundColor: ColorsManager.backgroundSurface,
-      appBar: CustomAppBar(
-        title: 'ملف العضو',
-        action: Row(
-          children: [
-            IconButton(
-              onPressed: () => _editMember(),
-              icon: Icon(
-                Icons.edit_rounded,
-                color: ColorsManager.primaryColor,
-                size: SizeApp.iconSize,
-              ),
-            ),
-            IconButton(
-              onPressed: () => _showMemberOptions(),
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: ColorsManager.defaultTextSecondary,
-                size: SizeApp.iconSize,
-              ),
-            ),
-          ],
-        ),
-      ),
+      appBar: _buildAppBar(),
       body: _isLoading
           ? const LoadingSpinner()
           : _error != null
-          ? EmptyStateWidget(
-        title: 'حدث خطأ',
-        subtitle: 'لم نتمكن من تحميل بيانات العضو، يرجى المحاولة مرة أخرى',
-        buttonText: 'إعادة المحاولة',
-        assetSvgPath: AssetsManager.notFoundIcon,
-        onPressed: _loadMemberData,
-      )
+          ? _buildErrorState()
           : _buildContent(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return CustomAppBar(
+      title: 'ملف العضو',
+      action: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: _editMember,
+            icon: Icon(
+              Icons.edit_rounded,
+              color: ColorsManager.primaryColor,
+              size: SizeApp.iconSize,
+            ),
+            tooltip: 'تعديل',
+          ),
+          IconButton(
+            onPressed: _showMemberOptions,
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: ColorsManager.defaultTextSecondary,
+              size: SizeApp.iconSize,
+            ),
+            tooltip: 'خيارات',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return EmptyStateWidget(
+      title: 'حدث خطأ',
+      subtitle: 'لم نتمكن من تحميل بيانات العضو، يرجى المحاولة مرة أخرى',
+      buttonText: 'إعادة المحاولة',
+      assetSvgPath: AssetsManager.notFoundIcon,
+      onPressed: _loadMemberData,
     );
   }
 
   Widget _buildContent() {
     return Column(
       children: [
-        RepaintBoundary(child: MemberHeaderWidget(member: widget.member)),
-        Container(
-          color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: ColorsManager.primaryColor,
-            unselectedLabelColor: ColorsManager.defaultTextSecondary,
-            indicatorColor: ColorsManager.primaryColor,
-            labelStyle: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-            ),
-            tabs: const [
-              Tab(text: 'التقدم'),
-              Tab(text: 'التمارين'),
-              Tab(text: 'الملاحظات'),
-            ],
+        // Header with Overall Progress
+        RepaintBoundary(
+          child: MemberHeaderWidget(
+            member: _currentMember,
+            onAvatarTap: () {
+              // Handle avatar tap
+            },
           ),
         ),
+
+        // Tab Bar
+        _buildTabBar(),
+
+        // Tab Views
         Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              // ✅ استخدام الكلاس الجديد للتقدم
-              MemberProgressTab(
-                member: _currentMember,
-                exerciseProgress: _exerciseProgress,
-              ),
-
-              // ✅ استخدام الكلاس الجديد للتمارين
-              MemberSkillsTab(
-                member: _currentMember,
-               // exerciseProgress: _exerciseProgress,
-
-              ),
-
-              // ✅ استخدام الكلاس الجديد للملاحظات
-              MemberNotesTab(
-                member: _currentMember,
-                onEditGeneralNotes: _editGeneralNotes,
-                onAddDetailedNote: _addDetailedNote,
-                onViewAllNotes: _viewAllNotes,
-                onViewNoteDetails: _viewNoteDetails,
-              ),
-            ],
-          ),
+          child: _buildTabBarView(),
         ),
       ],
     );
   }
 
-  /// Functions
+  Widget _buildTabBar() {
+    return Container(
+      color: Colors.white,
+      child: TabBar(
+        controller: _tabController,
+        labelColor: ColorsManager.primaryColor,
+        unselectedLabelColor: ColorsManager.defaultTextSecondary,
+        indicatorColor: ColorsManager.primaryColor,
+        indicatorWeight: 3,
+        labelStyle: TextStyle(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w500,
+        ),
+        tabs: const [
+          Tab(
+            icon: Icon(Icons.trending_up_rounded, size: 20),
+            text: 'التقدم',
+          ),
+          Tab(
+            icon: Icon(Icons.fitness_center_rounded, size: 20),
+            text: 'المهارات',
+          ),
+          Tab(
+            icon: Icon(Icons.note_rounded, size: 20),
+            text: 'الملاحظات',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBarView() {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        // Progress Tab - محدث
+        MemberProgressTab(
+          member: _currentMember,
+          exerciseProgress: _exerciseProgress,
+        ),
+
+        // Skills/Exercises Tab
+        MemberSkillsTab(
+          member: _currentMember,
+          onAddSkill: () {
+            // Handle add skill
+          },
+        ),
+
+        // Notes Tab - محدث
+        MemberNotesTab(
+          member: _currentMember,
+          onEditGeneralNotes: _editGeneralNotes,
+          onAddDetailedNote: _addDetailedNote,
+          onViewAllNotes: _viewAllNotes,
+          onViewNoteDetails: _viewNoteDetails,
+        ),
+      ],
+    );
+  }
+
+  // ============= Actions Methods =============
 
   void _editGeneralNotes() {
     MemberNotesActions.editGeneralNotes(
@@ -283,13 +294,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
     );
   }
 
-  void _addNewExercise() {
-    MemberExerciseActions.addNewExercise(
-      context: context,
-      member: _currentMember,
-    );
-  }
-
   void _editMember() {
     MemberProfileActions.editMember(
       context: context,
@@ -305,6 +309,4 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
       teamId: widget.teamId,
     );
   }
-
-
 }
