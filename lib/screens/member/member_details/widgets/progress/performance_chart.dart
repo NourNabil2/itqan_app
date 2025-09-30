@@ -155,7 +155,8 @@ class _PerformanceChartState extends State<PerformanceChart> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            if (_hasRealData && !_isLoading)
+              ImprovementBadge(improvement: _improvement),
             SizedBox(height: SizeApp.s16),
             if (_isLoading)
               _buildLoadingState()
@@ -168,65 +169,6 @@ class _PerformanceChartState extends State<PerformanceChart> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(10.sp),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    ColorsManager.primaryColor,
-                    ColorsManager.primaryColor.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: ColorsManager.primaryColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.show_chart_rounded,
-                color: Colors.white,
-                size: 20.sp,
-              ),
-            ),
-            SizedBox(width: SizeApp.s12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'مخطط الأداء',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: ColorsManager.defaultText,
-                  ),
-                ),
-                Text(
-                  'آخر 6 أسابيع',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: ColorsManager.defaultTextSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        if (_hasRealData && !_isLoading)
-          ImprovementBadge(improvement: _improvement),
-      ],
     );
   }
 

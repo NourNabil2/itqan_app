@@ -1,4 +1,4 @@
-import 'dart:io';
+// ============= Add Exercise Screen - Refactored =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/constants/image_picker_helper.dart';
@@ -8,12 +8,13 @@ import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
+import 'package:itqan_gym/data/models/exercise_template.dart';
+import 'package:itqan_gym/data/models/skill_template.dart';
+import 'package:itqan_gym/providers/exercise_library_provider.dart';
+import 'package:itqan_gym/screens/library/widgets/thumbnail_picker.dart';
+import 'package:itqan_gym/screens/member/widgets/editInfo_notice.dart';
+import 'package:itqan_gym/screens/member/widgets/form_action_buttons.dart';
 import 'package:provider/provider.dart';
-import '../../data/models/exercise_template.dart';
-import '../../data/models/skill_template.dart';
-import '../../providers/exercise_library_provider.dart';
-import '../member/widgets/editInfo_notice.dart';
-import '../member/widgets/form_action_buttons.dart';
 
 class AddExerciseScreen extends StatefulWidget {
   final ExerciseType type;
@@ -44,12 +45,10 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
   @override
   void initState() {
     super.initState();
-    if (_isEditing) {
-      _loadExistingExercise();
-    }
+    if (_isEditing) _loadExistingData();
   }
 
-  void _loadExistingExercise() {
+  void _loadExistingData() {
     final exercise = widget.exerciseToEdit!;
     _titleController.text = exercise.title;
     _descriptionController.text = exercise.description ?? '';
@@ -68,12 +67,12 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final color = _getTypeColor();
+
     return Scaffold(
       backgroundColor: ColorsManager.backgroundSurface,
       appBar: CustomAppBar(
-        title: _isEditing
-            ? 'تعديل ${widget.type.arabicName}'
-            : 'إضافة ${widget.type.arabicName}',
+        title: _isEditing ? 'تعديل ${widget.type.arabicName}' : 'إضافة ${widget.type.arabicName}',
         action: _isEditing ? _buildDeleteButton() : null,
       ),
       body: Column(
@@ -84,79 +83,84 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Header Section
-                    _buildHeader(),
-
-                    // Form Content
+                    SectionHeader(
+                      title: _isEditing ? 'تعديل التمرين' : 'إضافة تمرين جديد',
+                      subtitle: 'أدخل تفاصيل التمرين والوسائط',
+                      leading: Container(
+                        padding: EdgeInsets.all(SizeApp.s10),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(SizeApp.s10),
+                        ),
+                        child: Icon(_getTypeIcon(), color: color, size: SizeApp.iconSize),
+                      ),
+                      showDivider: true,
+                    ),
                     Padding(
                       padding: EdgeInsets.all(SizeApp.s16),
                       child: Column(
                         children: [
-                          // Error Display
-                          if (_error != null) _buildErrorContainer(),
+                          if (_error != null) FormErrorContainer(error: _error!),
 
-                          // Exercise Type Badge
-                          _buildTypeBadge(),
+                          TypeBadge(
+                            label: widget.type.arabicName,
+                            icon: _getTypeIcon(),
+                            color: color,
+                          ),
 
                           SizedBox(height: SizeApp.s24),
 
-                          // Title Field
                           AppTextField(
                             controller: _titleController,
                             hintText: 'مثال: تمرين القفز بالحبل',
                             title: 'عنوان التمرين',
-                            prefixIcon: Icon(
-                              _getExerciseTypeIcon(),
-                              color: _getExerciseTypeColor(),
-                              size: SizeApp.iconSize,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'عنوان التمرين مطلوب';
-                              }
-                              if (value.trim().length < 3) {
-                                return 'العنوان يجب أن يحتوي على 3 أحرف على الأقل';
-                              }
-
-                              // Check for duplicate titles
-                              final provider = context.read<ExerciseLibraryProvider>();
-                              if (provider.isExerciseTitleExists(
-                                value.trim(),
-                                excludeId: widget.exerciseToEdit?.id,
-                              )) {
-                                return 'يوجد تمرين آخر بنفس العنوان';
-                              }
-
-                              return null;
-                            },
+                            prefixIcon: Icon(_getTypeIcon(), color: color, size: SizeApp.iconSize),
+                            validator: (value) => _validateTitle(value),
                           ),
 
                           SizedBox(height: SizeApp.s16),
 
-                          // Description Field
                           AppTextFieldFactory.textArea(
                             controller: _descriptionController,
-                            hintText: 'اشرح كيفية أداء التمرين بالتفصيل...',
+                            hintText: 'اشرح كيفية أداء التمرين...',
                             title: 'الوصف',
                             maxLines: 6,
                           ),
 
                           SizedBox(height: SizeApp.s24),
 
-                          // Media Section
-                          _buildMediaSection(),
+                          const FormSectionHeader(
+                            title: 'الوسائط التوضيحية',
+                            icon: Icons.perm_media_rounded,
+                          ),
+
+                          SizedBox(height: SizeApp.s16),
+
+                          ThumbnailPicker(
+                            thumbnailPath: _thumbnailPath,
+                            onPick: _pickThumbnail,
+                            onRemove: () => setState(() => _thumbnailPath = null),
+                            accentColor: color,
+                          ),
+
+                          SizedBox(height: SizeApp.s16),
+
+                          MediaGalleryPicker(
+                            mediaGallery: _mediaGallery,
+                            onAddMedia: _addMedia,
+                            onRemoveMedia: (media) => setState(() => _mediaGallery.remove(media)),
+                          ),
 
                           SizedBox(height: SizeApp.s24),
 
-                          // Info Notice
                           EditInfoNotice(
                             message: _isEditing
-                                ? 'سيتم حفظ التعديلات على هذا التمرين في المكتبة'
-                                : 'سيتم إضافة هذا التمرين إلى مكتبة ${widget.type.arabicName}',
+                                ? 'سيتم حفظ التعديلات في المكتبة'
+                                : 'سيتم إضافة التمرين إلى مكتبة ${widget.type.arabicName}',
                             icon: Icons.info_outline_rounded,
-                            backgroundColor: _getExerciseTypeColor().withOpacity(0.1),
-                            textColor: _getExerciseTypeColor(),
-                            iconColor: _getExerciseTypeColor(),
+                            backgroundColor: color.withOpacity(0.1),
+                            textColor: color,
+                            iconColor: color,
                           ),
                         ],
                       ),
@@ -166,10 +170,8 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
               ),
             ),
           ),
-
-          // Action Buttons
           FormActionButtons(
-            onSave: _saveExercise,
+            onSave: _save,
             onCancel: () => Navigator.pop(context),
             isLoading: _isLoading,
             saveText: _isEditing ? 'حفظ التعديلات' : 'إضافة التمرين',
@@ -179,376 +181,47 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     );
   }
 
-  Widget _buildDeleteButton() {
+  Widget? _buildDeleteButton() {
     return IconButton(
       onPressed: _showDeleteDialog,
-      icon: Icon(
-        Icons.delete_rounded,
-        color: ColorsManager.errorFill,
-        size: SizeApp.iconSize,
-      ),
-      tooltip: 'حذف التمرين',
+      icon: Icon(Icons.delete_rounded, color: ColorsManager.errorFill, size: SizeApp.iconSize),
+      tooltip: 'حذف',
     );
   }
 
-  Widget _buildHeader() {
-    return SectionHeader(
-      title: _isEditing ? 'تعديل التمرين' : 'إضافة تمرين جديد',
-      subtitle: 'أدخل تفاصيل التمرين وأضف الوسائط التوضيحية',
-      leading: Container(
-        padding: EdgeInsets.all(SizeApp.s10),
-        decoration: BoxDecoration(
-          color: _getExerciseTypeColor().withOpacity(0.1),
-          borderRadius: BorderRadius.circular(SizeApp.s10),
-        ),
-        child: Icon(
-          _getExerciseTypeIcon(),
-          color: _getExerciseTypeColor(),
-          size: SizeApp.iconSize,
-        ),
-      ),
-      showDivider: true,
-    );
-  }
+  String? _validateTitle(String? value) {
+    if (value == null || value.trim().isEmpty) return 'عنوان التمرين مطلوب';
+    if (value.trim().length < 3) return 'العنوان يجب أن يحتوي على 3 أحرف على الأقل';
 
-  Widget _buildErrorContainer() {
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s16),
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: ColorsManager.errorFill.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        border: Border.all(
-          color: ColorsManager.errorFill.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            color: ColorsManager.errorFill,
-            size: SizeApp.iconSize,
-          ),
-          SizedBox(width: SizeApp.s12),
-          Expanded(
-            child: Text(
-              _error!,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: ColorsManager.errorFill,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeBadge() {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: SizeApp.s16,
-        vertical: SizeApp.s8,
-      ),
-      decoration: BoxDecoration(
-        color: _getExerciseTypeColor().withOpacity(0.1),
-        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        border: Border.all(
-          color: _getExerciseTypeColor().withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            _getExerciseTypeIcon(),
-            color: _getExerciseTypeColor(),
-            size: 16.sp,
-          ),
-          SizedBox(width: SizeApp.s8),
-          Text(
-            widget.type.arabicName,
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w700,
-              color: _getExerciseTypeColor(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMediaSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.perm_media_rounded,
-              color: ColorsManager.primaryColor,
-              size: 16.sp,
-            ),
-            SizedBox(width: SizeApp.s8),
-            Text(
-              'الوسائط التوضيحية',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-                color: ColorsManager.defaultText,
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Thumbnail Section
-        _buildThumbnailSection(),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Media Gallery Section
-        _buildMediaGallerySection(),
-      ],
-    );
-  }
-
-  Widget _buildThumbnailSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'الصورة المصغرة',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: ColorsManager.defaultText,
-          ),
-        ),
-
-        SizedBox(height: SizeApp.s8),
-
-        if (_thumbnailPath != null) ...[
-          Container(
-            height: 120.h,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              color: ColorsManager.backgroundCard,
-            ),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  child: Image.file(
-                    File(_thumbnailPath!),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
-                ),
-                Positioned(
-                  top: SizeApp.s4,
-                  right: SizeApp.s4,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: ColorsManager.errorFill,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: () => setState(() => _thumbnailPath = null),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 16.sp,
-                      ),
-                      padding: EdgeInsets.all(SizeApp.s4),
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: SizeApp.s8),
-        ],
-
-        OutlinedButton.icon(
-          onPressed: _pickThumbnail,
-          icon: Icon(Icons.image_rounded, size: SizeApp.iconSize),
-          label: Text(_thumbnailPath == null ? 'إضافة صورة مصغرة' : 'تغيير الصورة'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: _getExerciseTypeColor(),
-            side: BorderSide(color: _getExerciseTypeColor()),
-            padding: EdgeInsets.symmetric(vertical: 12.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMediaGallerySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'معرض الوسائط',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: ColorsManager.defaultText,
-          ),
-        ),
-
-        SizedBox(height: SizeApp.s8),
-
-        // Media buttons
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _addMediaToGallery(MediaType.image),
-                icon: Icon(Icons.add_photo_alternate_rounded, size: SizeApp.iconSize),
-                label: const Text('إضافة صورة'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ColorsManager.primaryColor,
-                  side: BorderSide(color: ColorsManager.primaryColor),
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(width: SizeApp.s8),
-
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _addMediaToGallery(MediaType.video),
-                icon: Icon(Icons.videocam_rounded, size: SizeApp.iconSize),
-                label: const Text('إضافة فيديو'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ColorsManager.secondaryColor,
-                  side: BorderSide(color: ColorsManager.secondaryColor),
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        // Media gallery display
-        if (_mediaGallery.isNotEmpty) ...[
-          SizedBox(height: SizeApp.s12),
-          Wrap(
-            spacing: SizeApp.s8,
-            runSpacing: SizeApp.s8,
-            children: _mediaGallery.map((media) => _buildMediaChip(media)).toList(),
-          ),
-        ],
-      ],
-    );
-  }
-
-// _buildMediaChip
-  Widget _buildMediaChip(MediaItem media) {
-    final isVideo = MediaPickerHelper.isVideoFile(media.path);
-    final fileSize = MediaPickerHelper.getFileSize(media.path);
-
-    return Chip(
-      avatar: Icon(
-        isVideo ? Icons.videocam : Icons.image,
-        size: 16.sp,
-        color: isVideo ? ColorsManager.secondaryColor : ColorsManager.primaryColor,
-      ),
-      label: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${isVideo ? 'فيديو' : 'صورة'}: ${media.path.split('/').last}',
-            style: TextStyle(fontSize: 12.sp),
-          ),
-          Text(
-            fileSize,
-            style: TextStyle(
-              fontSize: 10.sp,
-              color: ColorsManager.defaultTextSecondary,
-            ),
-          ),
-        ],
-      ),
-      onDeleted: () => setState(() => _mediaGallery.remove(media)),
-      deleteIconColor: ColorsManager.errorFill,
-    );
-  }
-
-  // Helper Methods
-  IconData _getExerciseTypeIcon() {
-    switch (widget.type) {
-      case ExerciseType.warmup:
-        return Icons.whatshot_rounded;
-      case ExerciseType.stretching:
-        return Icons.accessibility_new_rounded;
-      case ExerciseType.conditioning:
-        return Icons.fitness_center_rounded;
-      default:
-        return Icons.fitness_center_rounded;
+    final provider = context.read<ExerciseLibraryProvider>();
+    if (provider.isExerciseTitleExists(value.trim(), excludeId: widget.exerciseToEdit?.id)) {
+      return 'يوجد تمرين آخر بنفس العنوان';
     }
+    return null;
   }
 
-  Color _getExerciseTypeColor() {
-    switch (widget.type) {
-      case ExerciseType.warmup:
-        return const Color(0xFFFF5722);
-      case ExerciseType.stretching:
-        return const Color(0xFF4CAF50);
-      case ExerciseType.conditioning:
-        return const Color(0xFF2196F3);
-      default:
-        return ColorsManager.primaryColor;
-    }
-  }
-
-  // Action Methods
   void _pickThumbnail() {
     MediaPickerHelper.showImageSourceDialog(
       context: context,
-      onImageSelected: (imagePath) {
-        if (imagePath != null) {
-          setState(() => _thumbnailPath = imagePath);
-        }
+      onImageSelected: (path) {
+        if (path != null) setState(() => _thumbnailPath = path);
       },
     );
   }
 
-  void _addMediaToGallery(MediaType type) {
+  void _addMedia(MediaType type) {
     MediaPickerHelper.showMediaTypeDialog(
       context: context,
       isVideo: type == MediaType.video,
-      onMediaSelected: (mediaPath) {
-        if (mediaPath != null) {
-          setState(() {
-            _mediaGallery.add(MediaItem(path: mediaPath, type: type));
-          });
+      onMediaSelected: (path) {
+        if (path != null) {
+          setState(() => _mediaGallery.add(MediaItem(path: path, type: type)));
         }
       },
     );
   }
 
-  Future<void> _saveExercise() async {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -590,95 +263,28 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              _isEditing
-                  ? 'تم تحديث التمرين بنجاح'
-                  : 'تم إضافة التمرين بنجاح',
-            ),
+            content: Text(_isEditing ? 'تم تحديث التمرين بنجاح' : 'تم إضافة التمرين بنجاح'),
             backgroundColor: ColorsManager.successFill,
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
+      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showDeleteDialog() {
-    showDialog(
+    DeleteConfirmationDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_rounded,
-              color: ColorsManager.errorFill,
-              size: 24.sp,
-            ),
-            SizedBox(width: SizeApp.s8),
-            Text(
-              'حذف التمرين',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.errorFill,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'هل أنت متأكد من حذف "${widget.exerciseToEdit!.title}" نهائياً؟\n\nلا يمكن التراجع عن هذا الإجراء.',
-          style: TextStyle(
-            fontSize: 14.sp,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(
-                color: ColorsManager.defaultTextSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _deleteExercise,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsManager.errorFill,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              ),
-            ),
-            child: Text(
-              'حذف نهائياً',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'حذف التمرين',
+      itemName: widget.exerciseToEdit!.title,
+      onConfirm: _delete,
     );
   }
 
-  Future<void> _deleteExercise() async {
-    Navigator.pop(context); // Close dialog
-
+  Future<void> _delete() async {
     setState(() => _isLoading = true);
 
     try {
@@ -692,20 +298,38 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('تم حذف التمرين نهائياً'),
+          const SnackBar(
+            content: Text('تم حذف التمرين نهائياً'),
             backgroundColor: ColorsManager.errorFill,
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
+      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  IconData _getTypeIcon() {
+    switch (widget.type) {
+      case ExerciseType.warmup:
+        return Icons.whatshot_rounded;
+      case ExerciseType.stretching:
+        return Icons.accessibility_new_rounded;
+      case ExerciseType.conditioning:
+        return Icons.fitness_center_rounded;
+    }
+  }
+
+  Color _getTypeColor() {
+    switch (widget.type) {
+      case ExerciseType.warmup:
+        return const Color(0xFFFF5722);
+      case ExerciseType.stretching:
+        return const Color(0xFF4CAF50);
+      case ExerciseType.conditioning:
+        return const Color(0xFF2196F3);
     }
   }
 }

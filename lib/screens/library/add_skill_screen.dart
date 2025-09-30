@@ -1,4 +1,4 @@
-import 'dart:io';
+// ============= Add Skill Screen - Refactored =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/constants/image_picker_helper.dart';
@@ -8,12 +8,12 @@ import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
+import 'package:itqan_gym/data/models/skill_template.dart';
+import 'package:itqan_gym/providers/skill_library_provider.dart';
+import 'package:itqan_gym/screens/library/widgets/thumbnail_picker.dart';
 import 'package:itqan_gym/screens/member/widgets/editInfo_notice.dart';
 import 'package:itqan_gym/screens/member/widgets/form_action_buttons.dart';
 import 'package:provider/provider.dart';
-import '../../data/models/skill_template.dart';
-import '../../providers/skill_library_provider.dart';
-
 
 class AddSkillScreen extends StatefulWidget {
   final SkillTemplate? skillToEdit;
@@ -44,12 +44,10 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
   @override
   void initState() {
     super.initState();
-    if (_isEditing) {
-      _loadExistingSkill();
-    }
+    if (_isEditing) _loadExistingData();
   }
 
-  void _loadExistingSkill() {
+  void _loadExistingData() {
     final skill = widget.skillToEdit!;
     _selectedApparatus = skill.apparatus;
     _nameController.text = skill.skillName;
@@ -75,9 +73,14 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final color = getApparatusColor(_selectedApparatus);
+
     return Scaffold(
       backgroundColor: ColorsManager.backgroundSurface,
-      appBar: CustomAppBar(title:   _isEditing ? 'تعديل المهارة' : 'إضافة مهارة جديدة', action: _isEditing ? _buildDeleteButton() : null,),
+      appBar: CustomAppBar(
+        title: _isEditing ? 'تعديل المهارة' : 'إضافة مهارة جديدة',
+        action: _isEditing ? _buildDeleteButton() : null,
+      ),
       body: Column(
         children: [
           Expanded(
@@ -86,74 +89,79 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Header Section
-                    _buildHeader(),
-
-                    // Form Content
+                    SectionHeader(
+                      title: _isEditing ? 'تعديل المهارة' : 'إضافة مهارة جديدة',
+                      subtitle: 'أدخل تفاصيل المهارة والوسائط التعليمية',
+                      leading: Container(
+                        padding: EdgeInsets.all(SizeApp.s10),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(SizeApp.s10),
+                        ),
+                        child: Icon(
+                          Icons.sports_gymnastics_rounded,
+                          color: color,
+                          size: SizeApp.iconSize,
+                        ),
+                      ),
+                      showDivider: true,
+                    ),
                     Padding(
                       padding: EdgeInsets.all(SizeApp.s16),
                       child: Column(
                         children: [
-                          // Error Display
-                          if (_error != null) _buildErrorContainer(),
+                          if (_error != null) FormErrorContainer(error: _error!),
 
-                          // Apparatus Section
                           _buildApparatusSection(),
 
                           SizedBox(height: SizeApp.s24),
 
-                          // Skill Name Field
                           AppTextField(
                             controller: _nameController,
                             hintText: 'مثال: الدورة الخلفية الممدودة',
                             title: 'اسم المهارة',
-                            prefixIcon: Icon(
-                              Icons.star_rounded,
-                              color: _getApparatusColor(),
-                              size: SizeApp.iconSize,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'اسم المهارة مطلوب';
-                              }
-                              if (value.trim().length < 3) {
-                                return 'الاسم يجب أن يحتوي على 3 أحرف على الأقل';
-                              }
-
-                              // Check for duplicate names
-                              final provider = context.read<SkillLibraryProvider>();
-                              if (provider.isSkillNameExists(
-                                value.trim(),
-                                excludeId: widget.skillToEdit?.id,
-                              )) {
-                                return 'يوجد مهارة أخرى بنفس الاسم';
-                              }
-
-                              return null;
-                            },
+                            prefixIcon: Icon(Icons.star_rounded, color: color, size: SizeApp.iconSize),
+                            validator: (value) => _validateName(value),
                           ),
 
                           SizedBox(height: SizeApp.s24),
 
-                          // Media Section
-                          _buildMediaSection(),
+                          FormSectionHeader(
+                            title: 'الوسائط التعليمية',
+                            icon: Icons.perm_media_rounded,
+                          ),
+
+                          SizedBox(height: SizeApp.s16),
+
+                          ThumbnailPicker(
+                            thumbnailPath: _thumbnailPath,
+                            onPick: _pickThumbnail,
+                            onRemove: () => setState(() => _thumbnailPath = null),
+                            accentColor: color,
+                          ),
+
+                          SizedBox(height: SizeApp.s16),
+
+                          MediaGalleryPicker(
+                            mediaGallery: _mediaGallery,
+                            onAddMedia: _addMedia,
+                            onRemoveMedia: (media) => setState(() => _mediaGallery.remove(media)),
+                          ),
 
                           SizedBox(height: SizeApp.s24),
 
-                          // Skill Details Sections
                           _buildSkillDetailsSection(),
 
                           SizedBox(height: SizeApp.s24),
 
-                          // Info Notice
                           EditInfoNotice(
                             message: _isEditing
-                                ? 'سيتم حفظ التعديلات على هذه المهارة في المكتبة'
-                                : 'سيتم إضافة هذه المهارة إلى مكتبة مهارات ${_selectedApparatus.arabicName}',
+                                ? 'سيتم حفظ التعديلات في المكتبة'
+                                : 'سيتم إضافة المهارة إلى مكتبة ${_selectedApparatus.arabicName}',
                             icon: Icons.info_outline_rounded,
-                            backgroundColor: _getApparatusColor().withOpacity(0.1),
-                            textColor: _getApparatusColor(),
-                            iconColor: _getApparatusColor(),
+                            backgroundColor: color.withOpacity(0.1),
+                            textColor: color,
+                            iconColor: color,
                           ),
                         ],
                       ),
@@ -163,10 +171,8 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
               ),
             ),
           ),
-
-          // Action Buttons
           FormActionButtons(
-            onSave: _saveSkill,
+            onSave: _save,
             onCancel: () => Navigator.pop(context),
             isLoading: _isLoading,
             saveText: _isEditing ? 'حفظ التعديلات' : 'إضافة المهارة',
@@ -176,70 +182,11 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
     );
   }
 
-  Widget _buildDeleteButton() {
+  Widget? _buildDeleteButton() {
     return IconButton(
       onPressed: _showDeleteDialog,
-      icon: Icon(
-        Icons.delete_rounded,
-        color: ColorsManager.errorFill,
-        size: SizeApp.iconSize,
-      ),
-      tooltip: 'حذف المهارة',
-    );
-  }
-
-  Widget _buildHeader() {
-    return SectionHeader(
-      title: _isEditing ? 'تعديل المهارة' : 'إضافة مهارة جديدة',
-      subtitle: 'أدخل تفاصيل المهارة والوسائط التعليمية',
-      leading: Container(
-        padding: EdgeInsets.all(SizeApp.s10),
-        decoration: BoxDecoration(
-          color: _getApparatusColor().withOpacity(0.1),
-          borderRadius: BorderRadius.circular(SizeApp.s10),
-        ),
-        child: Icon(
-          _getApparatusIcon(),
-          color: _getApparatusColor(),
-          size: SizeApp.iconSize,
-        ),
-      ),
-      showDivider: true,
-    );
-  }
-
-  Widget _buildErrorContainer() {
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s16),
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: ColorsManager.errorFill.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        border: Border.all(
-          color: ColorsManager.errorFill.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            color: ColorsManager.errorFill,
-            size: SizeApp.iconSize,
-          ),
-          SizedBox(width: SizeApp.s12),
-          Expanded(
-            child: Text(
-              _error!,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: ColorsManager.errorFill,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
+      icon: Icon(Icons.delete_rounded, color: ColorsManager.errorFill, size: SizeApp.iconSize),
+      tooltip: 'حذف',
     );
   }
 
@@ -247,27 +194,11 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.sports_gymnastics_rounded,
-              color: ColorsManager.primaryColor,
-              size: 16.sp,
-            ),
-            SizedBox(width: SizeApp.s8),
-            Text(
-              'الجهاز',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-                color: ColorsManager.defaultText,
-              ),
-            ),
-          ],
+        FormSectionHeader(
+          title: 'الجهاز',
+          icon: Icons.sports_gymnastics_rounded,
         ),
-
         SizedBox(height: SizeApp.s12),
-
         Container(
           width: double.infinity,
           padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
@@ -283,12 +214,8 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
             value: _selectedApparatus,
             isExpanded: true,
             underline: const SizedBox.shrink(),
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: ColorsManager.defaultText,
-            ),
             items: Apparatus.values.map((apparatus) {
-              return DropdownMenuItem<Apparatus>(
+              return DropdownMenuItem(
                 value: apparatus,
                 child: Row(
                   children: [
@@ -307,11 +234,7 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
               );
             }).toList(),
             onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _selectedApparatus = value;
-                });
-              }
+              if (value != null) setState(() => _selectedApparatus = value);
             },
           ),
         ),
@@ -319,293 +242,62 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
     );
   }
 
-  Widget _buildMediaSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.perm_media_rounded,
-              color: ColorsManager.primaryColor,
-              size: 16.sp,
-            ),
-            SizedBox(width: SizeApp.s8),
-            Text(
-              'الوسائط التعليمية',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-                color: ColorsManager.defaultText,
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Thumbnail Section
-        _buildThumbnailSection(),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Media Gallery Section
-        _buildMediaGallerySection(),
-      ],
-    );
-  }
-
-  Widget _buildThumbnailSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'الصورة المصغرة',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: ColorsManager.defaultText,
-          ),
-        ),
-
-        SizedBox(height: SizeApp.s8),
-
-        if (_thumbnailPath != null) ...[
-          Container(
-            height: 120.h,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              color: ColorsManager.backgroundCard,
-            ),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  child: Image.file(
-                    File(_thumbnailPath!),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
-                ),
-                Positioned(
-                  top: SizeApp.s4,
-                  right: SizeApp.s4,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: ColorsManager.errorFill,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: () => setState(() => _thumbnailPath = null),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 16.sp,
-                      ),
-                      padding: EdgeInsets.all(SizeApp.s4),
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: SizeApp.s8),
-        ],
-
-        OutlinedButton.icon(
-          onPressed: _pickThumbnail,
-          icon: Icon(Icons.image_rounded, size: SizeApp.iconSize),
-          label: Text(_thumbnailPath == null ? 'إضافة صورة مصغرة' : 'تغيير الصورة'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: _getApparatusColor(),
-            side: BorderSide(color: _getApparatusColor()),
-            padding: EdgeInsets.symmetric(vertical: 12.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMediaGallerySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'معرض الوسائط',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: ColorsManager.defaultText,
-          ),
-        ),
-
-        SizedBox(height: SizeApp.s8),
-
-        // Media buttons
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _addMediaToGallery(MediaType.image),
-                icon: Icon(Icons.add_photo_alternate_rounded, size: SizeApp.iconSize),
-                label: const Text('إضافة صورة'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ColorsManager.primaryColor,
-                  side: BorderSide(color: ColorsManager.primaryColor),
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(width: SizeApp.s8),
-
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _addMediaToGallery(MediaType.video),
-                icon: Icon(Icons.videocam_rounded, size: SizeApp.iconSize),
-                label: const Text('إضافة فيديو'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ColorsManager.secondaryColor,
-                  side: BorderSide(color: ColorsManager.secondaryColor),
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        // Media gallery display
-        if (_mediaGallery.isNotEmpty) ...[
-          SizedBox(height: SizeApp.s12),
-          Wrap(
-            spacing: SizeApp.s8,
-            runSpacing: SizeApp.s8,
-            children: _mediaGallery.map((media) => _buildMediaChip(media)).toList(),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildMediaChip(MediaItem media) {
-    return Chip(
-      avatar: Icon(
-        media.type == MediaType.video ? Icons.videocam : Icons.image,
-        size: 16.sp,
-        color: ColorsManager.primaryColor,
-      ),
-      label: Text(
-        '${media.type == MediaType.video ? 'فيديو' : 'صورة'}: ${media.path.split('/').last}',
-        style: TextStyle(fontSize: 12.sp),
-      ),
-      onDeleted: () => setState(() => _mediaGallery.remove(media)),
-      deleteIconColor: ColorsManager.errorFill,
-    );
-  }
-
   Widget _buildSkillDetailsSection() {
+    final fields = [
+      {'controller': _technicalAnalysisController, 'title': 'التحليل الفني', 'lines': 4},
+      {'controller': _preRequisitesController, 'title': 'المتطلبات المسبقة', 'lines': 3},
+      {'controller': _skillProgressionController, 'title': 'تدرج المهارة', 'lines': 4},
+      {'controller': _drillsController, 'title': 'التمرينات المهارية', 'lines': 4},
+      {'controller': _physicalPreparationController, 'title': 'الإعداد البدني', 'lines': 3},
+    ];
+
     return Column(
-      children: [
-        // Technical Analysis
-        AppTextFieldFactory.textArea(
-          controller: _technicalAnalysisController,
-          hintText: 'وصف تقني مفصل للمهارة وخطوات تنفيذها...',
-          title: 'التحليل الفني',
-          maxLines: 4,
-        ),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Pre-requisites
-        AppTextFieldFactory.textArea(
-          controller: _preRequisitesController,
-          hintText: 'المهارات والقدرات المطلوبة قبل تعلم هذه المهارة...',
-          title: 'المتطلبات المسبقة',
-          maxLines: 3,
-        ),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Skill Progression
-        AppTextFieldFactory.textArea(
-          controller: _skillProgressionController,
-          hintText: 'خطوات التدرج في تعلم المهارة من البداية...',
-          title: 'تدرج المهارة',
-          maxLines: 4,
-        ),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Drills
-        AppTextFieldFactory.textArea(
-          controller: _drillsController,
-          hintText: 'التمرينات التحضيرية والمهارية للمهارة...',
-          title: 'التمرينات المهارية (Drills)',
-          maxLines: 4,
-        ),
-
-        SizedBox(height: SizeApp.s16),
-
-        // Physical Preparation
-        AppTextFieldFactory.textArea(
-          controller: _physicalPreparationController,
-          hintText: 'متطلبات الإعداد البدني والقوة المطلوبة...',
-          title: 'الإعداد البدني',
-          maxLines: 3,
-        ),
-      ],
+      children: fields.map((field) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: SizeApp.s16),
+          child: AppTextFieldFactory.textArea(
+            controller: field['controller'] as TextEditingController,
+            title: field['title'] as String,
+            hintText: 'أدخل ${field['title']}...',
+            maxLines: field['lines'] as int,
+          ),
+        );
+      }).toList(),
     );
   }
 
-  // Helper Methods
-  Color _getApparatusColor() {
-    return getApparatusColor(_selectedApparatus);
+  String? _validateName(String? value) {
+    if (value == null || value.trim().isEmpty) return 'اسم المهارة مطلوب';
+    if (value.trim().length < 3) return 'الاسم يجب أن يحتوي على 3 أحرف على الأقل';
+
+    final provider = context.read<SkillLibraryProvider>();
+    if (provider.isSkillNameExists(value.trim(), excludeId: widget.skillToEdit?.id)) {
+      return 'يوجد مهارة أخرى بنفس الاسم';
+    }
+    return null;
   }
 
-
-
-  IconData _getApparatusIcon() {
-    return Icons.sports_gymnastics_rounded;
-  }
-
-  // Action Methods
   void _pickThumbnail() {
     MediaPickerHelper.showImageSourceDialog(
       context: context,
-      onImageSelected: (imagePath) {
-        if (imagePath != null) {
-          setState(() => _thumbnailPath = imagePath);
-        }
+      onImageSelected: (path) {
+        if (path != null) setState(() => _thumbnailPath = path);
       },
     );
   }
 
-  void _addMediaToGallery(MediaType type) {
+  void _addMedia(MediaType type) {
     MediaPickerHelper.showImageSourceDialog(
       context: context,
-      onImageSelected: (imagePath) {
-        if (imagePath != null) {
-          setState(() {
-            _mediaGallery.add(MediaItem(path: imagePath, type: type));
-          });
+      onImageSelected: (path) {
+        if (path != null) {
+          setState(() => _mediaGallery.add(MediaItem(path: path, type: type)));
         }
       },
     );
   }
 
-  Future<void> _saveSkill() async {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -659,95 +351,28 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              _isEditing
-                  ? 'تم تحديث المهارة بنجاح'
-                  : 'تم إضافة المهارة بنجاح',
-            ),
+            content: Text(_isEditing ? 'تم تحديث المهارة بنجاح' : 'تم إضافة المهارة بنجاح'),
             backgroundColor: ColorsManager.successFill,
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
+      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showDeleteDialog() {
-    showDialog(
+    DeleteConfirmationDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_rounded,
-              color: ColorsManager.errorFill,
-              size: 24.sp,
-            ),
-            SizedBox(width: SizeApp.s8),
-            Text(
-              'حذف المهارة',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.errorFill,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'هل أنت متأكد من حذف "${widget.skillToEdit!.skillName}" نهائياً؟\n\nلا يمكن التراجع عن هذا الإجراء.',
-          style: TextStyle(
-            fontSize: 14.sp,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(
-                color: ColorsManager.defaultTextSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _deleteSkill,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsManager.errorFill,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              ),
-            ),
-            child: Text(
-              'حذف نهائياً',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'حذف المهارة',
+      itemName: widget.skillToEdit!.skillName,
+      onConfirm: _delete,
     );
   }
 
-  Future<void> _deleteSkill() async {
-    Navigator.pop(context); // Close dialog
-
+  Future<void> _delete() async {
     setState(() => _isLoading = true);
 
     try {
@@ -761,20 +386,16 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('تم حذف المهارة نهائياً'),
+          const SnackBar(
+            content: Text('تم حذف المهارة نهائياً'),
             backgroundColor: ColorsManager.errorFill,
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
+      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }
