@@ -74,9 +74,8 @@ class _MemberHeaderWidgetState extends State<MemberHeaderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.all(SizeApp.s20),
+    return Padding(
+      padding: EdgeInsets.all(SizeApp.padding),
       child: Column(
         children: [
           Row(

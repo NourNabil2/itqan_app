@@ -1,17 +1,45 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
-import '../../data/models/member/member.dart';
-import '../../screens/member/member_details/member_detail_screen.dart';
+import 'package:itqan_gym/data/models/member/member.dart';
+import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
+import 'package:itqan_gym/screens/member/member_details/member_detail_screen.dart';
+import 'package:provider/provider.dart';
 
+// ============= 1. Enhanced Member Card Model =============
+class MemberCardData {
+  final int skillsCount;
+  final double skillsProgress;
+  final int attendanceDays;
+  final double attendanceRate;
+  final DateTime? lastActivity;
+  final int completedExercises;
+
+  const MemberCardData({
+    this.skillsCount = 0,
+    this.skillsProgress = 0,
+    this.attendanceDays = 0,
+    this.attendanceRate = 0,
+    this.lastActivity,
+    this.completedExercises = 0,
+  });
+}
+
+// ============= 2. Updated Member Card Widget =============
 class MemberCard extends StatefulWidget {
   final Member member;
+  final VoidCallback? onTap;
+  final bool loadDynamicData;
 
-  const MemberCard({super.key, required this.member});
+  const MemberCard({
+    super.key,
+    required this.member,
+    this.onTap,
+    this.loadDynamicData = true,
+  });
 
   @override
   State<MemberCard> createState() => _MemberCardState();
@@ -21,6 +49,10 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
+
+  // Dynamic data
+  MemberCardData? _cardData;
+  bool _isLoadingData = false;
 
   @override
   void initState() {
@@ -36,6 +68,58 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
       parent: _controller,
       curve: Curves.easeInOut,
     ));
+
+    if (widget.loadDynamicData) {
+      _loadMemberData();
+    }
+  }
+
+  Future<void> _loadMemberData() async {
+    if (_isLoadingData || !mounted) return;
+
+    setState(() => _isLoadingData = true);
+
+    try {
+      final provider = context.read<ExerciseAssignmentProvider>();
+
+      // Load skills and statistics
+      final results = await Future.wait([
+        provider.loadMemberSkills(widget.member.id),
+        provider.getMemberStatistics(widget.member.id),
+      ]);
+
+      final skills = results[0] as List<AssignedSkill>;
+      final stats = results[1] as Map<String, dynamic>;
+
+      // Calculate skills progress
+      final skillsProgress = skills.isEmpty ? 0.0 :
+      skills.fold<double>(0, (sum, skill) => sum + skill.progress) / skills.length;
+
+      // Extract statistics
+      final skillStats = stats['skills'] ?? {};
+      final exerciseStats = stats['exercises'] ?? {};
+
+      if (mounted) {
+        setState(() {
+          _cardData = MemberCardData(
+            skillsCount: skills.length,
+            skillsProgress: skillsProgress,
+            attendanceDays: stats['attendanceDays'] ?? 0,
+            attendanceRate: stats['attendanceRate']?.toDouble() ?? 0,
+            completedExercises: exerciseStats['completed'] ?? 0,
+            lastActivity: stats['lastActivity'] != null
+                ? DateTime.tryParse(stats['lastActivity'])
+                : null,
+          );
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading member card data: $e');
+      if (mounted) {
+        setState(() => _isLoadingData = false);
+      }
+    }
   }
 
   @override
@@ -61,6 +145,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
 
@@ -72,12 +157,16 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
           child: GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MemberDetailScreen(member: widget.member),
-                ),
-              );
+              if (widget.onTap != null) {
+                widget.onTap!();
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MemberDetailScreen(member: widget.member),
+                  ),
+                );
+              }
             },
             onTapDown: _handleTapDown,
             onTapUp: _handleTapUp,
@@ -106,237 +195,9 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
               ),
               child: Column(
                 children: [
-                  // Header Section مع الصورة والاسم
-                  Container(
-                    padding: EdgeInsets.all(SizeApp.s16),
-                    child: Row(
-                      children: [
-                        // صورة العضو
-                        Hero(
-                          tag: 'member_avatar_${widget.member.id}',
-                          child: Container(
-                            width: isSmallScreen ? 60.w : 70.w,
-                            height: isSmallScreen ? 60.h : 70.h,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-                              color: widget.member.photoPath == null
-                                  ? ColorsManager.secondaryColor.withOpacity(0.15)
-                                  : null,
-                              image: widget.member.photoPath != null
-                                  ? DecorationImage(
-                                image: FileImage(File(widget.member.photoPath!)),
-                                fit: BoxFit.cover,
-                              )
-                                  : null,
-                              border: Border.all(
-                                color: ColorsManager.secondaryColor.withOpacity(0.2),
-                                width: 2,
-                              ),
-                            ),
-                            child: widget.member.photoPath == null
-                                ? Center(
-                              child: Text(
-                                widget.member.name[0].toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: isSmallScreen ? 24.sp : 28.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: ColorsManager.secondaryColor,
-                                ),
-                              ),
-                            )
-                                : null,
-                          ),
-                        ),
-
-                        SizedBox(width: SizeApp.s16),
-
-                        // معلومات العضو الأساسية
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.member.name,
-                                style: TextStyle(
-                                  fontSize: isSmallScreen ? 18.sp : 20.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: ColorsManager.defaultText,
-                                  height: 1.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-
-                              SizedBox(height: 6.h),
-
-                              // صف العمر والمستوى
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 4.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: ColorsManager.infoSurface,
-                                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.cake_outlined,
-                                          size: 12.sp,
-                                          color: ColorsManager.infoText,
-                                        ),
-                                        SizedBox(width: 4.w),
-                                        Text(
-                                          '${widget.member.age}',
-                                          style: TextStyle(
-                                            fontSize: 11.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: ColorsManager.infoText,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  SizedBox(width: 8.w),
-
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 4.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getLevelColor(widget.member.level).withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                                    ),
-                                    child: Text(
-                                      widget.member.level,
-                                      style: TextStyle(
-                                        fontSize: 11.sp,
-                                        fontWeight: FontWeight.w600,
-                                        color: _getLevelColor(widget.member.level),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // معدل التقدم الإجمالي
-                        // Column(
-                        //   children: [
-                        //     Container(
-                        //       width: 50.w,
-                        //       height: 50.h,
-                        //       decoration: BoxDecoration(
-                        //         color: _getProgressColor(widget.member.overallProgress).withOpacity(0.1),
-                        //         borderRadius: BorderRadius.circular(SizeApp.s12),
-                        //         border: Border.all(
-                        //           color: _getProgressColor(widget.member.overallProgress).withOpacity(0.3),
-                        //           width: 2,
-                        //         ),
-                        //       ),
-                        //       child: Stack(
-                        //         alignment: Alignment.center,
-                        //         children: [
-                        //           SizedBox(
-                        //             width: 35.w,
-                        //             height: 35.h,
-                        //             child: CircularProgressIndicator(
-                        //               value: widget.member.overallProgress / 100,
-                        //               strokeWidth: 3,
-                        //               backgroundColor: _getProgressColor(widget.member.overallProgress).withOpacity(0.2),
-                        //               valueColor: AlwaysStoppedAnimation<Color>(
-                        //                 _getProgressColor(widget.member.overallProgress),
-                        //               ),
-                        //               strokeCap: StrokeCap.round,
-                        //             ),
-                        //           ),
-                        //           Text(
-                        //             '${widget.member.overallProgress.toInt()}%',
-                        //             style: TextStyle(
-                        //               fontSize: 10.sp,
-                        //               fontWeight: FontWeight.w700,
-                        //               color: _getProgressColor(widget.member.overallProgress),
-                        //             ),
-                        //           ),
-                        //         ],
-                        //       ),
-                        //     ),
-                        //     SizedBox(height: 4.h),
-                        //     Text(
-                        //       'التقدم',
-                        //       style: TextStyle(
-                        //         fontSize: 9.sp,
-                        //         fontWeight: FontWeight.w500,
-                        //         color: ColorsManager.defaultTextSecondary,
-                        //       ),
-                        //     ),
-                        //   ],
-                        // ),
-                      ],
-                    ),
-                  ),
-
-                  // Divider خفيف
-                  Container(
-                    height: 1,
-                    margin: EdgeInsets.symmetric(horizontal: SizeApp.s16),
-                    color: ColorsManager.inputBorder.withOpacity(0.1),
-                  ),
-
-                  // Bottom Section - Quick Stats
-                  Container(
-                    padding: EdgeInsets.all(SizeApp.s16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatItem(
-                            'الحضور',
-                            '${(widget.member.overallProgress ?? 0 * 0.8).toInt()}%',
-                            Icons.calendar_today_outlined,
-                            ColorsManager.successFill,
-                          ),
-                        ),
-
-                        Container(
-                          width: 1,
-                          height: 40.h,
-                          color: ColorsManager.inputBorder.withOpacity(0.2),
-                        ),
-
-                        Expanded(
-                          child: _buildStatItem(
-                            'الأداء',
-                            '${(widget.member.overallProgress ?? 0 * 0.9).toInt()}%',
-                            Icons.trending_up_rounded,
-                            ColorsManager.warningFill,
-                          ),
-                        ),
-
-                        Container(
-                          width: 1,
-                          height: 40.h,
-                          color: ColorsManager.inputBorder.withOpacity(0.2),
-                        ),
-
-                        Expanded(
-                          child: _buildStatItem(
-                            'النشاط',
-                            '${widget.member.overallProgress?? 0.toInt()}%',
-                            Icons.fitness_center_outlined,
-                            ColorsManager.primaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildHeader(isSmallScreen, theme),
+                  _buildDivider(),
+                  _buildStats(isSmallScreen, theme),
                 ],
               ),
             ),
@@ -346,7 +207,237 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildStatItem(String title, String value, IconData icon, Color color) {
+  Widget _buildHeader(bool isSmallScreen, ThemeData theme) {
+    return Container(
+      padding: EdgeInsets.all(SizeApp.padding),
+      child: Row(
+        children: [
+          // Member Avatar
+          _buildAvatar(isSmallScreen),
+
+          SizedBox(width: SizeApp.s16),
+
+          // Member Info
+          Expanded(
+            child: _buildMemberInfo(isSmallScreen, theme),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(bool isSmallScreen) {
+    final hasPhoto = widget.member.photoPath != null;
+
+    return Hero(
+      tag: 'member_avatar_${widget.member.id}',
+      child: Container(
+        width: isSmallScreen ? 60.w : 70.w,
+        height: isSmallScreen ? 60.h : 70.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+          gradient: !hasPhoto ? LinearGradient(
+            colors: [
+              ColorsManager.secondaryColor.withOpacity(0.3),
+              ColorsManager.secondaryColor.withOpacity(0.1),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ) : null,
+          image: hasPhoto
+              ? DecorationImage(
+            image: FileImage(File(widget.member.photoPath!)),
+            fit: BoxFit.cover,
+          )
+              : null,
+          border: Border.all(
+            color: ColorsManager.secondaryColor.withOpacity(0.2),
+            width: 2,
+          ),
+        ),
+        child: !hasPhoto
+            ? Center(
+          child: Text(
+            widget.member.name.isNotEmpty
+                ? widget.member.name[0].toUpperCase()
+                : '?',
+            style: TextStyle(
+              fontSize: isSmallScreen ? 24.sp : 28.sp,
+              fontWeight: FontWeight.w700,
+              color: ColorsManager.secondaryColor,
+            ),
+          ),
+        )
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildMemberInfo(bool isSmallScreen, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.member.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontSize: isSmallScreen ? 18.sp : 20.sp,
+                  fontWeight: FontWeight.w700,
+                  color: ColorsManager.defaultText,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (_isLoadingData)
+              SizedBox(
+                width: 16.w,
+                height: 16.h,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    ColorsManager.primaryColor.withOpacity(0.6),
+                  ),
+                ),
+              ),
+          ],
+        ),
+
+        SizedBox(height: 6.h),
+
+        // Badges Row
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 4.h,
+          children: [
+            // Age Badge
+            if (widget.member.age != null)
+              _buildBadge(
+                icon: Icons.cake_outlined,
+                text: '${widget.member.age} سنة',
+                color: ColorsManager.infoText,
+                backgroundColor: ColorsManager.infoSurface,
+              ),
+
+            // Level Badge
+            _buildBadge(
+              text: widget.member.level,
+              color: _getLevelColor(widget.member.level),
+              backgroundColor: _getLevelColor(widget.member.level).withOpacity(0.15),
+            ),
+
+            // Skills Count Badge
+            if (_cardData != null && _cardData!.skillsCount > 0)
+              _buildBadge(
+                icon: Icons.star,
+                text: '${_cardData!.skillsCount} مهارة',
+                color: ColorsManager.warningText,
+                backgroundColor: ColorsManager.warningSurface,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBadge({
+    IconData? icon,
+    required String text,
+    required Color color,
+    required Color backgroundColor,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 8.w,
+        vertical: 4.h,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12.sp, color: color),
+            SizedBox(width: 4.w),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      margin: EdgeInsets.symmetric(horizontal: SizeApp.s16),
+      color: ColorsManager.inputBorder.withOpacity(0.1),
+    );
+  }
+
+  Widget _buildStats(bool isSmallScreen, ThemeData theme) {
+    // Use real data if available, otherwise use placeholder values
+    final skillsCount = _cardData?.skillsCount ?? 0;
+    final skillsProgress = _cardData?.skillsProgress ?? 0;
+    final completedExercises = _cardData?.completedExercises ?? 0;
+    final attendanceRate = _cardData?.attendanceRate ?? 0;
+    final lastActivityDays = _calculateDaysSinceActivity();
+
+    return Container(
+      padding: EdgeInsets.all(SizeApp.s16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatItem(
+              title: 'المهارات',
+              value: skillsCount.toString(),
+              icon: Icons.star_rounded,
+              color: ColorsManager.warningFill,
+              theme: theme,
+            ),
+          ),
+          _buildStatDivider(),
+          Expanded(
+            child: _buildStatItem(
+              title: 'التقدم',
+              value: '${skillsProgress.toInt()}%',
+              icon: Icons.trending_up_rounded,
+              color: ColorsManager.successFill,
+              theme: theme,
+            ),
+          ),
+          _buildStatDivider(),
+          Expanded(
+            child: _buildStatItem(
+              title: 'النشاط',
+              value: _formatLastActivity(lastActivityDays),
+              icon: Icons.schedule_rounded,
+              color: _getActivityColor(lastActivityDays),
+              theme: theme,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required ThemeData theme,
+  }) {
     return Column(
       children: [
         Container(
@@ -364,7 +455,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
         SizedBox(height: 6.h),
         Text(
           value,
-          style: TextStyle(
+          style: theme.textTheme.bodyLarge?.copyWith(
             fontSize: 14.sp,
             fontWeight: FontWeight.w700,
             color: color,
@@ -372,7 +463,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
         ),
         Text(
           title,
-          style: TextStyle(
+          style: theme.textTheme.bodySmall?.copyWith(
             fontSize: 10.sp,
             fontWeight: FontWeight.w500,
             color: ColorsManager.defaultTextSecondary,
@@ -380,6 +471,37 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
         ),
       ],
     );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      width: 1,
+      height: 40.h,
+      color: ColorsManager.inputBorder.withOpacity(0.2),
+    );
+  }
+
+  // Helper methods
+  int _calculateDaysSinceActivity() {
+    if (_cardData?.lastActivity == null) return -1;
+    return DateTime.now().difference(_cardData!.lastActivity!).inDays;
+  }
+
+  String _formatLastActivity(int days) {
+    if (days < 0) return 'جديد';
+    if (days == 0) return 'اليوم';
+    if (days == 1) return 'أمس';
+    if (days <= 7) return '$days أيام';
+    if (days <= 30) return '${(days / 7).floor()} أسابيع';
+    return '+30 يوم';
+  }
+
+  Color _getActivityColor(int days) {
+    if (days < 0) return ColorsManager.defaultTextSecondary;
+    if (days <= 3) return ColorsManager.successFill;
+    if (days <= 7) return ColorsManager.primaryColor;
+    if (days <= 14) return ColorsManager.warningFill;
+    return ColorsManager.errorFill;
   }
 
   Color _getProgressColor(double progress) {
@@ -402,6 +524,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
         return ColorsManager.successFill;
       case 'expert':
       case 'خبير':
+      case 'محترف':
         return ColorsManager.primaryColor;
       default:
         return ColorsManager.defaultTextSecondary;

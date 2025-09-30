@@ -7,38 +7,37 @@ import 'package:itqan_gym/core/widgets/CustomIcon.dart';
 class EmptyStateWidget extends StatelessWidget {
   final String title;
   final String subtitle;
-  final String buttonText;
-  final VoidCallback onPressed;
-
-  /// اختر أحدهما:
-  final IconData? iconData;        // في حال استخدام Material Icon
-  final String? assetSvgPath;      // في حال استخدام SVG من الأصول
-
-  /// تخصيص اختياري
+  final String? buttonText;
+  final VoidCallback? onPressed;
+  final IconData? iconData;
+  final String? assetSvgPath;
   final IconData buttonIcon;
   final double circleSize;
   final double iconSize;
+  final bool showButton; // للتحكم في إظهار الزر
 
   const EmptyStateWidget({
     super.key,
     required this.title,
     required this.subtitle,
-    required this.buttonText,
-    required this.onPressed,
+    this.buttonText,
+    this.onPressed,
     this.iconData,
     this.assetSvgPath,
     this.buttonIcon = Icons.add,
     this.circleSize = 120,
     this.iconSize = 60,
+    this.showButton = true,
   }) : assert(iconData != null || assetSvgPath != null,
-  'Provide either iconData or assetSvgPath');
+  'Provide either iconData or assetSvgPath'),
+        assert(!showButton || (buttonText != null && onPressed != null),
+        'If showButton is true, provide buttonText and onPressed');
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
     final onPrimary = theme.colorScheme.onPrimary;
-    final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface.withOpacity(0.8);
 
     return Center(
@@ -58,7 +57,7 @@ class EmptyStateWidget extends StatelessWidget {
               // أيقونة دائرية بزخرفة خفيفة
               Container(
                 width: circleSize.w,
-                height: circleSize.w, // مربع علشان يطلع دايرة مضبوطة
+                height: circleSize.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -82,13 +81,7 @@ class EmptyStateWidget extends StatelessWidget {
                   ],
                 ),
                 alignment: Alignment.center,
-                child: assetSvgPath != null
-                    ? CustomIcon(
-                  color: primary,
-                  assetPath: assetSvgPath!,
-                  size: iconSize.sp,
-                )
-                    : Icon(
+                child: Icon(
                   iconData,
                   color: primary,
                   size: iconSize.sp,
@@ -118,29 +111,31 @@ class EmptyStateWidget extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 24.h),
 
-              // زر الإجراء
-              ConstrainedBox(
-                constraints: BoxConstraints(minWidth: 180.w),
-                child: ElevatedButton.icon(
-                  onPressed: onPressed,
-                  icon: Icon(buttonIcon, color: ColorsManager.backgroundSurface),
-                  label: Text(buttonText),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: onPrimary,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 22.w,
-                      vertical: 12.h,
+              // زر الإجراء (اختياري)
+              if (showButton) ...[
+                SizedBox(height: 24.h),
+                ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: 180.w),
+                  child: ElevatedButton.icon(
+                    onPressed: onPressed!,
+                    icon: Icon(buttonIcon, color: ColorsManager.backgroundSurface),
+                    label: Text(buttonText!),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: onPrimary,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 22.w,
+                        vertical: 12.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                      elevation: 2,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                    elevation: 2,
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -148,3 +143,4 @@ class EmptyStateWidget extends StatelessWidget {
     );
   }
 }
+

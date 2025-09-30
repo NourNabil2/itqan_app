@@ -1,24 +1,27 @@
-// ============= Member Progress Tab - Clean & Refactored =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/core/widgets/Loading_widget.dart';
+import 'package:itqan_gym/core/widgets/app_buton.dart';
+import 'package:itqan_gym/core/widgets/badges/CountBadge.dart';
+import 'package:itqan_gym/core/widgets/badges/IconBadge.dart';
+import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
+import 'package:itqan_gym/core/widgets/error_container_widget.dart';
+import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/screens/member/member_details/widgets/progress/skills_progress_section.dart';
+import 'package:itqan_gym/screens/member/member_details/widgets/progress/performance_chart.dart';
+import 'package:itqan_gym/screens/member/member_details/widgets/progress/statistics_section.dart';
 import 'package:provider/provider.dart';
-import '../widgets/exercises/exercise_details_dialog.dart';
-import '../widgets/progress/performance_chart.dart';
-import '../widgets/progress/statistics_section.dart';
-
 
 class MemberProgressTab extends StatefulWidget {
   final Member member;
-  final List<Map<String, dynamic>> exerciseProgress;
 
   const MemberProgressTab({
     super.key,
     required this.member,
-    required this.exerciseProgress,
   });
 
   @override
@@ -28,7 +31,6 @@ class MemberProgressTab extends StatefulWidget {
 class _MemberProgressTabState extends State<MemberProgressTab>
     with AutomaticKeepAliveClientMixin {
   List<AssignedSkill> _assignedSkills = [];
-  List<AssignedExercise> _assignedExercises = [];
   Map<String, dynamic> _statistics = {};
   bool _isLoading = true;
   String? _error;
@@ -55,22 +57,20 @@ class _MemberProgressTabState extends State<MemberProgressTab>
 
       final results = await Future.wait([
         provider.loadMemberSkills(widget.member.id),
-        provider.loadMemberExercises(widget.member.id),
         provider.getMemberStatistics(widget.member.id),
       ]);
 
       if (mounted) {
         setState(() {
           _assignedSkills = results[0] as List<AssignedSkill>;
-          _assignedExercises = results[1] as List<AssignedExercise>;
-          _statistics = results[2] as Map<String, dynamic>;
+          _statistics = results[1] as Map<String, dynamic>;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = 'حدث خطأ في تحميل البيانات: ${e.toString()}';
           _isLoading = false;
         });
       }
@@ -79,10 +79,8 @@ class _MemberProgressTabState extends State<MemberProgressTab>
 
   void _navigateToTab(int index) {
     final tabController = DefaultTabController.of(context);
-    if (tabController != null) {
-      tabController.animateTo(index);
+    tabController.animateTo(index);
     }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,32 +88,43 @@ class _MemberProgressTabState extends State<MemberProgressTab>
 
     return RefreshIndicator(
       onRefresh: _loadProgressData,
+      color: ColorsManager.primaryColor,
       child: _isLoading
-          ? _buildLoadingState()
+          ? const LoadingSpinner()
           : _error != null
           ? _buildErrorState()
           : _buildContent(),
     );
   }
 
-  Widget _buildLoadingState() {
-    return Center(
-      child: CircularProgressIndicator(),
-    );
-  }
 
   Widget _buildErrorState() {
-    return Center(
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(SizeApp.padding),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 48.sp, color: Colors.grey),
-          SizedBox(height: SizeApp.s16),
-          Text('حدث خطأ في تحميل البيانات'),
-          SizedBox(height: SizeApp.s8),
-          ElevatedButton(
+          SizedBox(height: 100.h),
+
+          // Using ErrorContainer widget
+          ErrorContainer(
+            generalError: _error,
+            errorIcon: Icons.error_outline,
+            iconSize: 48.sp,
+            fontSize: 16.sp,
+            padding: EdgeInsets.all(SizeApp.s20),
+            margin: EdgeInsets.symmetric(horizontal: SizeApp.s16),
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+
+          SizedBox(height: SizeApp.s24),
+
+          // Using AppButton widget
+          AppButton(
+            text: 'إعادة المحاولة',
             onPressed: _loadProgressData,
-            child: Text('إعادة المحاولة'),
+            leadingIcon: Icons.refresh,
+            horizontalPadding: 60.w,
+            verticalPadding: 0,
           ),
         ],
       ),
@@ -123,46 +132,113 @@ class _MemberProgressTabState extends State<MemberProgressTab>
   }
 
   Widget _buildContent() {
+    final hasData = _assignedSkills.isNotEmpty || _statistics.isNotEmpty;
+
+    if (!hasData) {
+      return const SingleChildScrollView(
+        child: EmptyStateWidget(
+          title: 'لا توجد بيانات تقدم',
+          subtitle: 'سيتم عرض التقدم بعد بداية التدريب على المهارات',
+          iconData: Icons.insert_chart_outlined,
+          showButton: false,
+        ),
+      );
+    }
+
     return SingleChildScrollView(
-      padding: EdgeInsets.all(SizeApp.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Performance Chart
-          RepaintBoundary(
-            child: PerformanceChart(
-              member: widget.member,
-              exerciseProgress: widget.exerciseProgress,
-            ),
-          ),
+          SizedBox(height: SizeApp.padding),
+          // Performance Chart Section
+          _buildChartSection(),
 
-          SizedBox(height: SizeApp.s24),
+          if (_assignedSkills.isNotEmpty) ...[
+            SizedBox(height: SizeApp.s24),
+            _buildSkillsSection(),
+          ],
 
-          // Skills Progress Section
-          if (_assignedSkills.isNotEmpty)
-            SkillsProgressSection(
-              skills: _assignedSkills,
-              onViewAll: () => _navigateToTab(1),
-            ),
-
-          if (_assignedSkills.isNotEmpty) SizedBox(height: SizeApp.s24),
-
-          // Exercises Progress Section
-          if (_assignedExercises.isNotEmpty)
-            ExercisesProgressSection(
-              exercises: _assignedExercises,
-              onViewAll: () => _navigateToTab(1),
-            ),
-
-          if (_assignedExercises.isNotEmpty) SizedBox(height: SizeApp.s24),
-
-          // Statistics Section
-          if (_statistics.isNotEmpty)
-            StatisticsSection(
-              statistics: _statistics,
-            ),
+          if (_statistics.isNotEmpty) ...[
+            SizedBox(height: SizeApp.s24),
+            _buildStatisticsSection(),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildChartSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'مخطط الأداء',
+          subtitle: 'تتبع التقدم على مدار الوقت',
+          leading: IconBadge(
+            icon: Icons.show_chart_rounded,
+            backgroundColor: ColorsManager.primaryColor.withOpacity(0.1),
+            iconColor: ColorsManager.primaryColor,
+          ),
+          trailing: CountBadge(
+            count: 'آخر 6 أسابيع',
+            backgroundColor: ColorsManager.primaryColor.withOpacity(0.08),
+            textColor: ColorsManager.primaryColor,
+          ),
+        ),
+        SizedBox(height: SizeApp.s16),
+        RepaintBoundary(
+          child: PerformanceChart(member: widget.member),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkillsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'تقدم المهارات',
+          subtitle: 'المهارات المضافة ونسبة الإنجاز',
+          leading: IconBadge(
+            icon: Icons.sports_gymnastics_rounded,
+            backgroundColor: ColorsManager.warningText.withOpacity(0.1),
+            iconColor: ColorsManager.warningText,
+          ),
+          trailing:  CountBadge(
+            count: '${_assignedSkills.length}',
+            icon: Icons.star,
+            backgroundColor: ColorsManager.warningText.withOpacity(0.1),
+            textColor: ColorsManager.warningText,
+          ),
+        ),
+        SizedBox(height: SizeApp.s16),
+        SkillsProgressSection(
+          skills: _assignedSkills,
+          onViewAll: () => _navigateToTab(1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatisticsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'إحصائيات الأداء',
+          subtitle: 'نظرة شاملة على الأداء العام',
+          leading: IconBadge(
+            icon: Icons.analytics_outlined,
+            backgroundColor: ColorsManager.successText.withOpacity(0.1),
+            iconColor: ColorsManager.successText,
+          ),
+          showDivider: false,
+        ),
+        SizedBox(height: SizeApp.s16),
+        StatisticsSection(statistics: _statistics),
+        SizedBox(height: SizeApp.s16),
+      ],
     );
   }
 }

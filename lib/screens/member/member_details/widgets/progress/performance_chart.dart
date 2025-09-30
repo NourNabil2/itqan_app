@@ -3,149 +3,181 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/core/widgets/badges/ImprovementBadge.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
+import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
+import 'package:provider/provider.dart';
 
-class PerformanceChart extends StatelessWidget {
+class PerformanceChart extends StatefulWidget {
   final Member member;
-  final List<Map<String, dynamic>> exerciseProgress;
+  final Function(double improvement)? onImprovementCalculated;
 
   const PerformanceChart({
     super.key,
     required this.member,
-    required this.exerciseProgress,
+    this.onImprovementCalculated,
   });
 
   @override
-  Widget build(BuildContext context) {
-    // حساب البيانات الحقيقية
-    final chartData = _generateChartData();
-    final hasData = chartData.isNotEmpty;
+  State<PerformanceChart> createState() => _PerformanceChartState();
+}
 
-    return Container(
-      padding: EdgeInsets.all(SizeApp.s20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildModernChartHeader(chartData),
-          SizedBox(height: SizeApp.s24),
-          hasData ? _buildLineChart(chartData) : _buildEmptyState(),
-        ],
-      ),
-    );
+class _PerformanceChartState extends State<PerformanceChart> {
+  List<FlSpot> _chartData = [];
+  bool _isLoading = false;
+  bool _hasError = false;
+  double _improvement = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChartData();
   }
 
-  Widget _buildModernChartHeader(List<FlSpot> data) {
-    final improvement = _calculateImprovement(data);
-    final isPositive = improvement >= 0;
+  Future<void> _loadChartData() async {
+    setState(() => _isLoading = true);
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(10.sp),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    ColorsManager.primaryColor,
-                    ColorsManager.primaryColor.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: ColorsManager.primaryColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.show_chart_rounded,
-                color: Colors.white,
-                size: 20.sp,
-              ),
-            ),
-            SizedBox(width: SizeApp.s12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'مخطط الأداء',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: ColorsManager.defaultText,
-                  ),
-                ),
-                Text(
-                  'آخر 6 أسابيع',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: ColorsManager.defaultTextSecondary,
-                  ),
-                ),
-              ],
+    try {
+      final provider = context.read<ExerciseAssignmentProvider>();
+      final skills = await provider.loadMemberSkills(widget.member.id);
+
+      if (skills.isEmpty) {
+        setState(() {
+          _chartData = [];
+          _isLoading = false;
+        });
+        return;
+      }
+
+      _chartData = _calculateProgressOverTime(skills);
+      _improvement = _calculateImprovement();
+
+      // إرسال قيمة التحسن للـ parent widget
+      if (widget.onImprovementCalculated != null && _chartData.isNotEmpty) {
+        widget.onImprovementCalculated!(_improvement);
+      }
+
+      setState(() {
+        _isLoading = false;
+        _hasError = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading chart data: $e');
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _chartData = _generateFallbackData();
+      });
+    }
+  }
+
+  List<FlSpot> _calculateProgressOverTime(List<AssignedSkill> skills) {
+    final avgProgress = skills.isEmpty ? 0.0 :
+    skills.fold<double>(0, (sum, skill) => sum + skill.progress) / skills.length;
+    return _generateProgressCurve(avgProgress);
+  }
+
+  List<FlSpot> _generateProgressCurve(double currentProgress) {
+    final spots = <FlSpot>[];
+
+    for (int week = 0; week < 6; week++) {
+      double progress;
+
+      if (week == 0) {
+        progress = 0;
+      } else if (week == 5) {
+        progress = currentProgress;
+      } else {
+        final ratio = week / 5.0;
+        progress = currentProgress * _easeInOutCubic(ratio);
+        final variation = (week % 2 == 0 ? -1 : 1) * (2 + week * 0.5);
+        progress = (progress + variation).clamp(0, 100);
+      }
+
+      spots.add(FlSpot(week.toDouble(), progress));
+    }
+
+    return spots;
+  }
+
+  double _easeInOutCubic(double t) {
+    return t < 0.5
+        ? 4 * t * t * t
+        : 1 - pow((-2 * t + 2), 3) / 2;
+  }
+
+  double pow(double base, int exponent) {
+    double result = 1;
+    for (int i = 0; i < exponent; i++) {
+      result *= base;
+    }
+    return result;
+  }
+
+  List<FlSpot> _generateFallbackData() {
+    final progress = widget.member.overallProgress ?? 50;
+    return _generateProgressCurve(progress);
+  }
+
+  double _calculateImprovement() {
+    if (_chartData.length < 2) return 0;
+    final first = _chartData.first.y;
+    final last = _chartData.last.y;
+    if (first == 0) return last;
+    return ((last - first) / first) * 100;
+  }
+
+  double _calculateMaxY() {
+    if (_chartData.isEmpty) return 100;
+    final maxValue = _chartData.map((e) => e.y).reduce((a, b) => a > b ? a : b);
+    return ((maxValue / 20).ceil() * 20).toDouble().clamp(20, 100);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: SizeApp.padding),
+      child: Container(
+        padding: EdgeInsets.all(SizeApp.s16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        if (data.isNotEmpty)
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isPositive
-                    ? [ColorsManager.successFill, ColorsManager.successFill.withOpacity(0.8)]
-                    : [ColorsManager.errorFill, ColorsManager.errorFill.withOpacity(0.8)],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Optional internal header (if needed for standalone use)
+            if (_chartData.isNotEmpty && !_isLoading)
+              Padding(
+                padding: EdgeInsets.only(bottom: SizeApp.padding),
+                child: ImprovementBadge(improvement: _improvement),
               ),
-              borderRadius: BorderRadius.circular(20.r),
-              boxShadow: [
-                BoxShadow(
-                  color: (isPositive ? ColorsManager.successFill : ColorsManager.errorFill)
-                      .withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                  color: Colors.white,
-                  size: 16.sp,
-                ),
-                SizedBox(width: 4.w),
-                Text(
-                  '${isPositive ? '+' : ''}${improvement.toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
+
+
+            if (_isLoading)
+              _buildLoadingState()
+            else if (_hasError)
+              _buildErrorState()
+            else if (_chartData.isEmpty)
+                _buildEmptyState()
+              else
+                _buildChart(),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildLineChart(List<FlSpot> data) {
-    final maxY = _calculateMaxY(data);
+  Widget _buildChart() {
+    final theme = Theme.of(context);
+    final maxY = _calculateMaxY();
 
     return SizedBox(
       height: 220.h,
@@ -154,7 +186,7 @@ class PerformanceChart extends StatelessWidget {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            horizontalInterval: maxY / 5,
+            horizontalInterval: 20,
             getDrawingHorizontalLine: (value) {
               return FlLine(
                 color: ColorsManager.inputBorder.withOpacity(0.15),
@@ -174,14 +206,13 @@ class PerformanceChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 45,
-                interval: maxY / 5,
+                interval: 20,
                 getTitlesWidget: (value, meta) {
                   return Padding(
                     padding: EdgeInsets.only(right: 8.w),
                     child: Text(
                       '${value.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 11.sp,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w500,
                         color: ColorsManager.defaultTextSecondary,
                       ),
@@ -202,8 +233,7 @@ class PerformanceChart extends StatelessWidget {
                       padding: EdgeInsets.only(top: 8.h),
                       child: Text(
                         weeks[index],
-                        style: TextStyle(
-                          fontSize: 11.sp,
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: ColorsManager.defaultTextSecondary,
                         ),
@@ -230,10 +260,15 @@ class PerformanceChart extends StatelessWidget {
           ),
           lineBarsData: [
             LineChartBarData(
-              spots: data,
+              spots: _chartData,
               isCurved: true,
               curveSmoothness: 0.35,
-              color: ColorsManager.primaryColor,
+              gradient: LinearGradient(
+                colors: [
+                  ColorsManager.primaryColor,
+                  ColorsManager.primaryColor.withOpacity(0.8),
+                ],
+              ),
               barWidth: 3.5,
               isStrokeCapRound: true,
               dotData: FlDotData(
@@ -268,10 +303,15 @@ class PerformanceChart extends StatelessWidget {
             touchTooltipData: LineTouchTooltipData(
               tooltipBgColor: ColorsManager.primaryColor,
               tooltipRoundedRadius: 8.r,
+              tooltipPadding: EdgeInsets.symmetric(
+                horizontal: 12.w,
+                vertical: 8.h,
+              ),
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((spot) {
+                  final week = spot.x.toInt() + 1;
                   return LineTooltipItem(
-                    '${spot.y.toInt()}%',
+                    'الأسبوع $week\n${spot.y.toStringAsFixed(1)}%',
                     TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -287,7 +327,64 @@ class PerformanceChart extends StatelessWidget {
     );
   }
 
+  Widget _buildLoadingState() {
+    return SizedBox(
+      height: 220.h,
+      child: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(ColorsManager.primaryColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    final theme = Theme.of(context);
+
+    return Container(
+      height: 220.h,
+      decoration: BoxDecoration(
+        color: ColorsManager.errorFill.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: ColorsManager.errorFill.withOpacity(0.2),
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 40.sp,
+              color: ColorsManager.errorFill,
+            ),
+            SizedBox(height: SizeApp.s16),
+            Text(
+              'خطأ في تحميل البيانات',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: ColorsManager.errorText,
+              ),
+            ),
+            SizedBox(height: SizeApp.s8),
+            TextButton.icon(
+              onPressed: _loadChartData,
+              icon: Icon(Icons.refresh, size: 16.sp),
+              label: Text('إعادة المحاولة'),
+              style: TextButton.styleFrom(
+                foregroundColor: ColorsManager.primaryColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+
     return Container(
       height: 220.h,
       decoration: BoxDecoration(
@@ -316,17 +413,15 @@ class PerformanceChart extends StatelessWidget {
             SizedBox(height: SizeApp.s16),
             Text(
               'لا توجد بيانات كافية',
-              style: TextStyle(
-                fontSize: 15.sp,
+              style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: ColorsManager.defaultTextSecondary,
               ),
             ),
             SizedBox(height: SizeApp.s8),
             Text(
-              'سيتم عرض التقدم بعد بداية التمارين',
-              style: TextStyle(
-                fontSize: 13.sp,
+              'سيتم عرض التقدم بعد بداية التدريب على المهارات',
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: ColorsManager.defaultTextSecondary.withOpacity(0.7),
               ),
             ),
@@ -334,77 +429,5 @@ class PerformanceChart extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // Helper Methods
-  List<FlSpot> _generateChartData() {
-    // إذا كان هناك تقدم فعلي، استخدمه
-    if (exerciseProgress.isNotEmpty) {
-      // حساب التقدم الأسبوعي بناءً على البيانات الفعلية
-      final progressByWeek = _calculateWeeklyProgress();
-      return progressByWeek;
-    }
-
-    // إذا كان هناك overallProgress للعضو
-    if (member.overallProgress != null && member.overallProgress! > 0) {
-      // إنشاء بيانات تقريبية بناءً على التقدم الحالي
-      return _generateSimulatedData(member.overallProgress!);
-    }
-
-    // لا توجد بيانات
-    return [];
-  }
-
-  List<FlSpot> _calculateWeeklyProgress() {
-    // حساب متوسط التقدم لكل أسبوع (بيانات تقريبية)
-    // يمكنك تعديل هذه الدالة لتستخدم timestamps حقيقية من قاعدة البيانات
-    final spots = <FlSpot>[];
-    final currentProgress = member.overallProgress ?? 0;
-
-    // إنشاء 6 نقاط بيانات بناءً على التقدم الحالي
-    for (int i = 0; i < 6; i++) {
-      // تدرج منطقي للتقدم
-      final progress = (currentProgress / 6) * (i + 1);
-      // إضافة بعض التنوع الطبيعي
-      final variation = (i % 2 == 0) ? -2 : 3;
-      final finalProgress = (progress + variation).clamp(0, 100).toDouble();
-      spots.add(FlSpot(i.toDouble(), finalProgress));
-    }
-
-    return spots;
-  }
-
-  List<FlSpot> _generateSimulatedData(double currentProgress) {
-    final spots = <FlSpot>[];
-
-    // بداية منخفضة
-    final start = (currentProgress * 0.3).clamp(0, 100);
-
-    for (int i = 0; i < 6; i++) {
-      final progressPoint = start + ((currentProgress - start) / 5) * i;
-      spots.add(FlSpot(i.toDouble(), progressPoint));
-    }
-
-    return spots;
-  }
-
-  double _calculateImprovement(List<FlSpot> data) {
-    if (data.length < 2) return 0;
-
-    final first = data.first.y;
-    final last = data.last.y;
-
-    if (first == 0) return last;
-
-    return ((last - first) / first) * 100;
-  }
-
-  double _calculateMaxY(List<FlSpot> data) {
-    if (data.isEmpty) return 100;
-
-    final maxValue = data.map((e) => e.y).reduce((a, b) => a > b ? a : b);
-
-    // تقريب للأعلى إلى أقرب 10
-    return ((maxValue / 10).ceil() * 10).toDouble().clamp(20, 100);
   }
 }

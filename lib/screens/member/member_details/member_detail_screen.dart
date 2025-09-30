@@ -193,14 +193,13 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
   }
 
   Widget _buildTabBar() {
-    return Container(
-      color: Colors.white,
+    return SizedBox(
+      height: 60.h,
       child: TabBar(
         controller: _tabController,
         labelColor: ColorsManager.primaryColor,
         unselectedLabelColor: ColorsManager.defaultTextSecondary,
         indicatorColor: ColorsManager.primaryColor,
-        indicatorWeight: 3,
         labelStyle: TextStyle(
           fontSize: 14.sp,
           fontWeight: FontWeight.w600,
@@ -209,17 +208,17 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
           fontSize: 14.sp,
           fontWeight: FontWeight.w500,
         ),
-        tabs: const [
+        tabs: [
           Tab(
-            icon: Icon(Icons.trending_up_rounded, size: 20),
+            icon: Icon(Icons.trending_up_rounded, size: SizeApp.iconSizeSmall),
             text: 'التقدم',
           ),
           Tab(
-            icon: Icon(Icons.fitness_center_rounded, size: 20),
+            icon: Icon(Icons.fitness_center_rounded, size: SizeApp.iconSizeSmall),
             text: 'المهارات',
           ),
           Tab(
-            icon: Icon(Icons.note_rounded, size: 20),
+            icon: Icon(Icons.note_rounded, size: SizeApp.iconSizeSmall),
             text: 'الملاحظات',
           ),
         ],
@@ -234,7 +233,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
         // Progress Tab - محدث
         MemberProgressTab(
           member: _currentMember,
-          exerciseProgress: _exerciseProgress,
         ),
 
         // Skills/Exercises Tab

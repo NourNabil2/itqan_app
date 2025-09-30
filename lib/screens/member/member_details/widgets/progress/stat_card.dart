@@ -2,71 +2,88 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
-
-/// Stat Card Widget
-class StatCard extends StatelessWidget {
+class StatItem {
   final String title;
   final String value;
   final IconData icon;
   final Color color;
 
-  const StatCard({
-    super.key,
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+  StatItem(this.title, this.value, this.icon, this.color);
+}
+
+// Alternative responsive card design with better overflow handling
+class StatCard extends StatelessWidget {
+  final StatItem stat;
+
+  const StatCard({required this.stat});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    final theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          padding: EdgeInsets.all(SizeApp.padding),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(SizeApp.s10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(SizeApp.s10),
-            ),
-            child: Icon(
-              icon,
-              size: 24.sp,
-              color: color,
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.sp),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      stat.color.withOpacity(0.15),
+                      stat.color.withOpacity(0.08),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  stat.icon,
+                  color: stat.color,
+                  size: SizeApp.iconSizeSmall.sp,
+                ),
+              ),
+              SizedBox(width: SizeApp.padding),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        stat.value,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: stat.color,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      stat.title,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: ColorsManager.defaultTextSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: SizeApp.s10),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w500,
-              color: ColorsManager.defaultTextSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

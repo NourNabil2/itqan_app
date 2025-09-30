@@ -24,59 +24,15 @@ class SkillsProgressSection extends StatelessWidget {
 
     final visibleSkills = skills.take(maxVisible).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(),
-        SizedBox(height: SizeApp.s12),
-        ...visibleSkills.map((skill) => _buildSkillCard(skill)),
-        if (skills.length > maxVisible) _buildViewAllButton(context),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader() {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.all(8.sp),
-          decoration: BoxDecoration(
-            color: ColorsManager.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10.r),
-          ),
-          child: Icon(
-            Icons.sports_gymnastics_rounded,
-            color: ColorsManager.primaryColor,
-            size: 20.sp,
-          ),
-        ),
-        SizedBox(width: SizeApp.s12),
-        Expanded(
-          child: Text(
-            'تقدم المهارات',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
-              color: ColorsManager.defaultText,
-            ),
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-          decoration: BoxDecoration(
-            color: ColorsManager.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20.r),
-          ),
-          child: Text(
-            '${skills.length} مهارة',
-            style: TextStyle(
-              fontSize: 13.sp,
-              color: ColorsManager.primaryColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: SizeApp.padding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...visibleSkills.map((skill) => _buildSkillCard(skill)),
+          if (skills.length > maxVisible) _buildViewAllButton(context),
+        ],
+      ),
     );
   }
 
