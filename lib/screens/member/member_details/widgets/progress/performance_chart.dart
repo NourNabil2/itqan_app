@@ -27,6 +27,7 @@ class _PerformanceChartState extends State<PerformanceChart> {
   bool _isLoading = false;
   bool _hasError = false;
   double _improvement = 0;
+  bool _hasRealData = false;
 
   @override
   void initState() {
@@ -45,16 +46,31 @@ class _PerformanceChartState extends State<PerformanceChart> {
         setState(() {
           _chartData = [];
           _isLoading = false;
+          _hasRealData = false;
         });
         return;
       }
 
-      _chartData = _calculateProgressOverTime(skills);
-      _improvement = _calculateImprovement();
+      // فحص إذا كان العضو جديد (أقل من 7 أيام)
+      final memberAge = DateTime.now().difference(widget.member.createdAt).inDays;
 
-      // إرسال قيمة التحسن للـ parent widget
-      if (widget.onImprovementCalculated != null && _chartData.isNotEmpty) {
-        widget.onImprovementCalculated!(_improvement);
+      if (memberAge < 7) {
+        // عضو جديد - لا توجد بيانات كافية
+        setState(() {
+          _chartData = [];
+          _isLoading = false;
+          _hasRealData = false;
+        });
+        return;
+      }
+
+      // حساب البيانات الحقيقية من التواريخ
+      _chartData = _calculateRealProgressOverTime(skills);
+      _hasRealData = _chartData.length >= 2;
+
+      if (_hasRealData) {
+        _improvement = _calculateImprovement();
+        widget.onImprovementCalculated?.call(_improvement);
       }
 
       setState(() {
@@ -66,57 +82,43 @@ class _PerformanceChartState extends State<PerformanceChart> {
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _chartData = _generateFallbackData();
+        _chartData = [];
+        _hasRealData = false;
       });
     }
   }
 
-  List<FlSpot> _calculateProgressOverTime(List<AssignedSkill> skills) {
-    final avgProgress = skills.isEmpty ? 0.0 :
-    skills.fold<double>(0, (sum, skill) => sum + skill.progress) / skills.length;
-    return _generateProgressCurve(avgProgress);
-  }
+  List<FlSpot> _calculateRealProgressOverTime(List<AssignedSkill> skills) {
+    if (skills.isEmpty) return [];
 
-  List<FlSpot> _generateProgressCurve(double currentProgress) {
-    final spots = <FlSpot>[];
+    // تجميع المهارات حسب الأسبوع
+    final now = DateTime.now();
+    final weeklyProgress = <int, List<double>>{};
 
-    for (int week = 0; week < 6; week++) {
-      double progress;
-
-      if (week == 0) {
-        progress = 0;
-      } else if (week == 5) {
-        progress = currentProgress;
-      } else {
-        final ratio = week / 5.0;
-        progress = currentProgress * _easeInOutCubic(ratio);
-        final variation = (week % 2 == 0 ? -1 : 1) * (2 + week * 0.5);
-        progress = (progress + variation).clamp(0, 100);
+    for (var skill in skills) {
+      final weekDiff = now.difference(skill.assignedAt).inDays ~/ 7;
+      if (weekDiff >= 0 && weekDiff < 6) {
+        weeklyProgress.putIfAbsent(weekDiff, () => []).add(skill.progress);
       }
-
-      spots.add(FlSpot(week.toDouble(), progress));
     }
+
+    // إذا لم يكن هناك بيانات كافية
+    if (weeklyProgress.isEmpty) return [];
+
+    // حساب متوسط التقدم لكل أسبوع
+    final spots = <FlSpot>[];
+    for (int week = 0; week < 6; week++) {
+      if (weeklyProgress.containsKey(week)) {
+        final avg = weeklyProgress[week]!.reduce((a, b) => a + b) /
+            weeklyProgress[week]!.length;
+        spots.add(FlSpot(week.toDouble(), avg));
+      }
+    }
+
+    // ترتيب النقاط من الأقدم للأحدث
+    spots.sort((a, b) => a.x.compareTo(b.x));
 
     return spots;
-  }
-
-  double _easeInOutCubic(double t) {
-    return t < 0.5
-        ? 4 * t * t * t
-        : 1 - pow((-2 * t + 2), 3) / 2;
-  }
-
-  double pow(double base, int exponent) {
-    double result = 1;
-    for (int i = 0; i < exponent; i++) {
-      result *= base;
-    }
-    return result;
-  }
-
-  List<FlSpot> _generateFallbackData() {
-    final progress = widget.member.overallProgress ?? 50;
-    return _generateProgressCurve(progress);
   }
 
   double _calculateImprovement() {
@@ -151,27 +153,80 @@ class _PerformanceChartState extends State<PerformanceChart> {
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Optional internal header (if needed for standalone use)
-            if (_chartData.isNotEmpty && !_isLoading)
-              Padding(
-                padding: EdgeInsets.only(bottom: SizeApp.padding),
-                child: ImprovementBadge(improvement: _improvement),
-              ),
-
-
+            _buildHeader(),
+            SizedBox(height: SizeApp.s16),
             if (_isLoading)
               _buildLoadingState()
             else if (_hasError)
               _buildErrorState()
-            else if (_chartData.isEmpty)
+            else if (!_hasRealData || _chartData.isEmpty)
                 _buildEmptyState()
               else
                 _buildChart(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(10.sp),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ColorsManager.primaryColor,
+                    ColorsManager.primaryColor.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorsManager.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.show_chart_rounded,
+                color: Colors.white,
+                size: 20.sp,
+              ),
+            ),
+            SizedBox(width: SizeApp.s12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'مخطط الأداء',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    color: ColorsManager.defaultText,
+                  ),
+                ),
+                Text(
+                  'آخر 6 أسابيع',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: ColorsManager.defaultTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (_hasRealData && !_isLoading)
+          ImprovementBadge(improvement: _improvement),
+      ],
     );
   }
 
@@ -384,6 +439,14 @@ class _PerformanceChartState extends State<PerformanceChart> {
 
   Widget _buildEmptyState() {
     final theme = Theme.of(context);
+    final memberAge = DateTime.now().difference(widget.member.createdAt).inDays;
+
+    String message;
+    if (memberAge < 7) {
+      message = 'عضو جديد - سيتم عرض البيانات بعد أسبوع من التدريب';
+    } else {
+      message = 'لا توجد بيانات كافية - ابدأ بتعيين مهارات للعضو';
+    }
 
     return Container(
       height: 220.h,
@@ -412,17 +475,21 @@ class _PerformanceChartState extends State<PerformanceChart> {
             ),
             SizedBox(height: SizeApp.s16),
             Text(
-              'لا توجد بيانات كافية',
+              'لا توجد بيانات للعرض',
               style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: ColorsManager.defaultTextSecondary,
               ),
             ),
             SizedBox(height: SizeApp.s8),
-            Text(
-              'سيتم عرض التقدم بعد بداية التدريب على المهارات',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: ColorsManager.defaultTextSecondary.withOpacity(0.7),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32.w),
+              child: Text(
+                message,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: ColorsManager.defaultTextSecondary.withOpacity(0.7),
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
           ],
