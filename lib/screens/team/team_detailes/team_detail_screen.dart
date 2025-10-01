@@ -1,28 +1,17 @@
-import 'dart:developer';
-import 'dart:developer';
-import 'dart:developer';
-import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
-import 'package:itqan_gym/core/widgets/Loading_widget.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
-import 'package:itqan_gym/core/widgets/full_screen_media_viewer.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
-import 'package:itqan_gym/core/widgets/video_player_widget.dart';
-import 'package:itqan_gym/data/models/member/member.dart';
-import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
-import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:itqan_gym/screens/team/manage_assignments_screen.dart';
 import 'package:itqan_gym/screens/team/widgets/exercise_detail_sheet.dart';
 import 'package:itqan_gym/screens/team/widgets/skill_detail_sheet.dart';
 import 'package:itqan_gym/screens/team/widgets/team_members_manager.dart';
 import 'package:provider/provider.dart';
-import '../../../data/models/exercise_template.dart';
-import '../../../data/models/skill_template.dart';
 import '../../../data/models/team.dart';
 import '../../../providers/team_provider.dart';
 
@@ -60,24 +49,26 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: ColorsManager.backgroundSurface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: CustomAppBar(
         title: widget.team.name,
       ),
       body: Column(
         children: [
-          // Team Info Header
           _buildTeamInfoHeader(),
 
           // Tab Bar
           Container(
-            color: Colors.white,
+            color: theme.cardColor,
             child: TabBar(
               controller: _tabController,
-              labelColor: ColorsManager.primaryColor,
-              unselectedLabelColor: ColorsManager.defaultTextSecondary,
-              indicatorColor: ColorsManager.primaryColor,
+              labelColor: theme.primaryColor,
+              unselectedLabelColor: theme.textTheme.bodySmall?.color,
+              indicatorColor: theme.primaryColor,
               indicatorWeight: 3,
               labelStyle: TextStyle(
                 fontSize: 14.sp,
@@ -87,10 +78,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
               ),
-              tabs: const [
-                Tab(text: 'الأعضاء'),
-                Tab(text: 'المحتوى'),
-                Tab(text: 'التقدم'),
+              tabs: [
+                Tab(text: l10n.members),
+                Tab(text: l10n.content),
+                Tab(text: l10n.progress),
               ],
             ),
           ),
@@ -112,22 +103,25 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   Widget _buildTeamInfoHeader() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Consumer<TeamProvider>(
       builder: (context, teamProvider, child) {
         return Container(
-          color: Colors.white,
+          color: theme.cardColor,
           child: SectionHeader(
             title: widget.team.name,
-            subtitle: '${widget.team.ageCategory.arabicName} • ${teamProvider.totalMembers} عضو',
+            subtitle: '${widget.team.ageCategory.getLocalizedName(context)} • ${l10n.memberCount(teamProvider.totalMembers)}',
             leading: Container(
               padding: EdgeInsets.all(SizeApp.s10),
               decoration: BoxDecoration(
-                color: ColorsManager.primaryColor.withOpacity(0.1),
+                color: theme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(SizeApp.s10),
               ),
               child: Icon(
                 Icons.groups_rounded,
-                color: ColorsManager.primaryColor,
+                color: theme.primaryColor,
                 size: SizeApp.iconSize,
               ),
             ),
@@ -141,6 +135,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   Widget _buildQuickStatsChips() {
+    final l10n = AppLocalizations.of(context);
+
     return Consumer<TeamProvider>(
       builder: (context, teamProvider, child) {
         return Row(
@@ -148,13 +144,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
           children: [
             _buildStatChip(
               '${teamProvider.totalExercises}',
-              'تمرين',
+              l10n.exercisesAndSkillsLibrary,
               ColorsManager.secondaryColor,
             ),
             SizedBox(width: SizeApp.s4),
             _buildStatChip(
               '${teamProvider.totalSkills}',
-              'مهارة',
+              l10n.skills,
               ColorsManager.primaryColor,
             ),
           ],
@@ -203,6 +199,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   Widget _buildContentTab() {
+    final l10n = AppLocalizations.of(context);
+
     return Consumer<TeamProvider>(
       builder: (context, teamProvider, child) {
         final exercises = teamProvider.teamExercises;
@@ -220,15 +218,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
           padding: EdgeInsets.all(SizeApp.s16),
           child: Column(
             children: [
-              // Manage Assignments Button
               _buildManageAssignmentsButton(),
-
               SizedBox(height: SizeApp.s20),
 
-              // Exercises Section
               if (exercises.isNotEmpty) ...[
                 _buildContentSection(
-                  title: 'التمارين المُعيَّنة',
+                  title: l10n.assignedExercises,
                   icon: Icons.fitness_center_rounded,
                   color: ColorsManager.secondaryColor,
                   children: _buildExercisesList(exercises),
@@ -236,10 +231,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
                 SizedBox(height: SizeApp.s20),
               ],
 
-              // Skills Section
               if (skills.isNotEmpty) ...[
                 _buildContentSection(
-                  title: 'المهارات المُعيَّنة',
+                  title: l10n.assignedSkills,
                   icon: Icons.star_rounded,
                   color: ColorsManager.primaryColor,
                   children: _buildSkillsList(skills),
@@ -253,19 +247,21 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   Widget _buildLoadingState() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(ColorsManager.primaryColor),
+            valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
           ),
           SizedBox(height: SizeApp.s16),
           Text(
-            'جاري تحميل البيانات...',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: ColorsManager.defaultTextSecondary,
+            l10n.loadingData,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
             ),
           ),
         ],
@@ -274,6 +270,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   Widget _buildEmptyContentState() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(SizeApp.s24),
@@ -283,31 +282,28 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
             Container(
               padding: EdgeInsets.all(SizeApp.s20),
               decoration: BoxDecoration(
-                color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
+                color: theme.iconTheme.color?.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.assignment_outlined,
                 size: 64.sp,
-                color: ColorsManager.defaultTextSecondary.withOpacity(0.6),
+                color: theme.iconTheme.color?.withOpacity(0.6),
               ),
             ),
             SizedBox(height: SizeApp.s20),
             Text(
-              'لم يتم تعيين محتوى بعد',
-              style: TextStyle(
-                fontSize: 20.sp,
+              l10n.noContentAssigned,
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultText,
               ),
             ),
             SizedBox(height: SizeApp.s8),
             Text(
-              'ابدأ بتعيين التمارين والمهارات لهذا الفريق',
+              l10n.startAssigningContent,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: ColorsManager.defaultTextSecondary,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                 height: 1.4,
               ),
             ),
@@ -320,14 +316,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   Widget _buildManageAssignmentsButton() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _navigateToManageAssignments(),
         icon: Icon(Icons.assignment_rounded, size: SizeApp.iconSize),
-        label: const Text('إدارة التعيينات'),
+        label: Text(l10n.manageAssignments),
         style: ElevatedButton.styleFrom(
-          backgroundColor: ColorsManager.primaryColor,
+          backgroundColor: theme.primaryColor,
           foregroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 16.h),
           shape: RoundedRectangleBorder(
@@ -345,10 +344,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
     required Color color,
     required List<Widget> children,
   }) {
+    final theme = Theme.of(context);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         boxShadow: [
           BoxShadow(
@@ -361,7 +362,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
           Container(
             padding: EdgeInsets.all(SizeApp.s16),
             decoration: BoxDecoration(
@@ -386,8 +386,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
               ],
             ),
           ),
-
-          // Content
           Padding(
             padding: EdgeInsets.all(SizeApp.s16),
             child: Column(children: children),
@@ -398,18 +396,24 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   List<Widget> _buildExercisesList(List exercises) {
+    final theme = Theme.of(context);
+
     return exercises.map<Widget>((exercise) {
       return InkWell(
-        onTap: () => ExerciseDetailSheet.show(context, exercise,teamId: widget.team.id,),
+        onTap: () => ExerciseDetailSheet.show(
+          context,
+          exercise,
+          teamId: widget.team.id,
+        ),
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         child: Container(
           margin: EdgeInsets.only(bottom: SizeApp.s8),
           padding: EdgeInsets.all(SizeApp.s12),
           decoration: BoxDecoration(
-            color: ColorsManager.backgroundSurface,
+            color: theme.scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
             border: Border.all(
-              color: ColorsManager.inputBorder.withOpacity(0.3),
+              color: theme.dividerColor.withOpacity(0.3),
             ),
           ),
           child: Row(
@@ -433,20 +437,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
                   children: [
                     Text(
                       exercise.title,
-                      style: TextStyle(
-                        fontSize: 14.sp,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: ColorsManager.defaultText,
                       ),
                     ),
                     if (exercise.description != null) ...[
                       SizedBox(height: SizeApp.s2),
                       Text(
                         exercise.description!,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: ColorsManager.defaultTextSecondary,
-                        ),
+                        style: theme.textTheme.bodySmall,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -457,7 +456,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 14.sp,
-                color: ColorsManager.defaultTextSecondary,
+                color: theme.iconTheme.color?.withOpacity(0.5),
               ),
             ],
           ),
@@ -467,6 +466,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   List<Widget> _buildSkillsList(List skills) {
+    final theme = Theme.of(context);
+
     return skills.map<Widget>((skill) {
       return InkWell(
         onTap: () => SkillDetailSheet.show(context, skill, widget.team.id),
@@ -475,10 +476,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
           margin: EdgeInsets.only(bottom: SizeApp.s8),
           padding: EdgeInsets.all(SizeApp.s12),
           decoration: BoxDecoration(
-            color: ColorsManager.backgroundSurface,
+            color: theme.scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
             border: Border.all(
-              color: ColorsManager.inputBorder.withOpacity(0.3),
+              color: theme.dividerColor.withOpacity(0.3),
             ),
           ),
           child: Row(
@@ -502,19 +503,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
                   children: [
                     Text(
                       skill.skillName,
-                      style: TextStyle(
-                        fontSize: 14.sp,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: ColorsManager.defaultText,
                       ),
                     ),
                     SizedBox(height: SizeApp.s2),
                     Text(
-                      skill.apparatus.arabicName,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: ColorsManager.defaultTextSecondary,
-                      ),
+                      skill.apparatus.getLocalizedName(context),
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
@@ -522,7 +518,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 14.sp,
-                color: ColorsManager.defaultTextSecondary,
+                color: theme.iconTheme.color?.withOpacity(0.5),
               ),
             ],
           ),
@@ -532,6 +528,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
   Widget _buildProgressTab() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -539,30 +538,27 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
           Container(
             padding: EdgeInsets.all(SizeApp.s20),
             decoration: BoxDecoration(
-              color: ColorsManager.primaryColor.withOpacity(0.1),
+              color: theme.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.timeline_rounded,
               size: 64.sp,
-              color: ColorsManager.primaryColor,
+              color: theme.primaryColor,
             ),
           ),
           SizedBox(height: SizeApp.s20),
           Text(
-            'قريباً: تتبع التقدم',
-            style: TextStyle(
-              fontSize: 18.sp,
+            l10n.comingSoonProgressTracking,
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
             ),
           ),
           SizedBox(height: SizeApp.s8),
           Text(
-            'سيتم إضافة هذه الوظيفة قريباً',
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
+            l10n.featureComingSoon,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
             ),
           ),
         ],
@@ -570,7 +566,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
     );
   }
 
-  // Helper Methods
   IconData _getExerciseIcon(ExerciseType type) {
     switch (type) {
       case ExerciseType.warmup:

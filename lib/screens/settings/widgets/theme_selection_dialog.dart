@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/providers/settings_provider.dart';
@@ -16,12 +17,22 @@ class ThemeSelectionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return AlertDialog(
+      backgroundColor: theme.dialogBackgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+      ),
       title: Row(
         children: [
-          const Icon(Icons.palette_outlined, color: ColorsManager.primaryColor),
+          Icon(
+            Icons.palette_outlined,
+            color: ColorsManager.primaryColor,
+          ),
           SizedBox(width: SizeApp.s8),
-          const Text('اختر المظهر'),
+          Text(l10n.selectTheme),
         ],
       ),
       content: Column(
@@ -30,19 +41,19 @@ class ThemeSelectionDialog extends StatelessWidget {
           _buildThemeOption(
             context: context,
             mode: ThemeMode.light,
-            title: 'فاتح',
+            title: l10n.lightMode,
             icon: Icons.light_mode,
           ),
           _buildThemeOption(
             context: context,
             mode: ThemeMode.dark,
-            title: 'داكن',
+            title: l10n.darkMode,
             icon: Icons.dark_mode,
           ),
           _buildThemeOption(
             context: context,
             mode: ThemeMode.system,
-            title: 'حسب النظام',
+            title: l10n.systemMode,
             icon: Icons.settings_suggest,
           ),
         ],
@@ -56,6 +67,7 @@ class ThemeSelectionDialog extends StatelessWidget {
     required String title,
     required IconData icon,
   }) {
+    final theme = Theme.of(context);
     final isSelected = currentTheme == mode;
 
     return InkWell(
@@ -66,6 +78,7 @@ class ThemeSelectionDialog extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(12.r),
       child: Container(
+        margin: EdgeInsets.only(bottom: 8.h),
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
           color: isSelected
@@ -75,7 +88,7 @@ class ThemeSelectionDialog extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? ColorsManager.primaryColor
-                : Colors.grey.withOpacity(0.3),
+                : theme.dividerColor,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -83,19 +96,15 @@ class ThemeSelectionDialog extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected
-                  ? ColorsManager.primaryColor
-                  : Colors.grey,
+              color: isSelected ? ColorsManager.primaryColor : theme.iconTheme.color,
             ),
             SizedBox(width: SizeApp.s12),
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? ColorsManager.primaryColor
-                      : null,
+                  color: isSelected ? ColorsManager.primaryColor : null,
                 ),
               ),
             ),

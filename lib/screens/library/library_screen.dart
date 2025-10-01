@@ -1,6 +1,6 @@
-// ============= Library Screen - Refactored =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
@@ -65,7 +65,16 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   void _onSearchChanged(String query) {
     if (_tabController.index < 3) {
-      context.read<ExerciseLibraryProvider>().searchExercises(query);
+      // Create type localizations for search
+      final typeLocalizations = {
+        for (var type in ExerciseType.values)
+          type: type.getLocalizedName(context).toLowerCase()
+      };
+
+      context.read<ExerciseLibraryProvider>().searchExercises(
+        query,
+        typeLocalizations: typeLocalizations,
+      );
     } else {
       context.read<SkillLibraryProvider>().searchSkills(query);
     }
@@ -73,6 +82,8 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: ColorsManager.backgroundSurface,
       body: Column(
@@ -105,9 +116,11 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
+
     return SectionHeader(
-      title: 'مكتبة التمارين والمهارات',
-      subtitle: 'إدارة وتنظيم جميع التمارين والمهارات',
+      title: l10n.exercisesAndSkillsLibrary,
+      subtitle: l10n.manageExercisesAndSkills,
       leading: Container(
         padding: EdgeInsets.all(SizeApp.s8),
         decoration: BoxDecoration(
@@ -127,7 +140,7 @@ class _LibraryScreenState extends State<LibraryScreen>
           color: ColorsManager.primaryColor,
           size: SizeApp.iconSize,
         ),
-        tooltip: 'إحصائيات',
+        tooltip: l10n.statistics,
       ),
       padding: EdgeInsets.all(SizeApp.s16),
       showDivider: true,
@@ -135,11 +148,14 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   String _getSearchHint() {
+    final l10n = AppLocalizations.of(context);
     final tab = LibraryTab.tabs[_tabController.index];
-    return 'البحث في ${tab.title}...';
+    return l10n.searchIn(tab.title);
   }
 
   Widget _buildExerciseList(ExerciseType type) {
+    final l10n = AppLocalizations.of(context);
+
     return Consumer<ExerciseLibraryProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading) return _buildLoadingState();
@@ -148,11 +164,11 @@ class _LibraryScreenState extends State<LibraryScreen>
 
         if (exercises.isEmpty) {
           return LibraryEmptyState(
-            category: type.arabicName,
+            category: type.getLocalizedName(context),
             icon: type.icon,
             iconColor: type.color,
             onAddPressed: () => _navigateToAdd(type: type),
-            addButtonText: 'إضافة أول ${type.arabicName}',
+            addButtonText: l10n.addFirst(type.getLocalizedName(context)),
           );
         }
 
@@ -161,7 +177,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             children: [
               LibraryAddButton(
                 onPressed: () => _navigateToAdd(type: type),
-                text: 'إضافة ${type.arabicName} جديد',
+                text: l10n.addNew(type.getLocalizedName(context)),
                 icon: Icons.add_rounded,
                 color: type.color,
               ),
@@ -179,17 +195,19 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildSkillsList() {
+    final l10n = AppLocalizations.of(context);
+
     return Consumer<SkillLibraryProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading) return _buildLoadingState();
 
         if (provider.skills.isEmpty) {
           return LibraryEmptyState(
-            category: 'المهارات',
+            category: l10n.skills,
             icon: Icons.star_rounded,
             iconColor: ColorsManager.secondaryColor,
             onAddPressed: () => _navigateToAdd(),
-            addButtonText: 'إضافة أول مهارة',
+            addButtonText: l10n.addFirstSkill,
           );
         }
 
@@ -198,7 +216,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             children: [
               LibraryAddButton(
                 onPressed: () => _navigateToAdd(),
-                text: 'إضافة مهارة جديدة',
+                text: l10n.addNewSkill,
                 icon: Icons.star_rounded,
                 color: ColorsManager.secondaryColor,
               ),
@@ -238,6 +256,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildLoadingState() {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -247,7 +267,7 @@ class _LibraryScreenState extends State<LibraryScreen>
           ),
           SizedBox(height: SizeApp.s16),
           Text(
-            'جاري تحميل المحتوى...',
+            l10n.loadingContent,
             style: TextStyle(
               fontSize: 16.sp,
               color: ColorsManager.defaultTextSecondary,

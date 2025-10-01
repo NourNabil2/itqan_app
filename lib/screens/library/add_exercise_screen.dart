@@ -72,7 +72,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     return Scaffold(
       backgroundColor: ColorsManager.backgroundSurface,
       appBar: CustomAppBar(
-        title: _isEditing ? 'تعديل ${widget.type.arabicName}' : 'إضافة ${widget.type.arabicName}',
+        title: _isEditing ? 'تعديل ${widget.type.getLocalizedName(context)}' : 'إضافة ${widget.type.getLocalizedName(context)}',
         action: _isEditing ? _buildDeleteButton() : null,
       ),
       body: Column(
@@ -103,7 +103,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                           if (_error != null) FormErrorContainer(error: _error!),
 
                           TypeBadge(
-                            label: widget.type.arabicName,
+                            label: widget.type.getLocalizedName(context),
                             icon: _getTypeIcon(),
                             color: color,
                           ),
@@ -156,7 +156,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                           EditInfoNotice(
                             message: _isEditing
                                 ? 'سيتم حفظ التعديلات في المكتبة'
-                                : 'سيتم إضافة التمرين إلى مكتبة ${widget.type.arabicName}',
+                                : 'سيتم إضافة التمرين إلى مكتبة ${widget.type.getLocalizedName(context)}',
                             icon: Icons.info_outline_rounded,
                             backgroundColor: color.withOpacity(0.1),
                             textColor: color,

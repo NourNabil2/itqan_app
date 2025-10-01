@@ -1,6 +1,6 @@
-// ============= Member Actions - دوال العمليات =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
@@ -12,7 +12,6 @@ import 'package:itqan_gym/screens/member/member_notes/member_notes_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-///  Member Notes Actions - عمليات الملاحظات
 class MemberNotesActions {
   static void editGeneralNotes({
     required BuildContext context,
@@ -20,18 +19,20 @@ class MemberNotesActions {
     required Function(Member) onMemberUpdated,
     String? teamId,
   }) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final controller = TextEditingController(text: currentMember.notes ?? '');
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.dialogBackgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SizeApp.radiusMed),
         ),
         title: Text(
-          'تعديل الملاحظة العامة',
-          style: TextStyle(
-            fontSize: 16.sp,
+          l10n.editGeneralNote,
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -39,7 +40,7 @@ class MemberNotesActions {
           controller: controller,
           maxLines: 6,
           decoration: InputDecoration(
-            hintText: 'اكتب ملاحظة عامة عن العضو...',
+            hintText: l10n.generalNoteHint,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.r),
             ),
@@ -50,8 +51,10 @@ class MemberNotesActions {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'إلغاء',
-              style: TextStyle(color: ColorsManager.defaultTextSecondary),
+              l10n.cancel,
+              style: TextStyle(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+              ),
             ),
           ),
           ElevatedButton(
@@ -75,20 +78,20 @@ class MemberNotesActions {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('تم تحديث الملاحظة العامة'),
+                    content: Text(l10n.generalNoteUpdated),
                     backgroundColor: ColorsManager.successFill,
                   ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('فشل في التحديث: $e'),
+                    content: Text('${l10n.updateFailed}: $e'),
                     backgroundColor: ColorsManager.errorFill,
                   ),
                 );
               }
             },
-            child: Text('حفظ'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -130,6 +133,9 @@ class MemberNotesActions {
     required MemberNote note,
     required VoidCallback onViewAll,
   }) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     final noteType = NoteType.values.firstWhere(
           (type) => type.value == note.noteType,
       orElse: () => NoteType.general,
@@ -143,18 +149,20 @@ class MemberNotesActions {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.dialogBackgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SizeApp.radiusMed),
         ),
         title: Row(
           children: [
-            // Use the priority color for the type icon
             Icon(noteType.icon, color: notePriority.color, size: 20.sp),
             SizedBox(width: 8.w),
             Expanded(
               child: Text(
                 note.title,
-                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -165,34 +173,58 @@ class MemberNotesActions {
           children: [
             Text(
               note.content,
-              style: TextStyle(fontSize: 14.sp, height: 1.4),
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
             ),
             SizedBox(height: SizeApp.s12),
             Container(
               padding: EdgeInsets.all(SizeApp.s8),
               decoration: BoxDecoration(
-                color: ColorsManager.defaultSurface,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(6.r),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'تفاصيل:',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 11.sp),
+                    '${l10n.details}:',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   SizedBox(height: 8.h),
 
-                  // النوع: use the enum's icon; neutral/text color
-                  _buildDetailRow('النوع', noteType.arabicName, noteType.icon, ColorsManager.defaultText),
+                  _buildDetailRow(
+                    context,
+                    l10n.type,
+                    noteType.getLocalizedName(context),
+                    noteType.icon,
+                    theme.textTheme.bodyLarge?.color ?? Colors.black,
+                  ),
 
-                  // الأولوية: pick an appropriate icon and use the priority color
-                  _buildDetailRow('الأولوية', notePriority.arabicName, Icons.flag_rounded, notePriority.color),
+                  _buildDetailRow(
+                    context,
+                    l10n.priority,
+                    notePriority.getLocalizedName(context),
+                    Icons.flag_rounded,
+                    notePriority.color,
+                  ),
 
                   if (note.createdBy != null)
-                    _buildDetailRow('بواسطة', note.createdBy!, Icons.person, ColorsManager.defaultText),
+                    _buildDetailRow(
+                      context,
+                      l10n.by,
+                      note.createdBy!,
+                      Icons.person,
+                      theme.textTheme.bodyLarge?.color ?? Colors.black,
+                    ),
 
-                  _buildDetailRow('التاريخ', MemberUtils.formatDate(note.createdAt), Icons.schedule, ColorsManager.defaultText),
+                  _buildDetailRow(
+                    context,
+                    l10n.date,
+                    MemberUtils.formatDate(context, note.createdAt),
+                    Icons.schedule,
+                    theme.textTheme.bodyLarge?.color ?? Colors.black,
+                  ),
                 ],
               ),
             ),
@@ -201,22 +233,29 @@ class MemberNotesActions {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق'),
+            child: Text(l10n.close),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               onViewAll();
             },
-            child: const Text('عرض الكل'),
+            child: Text(l10n.viewAll),
           ),
         ],
       ),
     );
   }
 
+  static Widget _buildDetailRow(
+      BuildContext context,
+      String label,
+      String value,
+      IconData icon,
+      Color color,
+      ) {
+    final theme = Theme.of(context);
 
-  static Widget _buildDetailRow(String label, String value, IconData icon, Color color) {
     return Padding(
       padding: EdgeInsets.only(bottom: 4.h),
       child: Row(
@@ -225,7 +264,7 @@ class MemberNotesActions {
           SizedBox(width: 6.w),
           Text(
             '$label: $value',
-            style: TextStyle(fontSize: 10.sp, color: ColorsManager.defaultText),
+            style: theme.textTheme.bodySmall,
           ),
         ],
       ),
@@ -233,13 +272,11 @@ class MemberNotesActions {
   }
 }
 
-///  Member Exercise Actions - عمليات التمارين
 class MemberExerciseActions {
   static void addNewExercise({
     required BuildContext context,
     required Member member,
   }) {
-    // يمكن إضافة navigation لشاشة إضافة تمرين جديد
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('سيتم إضافة تمرين جديد للعضو ${member.name}'),
@@ -253,7 +290,6 @@ class MemberExerciseActions {
     required Member member,
     required Map<String, dynamic> exercise,
   }) {
-    // يمكن إضافة navigation لشاشة تحرير التمرين
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('سيتم تحرير تمرين ${exercise['name']}'),
@@ -263,7 +299,6 @@ class MemberExerciseActions {
   }
 }
 
-///  Member Profile Actions - عمليات ملف العضو
 class MemberProfileActions {
   static void editMember({
     required BuildContext context,
@@ -287,12 +322,15 @@ class MemberProfileActions {
     required Member member,
     String? teamId,
   }) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(SizeApp.radiusMed),
             topRight: Radius.circular(SizeApp.radiusMed),
@@ -306,7 +344,7 @@ class MemberProfileActions {
               width: 40.w,
               height: 4.h,
               decoration: BoxDecoration(
-                color: ColorsManager.inputBorder.withOpacity(0.3),
+                color: theme.dividerColor.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2.r),
               ),
             ),
@@ -314,7 +352,7 @@ class MemberProfileActions {
             _buildOptionTile(
               context: context,
               icon: Icons.share_rounded,
-              title: 'مشاركة الملف',
+              title: l10n.shareProfile,
               color: ColorsManager.primaryColor,
               onTap: () => _shareMember(context, member),
             ),
@@ -322,14 +360,14 @@ class MemberProfileActions {
               _buildOptionTile(
                 context: context,
                 icon: Icons.group_remove_rounded,
-                title: 'إزالة من الفريق',
+                title: l10n.removeFromTeam,
                 color: ColorsManager.warningFill,
                 onTap: () => _showRemoveFromTeamDialog(context, member, teamId),
               ),
             _buildOptionTile(
               context: context,
               icon: Icons.delete_rounded,
-              title: 'حذف العضو نهائياً',
+              title: l10n.deleteMemberPermanently,
               color: ColorsManager.errorFill,
               onTap: () => _showDeleteDialog(context, member),
             ),
@@ -346,6 +384,8 @@ class MemberProfileActions {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+
     return ListTile(
       leading: Container(
         padding: EdgeInsets.all(SizeApp.s8),
@@ -357,10 +397,11 @@ class MemberProfileActions {
       ),
       title: Text(
         title,
-        style: TextStyle(
-          fontSize: 16.sp,
+        style: theme.textTheme.bodyLarge?.copyWith(
           fontWeight: FontWeight.w500,
-          color: title.contains('حذف') ? color : ColorsManager.defaultText,
+          color: title.contains(AppLocalizations.of(context).delete)
+              ? color
+              : theme.textTheme.bodyLarge?.color,
         ),
       ),
       onTap: () {
@@ -371,33 +412,33 @@ class MemberProfileActions {
   }
 
   static Future<void> _shareMember(BuildContext context, Member member) async {
-    final text = '${member.name} • العمر: ${member.age} • المستوى: ${member.level} , ${member.notes} ';
-    await Share.share(text, subject: 'بيانات العضو: ${member.name}');
+    final l10n = AppLocalizations.of(context);
+    final text = '${member.name} • ${l10n.age}: ${member.age} • ${l10n.level}: ${member.level} , ${member.notes} ';
+    await Share.share(text, subject: '${l10n.shareProfile}: ${member.name}');
   }
 
   static void _showRemoveFromTeamDialog(BuildContext context, Member member, String teamId) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.dialogBackgroundColor,
         title: Text(
-          'إزالة من الفريق',
-          style: TextStyle(
-            fontSize: 18.sp,
+          l10n.removeFromTeamTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: ColorsManager.defaultText,
           ),
         ),
         content: Text(
-          'هل أنت متأكد من إزالة ${member.name} من الفريق؟ سيبقى العضو في المكتبة العامة.',
-          style: TextStyle(fontSize: 14.sp),
+          l10n.removeFromTeamConfirmation(member.name),
+          style: theme.textTheme.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(color: ColorsManager.defaultTextSecondary),
-            ),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -408,14 +449,14 @@ class MemberProfileActions {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('تم إزالة ${member.name} من الفريق'),
+                    content: Text(l10n.memberRemovedFromTeam(member.name)),
                     backgroundColor: ColorsManager.warningFill,
                   ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('فشل في إزالة العضو: $e'),
+                    content: Text('${l10n.updateFailed}: $e'),
                     backgroundColor: ColorsManager.errorFill,
                   ),
                 );
@@ -423,11 +464,9 @@ class MemberProfileActions {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: ColorsManager.warningFill,
+              foregroundColor: Colors.white,
             ),
-            child: Text(
-              'إزالة',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: Text(l10n.remove),
           ),
         ],
       ),
@@ -435,28 +474,28 @@ class MemberProfileActions {
   }
 
   static void _showDeleteDialog(BuildContext context, Member member) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.dialogBackgroundColor,
         title: Text(
-          'حذف العضو',
-          style: TextStyle(
-            fontSize: 18.sp,
+          l10n.deleteMemberTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
             color: ColorsManager.errorFill,
           ),
         ),
         content: Text(
-          'هل أنت متأكد من حذف ${member.name} نهائياً من المكتبة؟ لا يمكن التراجع عن هذا الإجراء.',
-          style: TextStyle(fontSize: 14.sp),
+          l10n.deleteMemberConfirmation(member.name),
+          style: theme.textTheme.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(color: ColorsManager.defaultTextSecondary),
-            ),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -468,14 +507,14 @@ class MemberProfileActions {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('تم حذف ${member.name} نهائياً'),
+                    content: Text(l10n.memberDeletedPermanently(member.name)),
                     backgroundColor: ColorsManager.errorFill,
                   ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('فشل في حذف العضو: $e'),
+                    content: Text('${l10n.updateFailed}: $e'),
                     backgroundColor: ColorsManager.errorFill,
                   ),
                 );
@@ -483,11 +522,9 @@ class MemberProfileActions {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: ColorsManager.errorFill,
+              foregroundColor: Colors.white,
             ),
-            child: Text(
-              'حذف نهائياً',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: Text(l10n.deletePermanently),
           ),
         ],
       ),
@@ -495,7 +532,6 @@ class MemberProfileActions {
   }
 }
 
-///  Member Utils - دوال مساعدة
 class MemberUtils {
   static Color getLevelColor(String level) {
     switch (level.toLowerCase()) {
@@ -516,26 +552,29 @@ class MemberUtils {
     }
   }
 
-  static String formatDate(DateTime date) {
+  static String formatDate(BuildContext context, DateTime date) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
-      return 'اليوم';
+      return l10n.today;
     } else if (difference.inDays == 1) {
-      return 'أمس';
+      return l10n.yesterday;
     } else if (difference.inDays < 7) {
-      return 'منذ ${difference.inDays} أيام';
+      return l10n.daysAgo(difference.inDays);
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
   }
 
-  static String getStatusText(double progress) {
-    if (progress >= 80) return 'مكتمل';
-    if (progress >= 50) return 'قيد التقدم';
-    if (progress > 0) return 'بداية';
-    return 'لم يبدأ';
+  static String getStatusText(BuildContext context, double progress) {
+    final l10n = AppLocalizations.of(context);
+
+    if (progress >= 80) return l10n.completed;
+    if (progress >= 50) return l10n.inProgress;
+    if (progress > 0) return l10n.beginning;
+    return l10n.notStarted;
   }
 
   static Color getProgressColor(double progress) {

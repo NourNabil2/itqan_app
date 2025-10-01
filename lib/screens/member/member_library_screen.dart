@@ -1,22 +1,14 @@
-// ============= AddGlobalMemberScreen.dart =============
-import 'dart:developer';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
-import 'package:itqan_gym/core/widgets/app_buton.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
-import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
-import 'package:itqan_gym/core/widgets/error_container_widget.dart';
 import 'package:itqan_gym/core/widgets/member_card.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../data/models/member/member.dart';
 import 'add_member_screen/add_member_screen.dart';
 
-// ============= MemberLibraryScreen.dart =============
 class MemberLibraryScreen extends StatefulWidget {
   const MemberLibraryScreen({super.key});
 
@@ -35,17 +27,24 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: ColorsManager.backgroundSurface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
-                SizeApp.s16, SizeApp.s20, SizeApp.s16, SizeApp.s16),
+              SizeApp.s16,
+              SizeApp.s20,
+              SizeApp.s16,
+              SizeApp.s16,
+            ),
             child: AppTextFieldFactory.search(
               controller: _searchController,
-              hintText: 'البحث عن عضو...',
-              fillColor: ColorsManager.backgroundCard,
+              hintText: l10n.searchForMember,
+              fillColor: theme.cardColor,
               onChanged: (query) {
                 Provider.of<MemberLibraryProvider>(context, listen: false)
                     .searchMembers(query);
@@ -53,22 +52,22 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
             ),
           ),
 
-          // Enhanced Stats Section
+          // Stats Section
           Container(
             margin: EdgeInsets.symmetric(horizontal: SizeApp.s16),
             padding: EdgeInsets.all(SizeApp.s16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  ColorsManager.primaryColor.withOpacity(0.08),
-                  ColorsManager.primaryColor.withOpacity(0.04),
+                  theme.primaryColor.withOpacity(0.08),
+                  theme.primaryColor.withOpacity(0.04),
                 ],
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
               ),
               borderRadius: BorderRadius.circular(SizeApp.radiusMed),
               border: Border.all(
-                color: ColorsManager.primaryColor.withOpacity(0.1),
+                color: theme.primaryColor.withOpacity(0.1),
                 width: 1,
               ),
             ),
@@ -79,12 +78,12 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                     Container(
                       padding: EdgeInsets.all(SizeApp.s10),
                       decoration: BoxDecoration(
-                        color: ColorsManager.primaryColor.withOpacity(0.15),
+                        color: theme.primaryColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(SizeApp.s10),
                       ),
                       child: Icon(
                         Icons.groups_rounded,
-                        color: ColorsManager.primaryColor,
+                        color: theme.primaryColor,
                         size: SizeApp.iconSize,
                       ),
                     ),
@@ -94,20 +93,15 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'إجمالي الأعضاء',
-                            style: TextStyle(
-                              fontSize: 14.sp,
+                            l10n.totalMembers,
+                            style: theme.textTheme.bodyLarge?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: ColorsManager.defaultTextSecondary,
                             ),
                           ),
                           SizedBox(height: 2.h),
                           Text(
-                            '${provider.members.length} عضو نشط', // ✅ استخدم members بدلاً من globalMembers
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: ColorsManager.defaultTextSecondary,
-                            ),
+                            l10n.activeMembers(provider.members.length),
+                            style: theme.textTheme.bodySmall,
                           ),
                         ],
                       ),
@@ -120,21 +114,21 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            ColorsManager.primaryColor,
+                            theme.primaryColor,
                             ColorsManager.secondLightColor,
                           ],
                         ),
                         borderRadius: BorderRadius.circular(SizeApp.s12),
                         boxShadow: [
                           BoxShadow(
-                            color: ColorsManager.primaryColor.withOpacity(0.3),
+                            color: theme.primaryColor.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: Text(
-                        '${provider.members.length}', // ✅ استخدم members بدلاً من globalMembers
+                        '${provider.members.length}',
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
@@ -164,20 +158,19 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                           height: 60.h,
                           padding: EdgeInsets.all(SizeApp.s16),
                           decoration: BoxDecoration(
-                            color: ColorsManager.primaryColor.withOpacity(0.1),
+                            color: theme.primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(SizeApp.radius),
                           ),
                           child: CircularProgressIndicator(
-                            color: ColorsManager.primaryColor,
+                            color: theme.primaryColor,
                             strokeWidth: 3,
                           ),
                         ),
                         SizedBox(height: SizeApp.s16),
                         Text(
-                          'جاري تحميل الأعضاء...',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            color: ColorsManager.defaultTextSecondary,
+                          l10n.loadingMembers,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.textTheme.bodySmall?.color,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -187,7 +180,6 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                 }
 
                 if (provider.members.isEmpty) {
-                  // ✅ استخدم members بدلاً من globalMembers
                   return _buildEmptyState(context);
                 }
 
@@ -198,12 +190,10 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                     SizeApp.s16,
                     SizeApp.s20,
                   ),
-                  itemCount: provider.members
-                      .length, // ✅ استخدم members بدلاً من globalMembers
+                  itemCount: provider.members.length,
                   itemBuilder: (context, index) {
                     return MemberCard(
-                      member: provider.members[
-                          index], // ✅ استخدم members بدلاً من globalMembers
+                      member: provider.members[index],
                     );
                   },
                 );
@@ -216,6 +206,9 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Center(
       child: Container(
         padding: EdgeInsets.all(SizeApp.s32),
@@ -226,34 +219,31 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
               width: 120.w,
               height: 120.h,
               decoration: BoxDecoration(
-                color: ColorsManager.defaultSurface,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(SizeApp.radius),
                 border: Border.all(
-                  color: ColorsManager.inputBorder.withOpacity(0.3),
+                  color: theme.dividerColor.withOpacity(0.3),
                   width: 2,
                 ),
               ),
               child: Icon(
                 Icons.people_outline_rounded,
                 size: 60.sp,
-                color: ColorsManager.defaultTextSecondary.withOpacity(0.6),
+                color: theme.iconTheme.color?.withOpacity(0.6),
               ),
             ),
             SizedBox(height: SizeApp.s24),
             Text(
-              'لا توجد أعضاء في المكتبة',
-              style: TextStyle(
-                fontSize: 20.sp,
+              l10n.noMembersInLibrary,
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultText,
               ),
             ),
             SizedBox(height: SizeApp.s8),
             Text(
-              'ابدأ بإضافة أول عضو لبناء قاعدة بياناتك',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: ColorsManager.defaultTextSecondary,
+              l10n.startAddingFirstMember,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodySmall?.color,
               ),
               textAlign: TextAlign.center,
             ),
@@ -262,14 +252,14 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    ColorsManager.primaryColor,
+                    theme.primaryColor,
                     ColorsManager.secondLightColor,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(SizeApp.radiusMed),
                 boxShadow: [
                   BoxShadow(
-                    color: ColorsManager.primaryColor.withOpacity(0.3),
+                    color: theme.primaryColor.withOpacity(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -302,7 +292,7 @@ class _MemberLibraryScreenState extends State<MemberLibraryScreen> {
                         ),
                         SizedBox(width: SizeApp.s8),
                         Text(
-                          'إضافة أول عضو',
+                          l10n.addFirstMember,
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w600,

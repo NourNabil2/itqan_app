@@ -1,23 +1,23 @@
-
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/full_screen_media_viewer.dart';
 import 'package:itqan_gym/core/widgets/video_player_widget.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
+import 'package:itqan_gym/data/models/skill_template.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/screens/team/widgets/assign_exercise_to_members_sheet.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/exercise_template.dart';
-import '../../../data/models/skill_template.dart';
-import '../team_detailes/team_detail_screen.dart';
+
 class ExerciseDetailSheet extends StatefulWidget {
   final ExerciseTemplate exercise;
-  final String? teamId; // إضافة معرف الفريق
+  final String? teamId;
 
   const ExerciseDetailSheet({
     super.key,
@@ -33,12 +33,12 @@ class ExerciseDetailSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ExerciseDetailSheet(exercise: exercise,teamId: teamId,),
+      builder: (context) => ExerciseDetailSheet(
+        exercise: exercise,
+        teamId: teamId,
+      ),
     );
   }
-
-
-
 }
 
 class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
@@ -60,10 +60,12 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.dialogBackgroundColor,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(SizeApp.radiusMed),
           topRight: Radius.circular(SizeApp.radiusMed),
@@ -77,41 +79,29 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
             width: 40.w,
             height: 4.h,
             decoration: BoxDecoration(
-              color: ColorsManager.inputBorder.withOpacity(0.3),
+              color: theme.dividerColor.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2.r),
             ),
           ),
 
-          // Header مع زر التعيين
           _buildHeaderWithActions(context),
 
-          // Content
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(SizeApp.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // قسم الأعضاء المعينين
                   if (widget.teamId != null) _buildAssignedMembersSection(context),
-
-                  // Media Section
                   if (widget.exercise.hasMedia) _buildMediaSection(),
-
-                  // Description Section
                   if (widget.exercise.description != null) _buildDescriptionSection(),
-
-                  // Exercise Type Info
                   _buildTypeInfoSection(),
-
-                  // Stats Section
                   _buildStatsSection(),
                 ],
               ),
             ),
           ),
 
-          // Bottom Actions
           _buildBottomActions(context),
         ],
       ),
@@ -119,7 +109,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildHeaderWithActions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final exerciseColor = _getExerciseColor();
+
     return Container(
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
@@ -167,7 +160,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                     borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
                   ),
                   child: Text(
-                    widget.exercise.type.arabicName,
+                    widget.exercise.type.getLocalizedName(context),
                     style: TextStyle(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
@@ -178,19 +171,18 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               ],
             ),
           ),
-          // زر التعيين للأعضاء
           if (widget.teamId != null) ...[
             IconButton(
               onPressed: () => _showAssignmentSheet(context),
               icon: Container(
                 padding: EdgeInsets.all(SizeApp.s8),
                 decoration: BoxDecoration(
-                  color: ColorsManager.primaryColor.withOpacity(0.1),
+                  color: theme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
                 ),
                 child: Icon(
                   Icons.person_add_rounded,
-                  color: ColorsManager.primaryColor,
+                  color: theme.primaryColor,
                   size: 20.sp,
                 ),
               ),
@@ -202,6 +194,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildAssignedMembersSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return FutureBuilder<List<Member>>(
       future: _membersFuture,
       builder: (context, snapshot) {
@@ -219,11 +214,17 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.groups_rounded, color: ColorsManager.primaryColor, size: 20.sp),
+                  Icon(
+                    Icons.groups_rounded,
+                    color: theme.primaryColor,
+                    size: 20.sp,
+                  ),
                   SizedBox(width: SizeApp.s8),
                   Text(
-                    'الأعضاء المعينون (${members.length})',
-                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: ColorsManager.defaultText),
+                    l10n.assignedMembers(members.length),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const Spacer(),
                   TextButton(
@@ -232,7 +233,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                       children: [
                         Icon(Icons.add_circle_outline_rounded, size: 16.sp),
                         SizedBox(width: SizeApp.s4),
-                        Text('إضافة', style: TextStyle(fontSize: 14.sp)),
+                        Text(
+                          l10n.add,
+                          style: TextStyle(fontSize: 14.sp),
+                        ),
                       ],
                     ),
                   ),
@@ -254,28 +258,28 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
   }
 
-
   Widget _buildMemberCard(Member member) {
+    final theme = Theme.of(context);
+
     return Container(
       width: 140.w,
       margin: EdgeInsets.only(left: SizeApp.s8),
       padding: EdgeInsets.all(SizeApp.s12),
       decoration: BoxDecoration(
-        color: ColorsManager.backgroundCard,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         border: Border.all(
-          color: ColorsManager.inputBorder.withOpacity(0.2),
+          color: theme.dividerColor.withOpacity(0.2),
         ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Avatar
           Container(
             width: 36.w,
             height: 36.w,
             decoration: BoxDecoration(
-              color: ColorsManager.primaryColor.withOpacity(0.1),
+              color: theme.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -284,31 +288,27 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
-                  color: ColorsManager.primaryColor,
+                  color: theme.primaryColor,
                 ),
               ),
             ),
           ),
           SizedBox(height: SizeApp.s8),
-          // Name
           Text(
             member.name,
-            style: TextStyle(
-              fontSize: 12.sp,
+            style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
-          // Progress
-          if ((member.overallProgress ??  0)> 0) ...[
+          if ((member.overallProgress ?? 0) > 0) ...[
             SizedBox(height: SizeApp.s4),
             LinearProgressIndicator(
-              value: member.overallProgress??0 / 100,
-              backgroundColor: ColorsManager.inputBorder.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation(ColorsManager.primaryColor),
+              value: member.overallProgress ?? 0 / 100,
+              backgroundColor: theme.dividerColor.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation(theme.primaryColor),
               minHeight: 3,
             ),
           ],
@@ -318,14 +318,17 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildEmptyMembersSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s20),
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: ColorsManager.backgroundCard,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         border: Border.all(
-          color: ColorsManager.inputBorder.withOpacity(0.2),
+          color: theme.dividerColor.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -333,23 +336,22 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           Icon(
             Icons.group_add_rounded,
             size: 48.sp,
-            color: ColorsManager.defaultTextSecondary.withOpacity(0.5),
+            color: theme.iconTheme.color?.withOpacity(0.5),
           ),
           SizedBox(height: SizeApp.s12),
           Text(
-            'لم يتم تعيين أي عضو لهذا التمرين',
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
+            l10n.noMembersAssigned,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodySmall?.color,
             ),
           ),
           SizedBox(height: SizeApp.s12),
           ElevatedButton.icon(
             onPressed: () => _showAssignmentSheet(context),
             icon: Icon(Icons.person_add_rounded, size: 18.sp),
-            label: Text('تعيين أعضاء'),
+            label: Text(l10n.assignMembers),
             style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsManager.primaryColor,
+              backgroundColor: theme.primaryColor,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(
                 horizontal: SizeApp.s16,
@@ -366,25 +368,30 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildLoadingSection() {
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s20),
       padding: EdgeInsets.all(SizeApp.s16),
       child: Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(ColorsManager.primaryColor),
+          valueColor: AlwaysStoppedAnimation(theme.primaryColor),
         ),
       ),
     );
   }
 
   Widget _buildBottomActions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         border: Border(
           top: BorderSide(
-            color: ColorsManager.inputBorder.withOpacity(0.3),
+            color: theme.dividerColor.withOpacity(0.3),
           ),
         ),
       ),
@@ -392,7 +399,6 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         top: false,
         child: Row(
           children: [
-            // Close Button
             Expanded(
               flex: 2,
               child: ElevatedButton(
@@ -406,7 +412,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                   ),
                 ),
                 child: Text(
-                  'إغلاق',
+                  l10n.close,
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
@@ -414,7 +420,6 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                 ),
               ),
             ),
-            // Assign Members Button
             if (widget.teamId != null) ...[
               SizedBox(width: SizeApp.s12),
               Expanded(
@@ -422,14 +427,14 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                 child: OutlinedButton.icon(
                   onPressed: () => _showAssignmentSheet(context),
                   icon: Icon(Icons.person_add_rounded),
-                  label: Text('تعيين للأعضاء'),
+                  label: Text(l10n.assignToMembers),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: ColorsManager.primaryColor,
+                    foregroundColor: theme.primaryColor,
                     padding: EdgeInsets.symmetric(vertical: 14.h),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
                     ),
-                    side: BorderSide(color: ColorsManager.primaryColor),
+                    side: BorderSide(color: theme.primaryColor),
                   ),
                 ),
               ),
@@ -443,49 +448,43 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   Future<void> _showAssignmentSheet(BuildContext context) async {
     if (widget.teamId == null) return;
 
-    final result = await AssignExerciseToMembersSheet.show(context, widget.exercise, widget.teamId!);
+    final result = await AssignExerciseToMembersSheet.show(
+      context,
+      widget.exercise,
+      widget.teamId!,
+    );
 
-    if (result == true) {
-      // إعادة تحميل الأعضاء المعينين
-      if (context.mounted) {
-        final provider = Provider.of<ExerciseAssignmentProvider>(
-          context,
-          listen: false,
-        );
-        provider.loadExerciseMembers(widget.exercise.id);
-      }
+    if (result == true && context.mounted) {
+      final provider = Provider.of<ExerciseAssignmentProvider>(
+        context,
+        listen: false,
+      );
+      provider.loadExerciseMembers(widget.exercise.id);
     }
   }
 
   Widget _buildMediaSection() {
-    // Debug prints
-    log('DEBUG: ExerciseDetailSheet for ${widget.exercise.title}:');
-    log('- Thumbnail: ${widget.exercise.thumbnailPath}');
-    log('- Media Gallery: ${widget.exercise.mediaGallery.length} items');
-    log('- Legacy Media: ${widget.exercise.mediaPath}');
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'الوسائط التعليمية',
-            style: TextStyle(
-              fontSize: 16.sp,
+            l10n.educationalMedia,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
             ),
           ),
           SizedBox(height: SizeApp.s12),
 
-          // Display thumbnail if available
           if (widget.exercise.thumbnailPath != null) _buildThumbnailSection(),
-
-          // Display media gallery
           if (widget.exercise.mediaGallery.isNotEmpty) _buildMediaGallerySection(),
-
-          // Legacy media support
-          if (widget.exercise.mediaPath != null && widget.exercise.thumbnailPath == null && widget.exercise.mediaGallery.isEmpty)
+          if (widget.exercise.mediaPath != null &&
+              widget.exercise.thumbnailPath == null &&
+              widget.exercise.mediaGallery.isEmpty)
             _buildLegacyMediaSection(),
         ],
       ),
@@ -493,17 +492,18 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildThumbnailSection() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'الصورة المصغرة',
-            style: TextStyle(
-              fontSize: 14.sp,
+            l10n.thumbnail,
+            style: theme.textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
             ),
           ),
           SizedBox(height: SizeApp.s8),
@@ -512,7 +512,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              color: ColorsManager.backgroundCard,
+              color: theme.cardColor,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
@@ -525,7 +525,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                   return Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                      color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
+                      color: theme.iconTheme.color?.withOpacity(0.1),
                     ),
                     child: Center(
                       child: Column(
@@ -534,14 +534,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                           Icon(
                             Icons.broken_image_rounded,
                             size: 48.sp,
-                            color: ColorsManager.defaultTextSecondary,
+                            color: theme.iconTheme.color?.withOpacity(0.6),
                           ),
                           SizedBox(height: SizeApp.s8),
                           Text(
-                            'لا يمكن عرض الصورة',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: ColorsManager.defaultTextSecondary,
+                            l10n.cannotDisplayImage,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.textTheme.bodySmall?.color,
                             ),
                           ),
                         ],
@@ -558,17 +557,18 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildMediaGallerySection() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'معرض الوسائط (${widget.exercise.mediaGallery.length})',
-            style: TextStyle(
-              fontSize: 14.sp,
+            l10n.mediaGallery(widget.exercise.mediaGallery.length),
+            style: theme.textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
             ),
           ),
           SizedBox(height: SizeApp.s12),
@@ -589,6 +589,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildMediaPreview(MediaItem media) {
+    final theme = Theme.of(context);
     final isVideo = media.type == MediaType.video;
 
     return GestureDetector(
@@ -603,7 +604,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         margin: EdgeInsets.only(right: SizeApp.s8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-          color: ColorsManager.backgroundCard,
+          color: theme.cardColor,
         ),
         child: isVideo
             ? VideoPlayerWidget(
@@ -621,13 +622,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               return Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
+                  color: theme.iconTheme.color?.withOpacity(0.1),
                 ),
                 child: Center(
                   child: Icon(
                     Icons.broken_image_rounded,
                     size: 32.sp,
-                    color: ColorsManager.defaultTextSecondary,
+                    color: theme.iconTheme.color?.withOpacity(0.6),
                   ),
                 ),
               );
@@ -639,6 +640,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildLegacyMediaSection() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final isVideo = widget.exercise.mediaType == MediaType.video;
 
     return GestureDetector(
@@ -653,7 +656,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-          color: ColorsManager.backgroundCard,
+          color: theme.cardColor,
         ),
         child: isVideo
             ? VideoPlayerWidget(
@@ -672,7 +675,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               return Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  color: ColorsManager.defaultTextSecondary.withOpacity(0.1),
+                  color: theme.iconTheme.color?.withOpacity(0.1),
                 ),
                 child: Center(
                   child: Column(
@@ -681,14 +684,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                       Icon(
                         Icons.broken_image_rounded,
                         size: 48.sp,
-                        color: ColorsManager.defaultTextSecondary,
+                        color: theme.iconTheme.color?.withOpacity(0.6),
                       ),
                       SizedBox(height: SizeApp.s8),
                       Text(
-                        'لا يمكن عرض الصورة',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: ColorsManager.defaultTextSecondary,
+                        l10n.cannotDisplayImage,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodySmall?.color,
                         ),
                       ),
                     ],
@@ -702,16 +704,18 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
   }
 
-
   Widget _buildDescriptionSection() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s20),
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: ColorsManager.backgroundCard,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         border: Border.all(
-          color: ColorsManager.inputBorder.withOpacity(0.2),
+          color: theme.dividerColor.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -726,11 +730,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               ),
               SizedBox(width: SizeApp.s8),
               Text(
-                'وصف التمرين',
-                style: TextStyle(
-                  fontSize: 16.sp,
+                l10n.exerciseDescription,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: ColorsManager.defaultText,
                 ),
               ),
             ],
@@ -738,9 +740,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           SizedBox(height: SizeApp.s12),
           Text(
             widget.exercise.description!,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodySmall?.color,
               height: 1.5,
             ),
           ),
@@ -750,6 +751,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildTypeInfoSection() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s20),
       padding: EdgeInsets.all(SizeApp.s16),
@@ -772,7 +776,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               ),
               SizedBox(width: SizeApp.s8),
               Text(
-                'معلومات التمرين',
+                l10n.exerciseInfo,
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w600,
@@ -782,17 +786,31 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
             ],
           ),
           SizedBox(height: SizeApp.s12),
-          _buildInfoRow('النوع', widget.exercise.type.arabicName, _getExerciseIcon()),
+          _buildInfoRow(
+            l10n.type,
+            widget.exercise.type.getLocalizedName(context),
+            _getExerciseIcon(),
+          ),
           SizedBox(height: SizeApp.s8),
-          _buildInfoRow('تاريخ الإضافة', _formatDate(widget.exercise.createdAt), Icons.calendar_today_rounded),
+          _buildInfoRow(
+            l10n.dateAdded,
+            _formatDate(widget.exercise.createdAt),
+            Icons.calendar_today_rounded,
+          ),
           SizedBox(height: SizeApp.s8),
-          _buildInfoRow('آخر تحديث', _formatDate(widget.exercise.updatedAt), Icons.update_rounded),
+          _buildInfoRow(
+            l10n.lastUpdate,
+            _formatDate(widget.exercise.updatedAt),
+            Icons.update_rounded,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildInfoRow(String label, String value, IconData icon) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         Icon(
@@ -803,18 +821,15 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         SizedBox(width: SizeApp.s8),
         Text(
           '$label: ',
-          style: TextStyle(
-            fontSize: 14.sp,
+          style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
-            color: ColorsManager.defaultText,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodySmall?.color,
             ),
           ),
         ),
@@ -823,13 +838,16 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildStatsSection() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Container(
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         border: Border.all(
-          color: ColorsManager.inputBorder.withOpacity(0.2),
+          color: theme.dividerColor.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -839,16 +857,14 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
             children: [
               Icon(
                 Icons.analytics_outlined,
-                color: ColorsManager.primaryColor,
+                color: theme.primaryColor,
                 size: 20.sp,
               ),
               SizedBox(width: SizeApp.s8),
               Text(
-                'إحصائيات الاستخدام',
-                style: TextStyle(
-                  fontSize: 16.sp,
+                l10n.usageStatistics,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: ColorsManager.defaultText,
                 ),
               ),
             ],
@@ -858,7 +874,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'الفرق المعينة',
+                  l10n.assignedTeams,
                   '${widget.exercise.assignedTeamsCount ?? 0}',
                   Icons.groups_rounded,
                   ColorsManager.primaryColor,
@@ -867,7 +883,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               SizedBox(width: SizeApp.s12),
               Expanded(
                 child: _buildStatCard(
-                  'الإضافة',
+                  l10n.addition,
                   _formatShortDate(widget.exercise.createdAt),
                   Icons.add_circle_outline_rounded,
                   ColorsManager.secondaryColor,
@@ -881,6 +897,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: EdgeInsets.all(SizeApp.s12),
       decoration: BoxDecoration(
@@ -906,9 +924,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           SizedBox(height: SizeApp.s4),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: ColorsManager.defaultTextSecondary,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color,
             ),
             textAlign: TextAlign.center,
           ),
@@ -917,7 +934,6 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
   }
 
-  // Helper Methods
   Color _getExerciseColor() {
     switch (widget.exercise.type) {
       case ExerciseType.warmup:

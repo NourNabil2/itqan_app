@@ -1,6 +1,6 @@
-// ============= Skills Progress Section Widget =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
@@ -29,14 +29,16 @@ class SkillsProgressSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...visibleSkills.map((skill) => _buildSkillCard(skill)),
+          ...visibleSkills.map((skill) => _buildSkillCard(context, skill)),
           if (skills.length > maxVisible) _buildViewAllButton(context),
         ],
       ),
     );
   }
 
-  Widget _buildSkillCard(AssignedSkill skill) {
+  Widget _buildSkillCard(BuildContext context, AssignedSkill skill) {
+    final theme = Theme.of(context);
+
     if (skill.skill == null) return const SizedBox.shrink();
 
     final apparatusColor = getApparatusColor(skill.skill!.apparatus);
@@ -45,7 +47,7 @@ class SkillsProgressSection extends StatelessWidget {
       margin: EdgeInsets.only(bottom: SizeApp.s12),
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
@@ -78,20 +80,17 @@ class SkillsProgressSection extends StatelessWidget {
                   children: [
                     Text(
                       skill.skill!.skillName,
-                      style: TextStyle(
-                        fontSize: 15.sp,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: ColorsManager.defaultText,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      skill.skill!.apparatus.arabicName,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: ColorsManager.defaultTextSecondary,
+                      skill.skill!.apparatus.getLocalizedName(context),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -102,7 +101,7 @@ class SkillsProgressSection extends StatelessWidget {
             ],
           ),
           SizedBox(height: SizeApp.s12),
-          _buildProgressBar(skill, apparatusColor),
+          _buildProgressBar(context, skill, apparatusColor),
         ],
       ),
     );
@@ -126,23 +125,24 @@ class SkillsProgressSection extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressBar(AssignedSkill skill, Color color) {
+  Widget _buildProgressBar(BuildContext context, AssignedSkill skill, Color color) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'التقدم',
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: ColorsManager.defaultTextSecondary,
+              l10n.progress,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
               ),
             ),
             Text(
-              _getStatusText(skill),
-              style: TextStyle(
-                fontSize: 12.sp,
+              _getStatusText(context, skill),
+              style: theme.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: _getStatusColor(skill),
               ),
@@ -164,6 +164,8 @@ class SkillsProgressSection extends StatelessWidget {
   }
 
   Widget _buildViewAllButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: EdgeInsets.only(top: 8.h),
       child: InkWell(
@@ -175,7 +177,7 @@ class SkillsProgressSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'عرض كل المهارات (${skills.length})',
+                l10n.viewAllSkills(skills.length),
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
@@ -195,10 +197,12 @@ class SkillsProgressSection extends StatelessWidget {
     );
   }
 
-  String _getStatusText(AssignedSkill skill) {
-    if (skill.isCompleted) return 'مكتمل';
-    if (skill.isInProgress) return 'قيد التقدم';
-    return 'لم يبدأ';
+  String _getStatusText(BuildContext context, AssignedSkill skill) {
+    final l10n = AppLocalizations.of(context);
+
+    if (skill.isCompleted) return l10n.completed;
+    if (skill.isInProgress) return l10n.inProgress;
+    return l10n.notStarted;
   }
 
   Color _getStatusColor(AssignedSkill skill) {

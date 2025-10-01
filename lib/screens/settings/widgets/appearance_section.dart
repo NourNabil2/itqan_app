@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 
 import 'language_selection_dialog.dart';
 import 'setting_card/settings_card.dart';
@@ -18,35 +19,26 @@ class AppearanceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SettingsCard(
-      title: 'المظهر',
+      title: l10n.appearance,
       icon: Icons.palette_outlined,
       children: [
         SettingsTile(
           icon: Icons.dark_mode_outlined,
-          title: 'المظهر',
-          subtitle: _getThemeName(currentTheme),
+          title: l10n.theme,
+          subtitle: l10n.getThemeName(currentTheme),
           onTap: () => _showThemeDialog(context),
         ),
         SettingsTile(
           icon: Icons.language,
-          title: 'اللغة',
-          subtitle: currentLanguage == 'ar' ? 'العربية' : 'English',
+          title: l10n.language,
+          subtitle: currentLanguage == 'ar' ? l10n.arabic : l10n.english,
           onTap: () => _showLanguageDialog(context),
         ),
       ],
     );
-  }
-
-  String _getThemeName(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return 'فاتح';
-      case ThemeMode.dark:
-        return 'داكن';
-      case ThemeMode.system:
-        return 'حسب النظام';
-    }
   }
 
   void _showThemeDialog(BuildContext context) {

@@ -124,21 +124,54 @@ class ExerciseLibraryProvider extends ChangeNotifier {
     _applyFilters();
   }
 
-  // ✅ Search exercises with debouncing
-  void searchExercises(String query) {
+// في ExerciseLibraryProvider
+// في searchExercises method
+  void searchExercises(String query, {Map<ExerciseType, String>? typeLocalizations}) {
     if (_searchQuery == query) return;
 
     _searchQuery = query.trim();
-
-    // Cancel previous timer
     _searchTimer?.cancel();
+    _typeLocalizations = typeLocalizations;
 
-    // Debounce search to avoid excessive filtering
     _searchTimer = Timer(const Duration(milliseconds: 300), () {
       _applyFilters();
     });
   }
 
+// أضف في أول الـ class
+  Map<ExerciseType, String>? _typeLocalizations;
+
+// تحديث _applyFilters
+  void _applyFilters() {
+    List<ExerciseTemplate> filtered = List.from(_allExercises);
+
+    if (_selectedType != null) {
+      filtered = filtered
+          .where((exercise) => exercise.type == _selectedType)
+          .toList();
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((exercise) {
+        final matchesBasic = exercise.title.toLowerCase().contains(query) ||
+            (exercise.description?.toLowerCase().contains(query) ?? false);
+
+        final matchesEnglish = exercise.type.value.toLowerCase().contains(query);
+
+        final matchesLocalized = _typeLocalizations != null
+            ? (_typeLocalizations![exercise.type]?.toLowerCase().contains(query) ?? false)
+            : false;
+
+        return matchesBasic || matchesEnglish || matchesLocalized;
+      }).toList();
+    }
+
+    filtered.sort((a, b) => a.title.compareTo(b.title));
+
+    _displayedExercises = filtered;
+    notifyListeners();
+  }
   // ✅ Clear search
   void clearSearch() {
     if (_searchQuery.isEmpty) return;
@@ -211,35 +244,6 @@ class ExerciseLibraryProvider extends ChangeNotifier {
     }
   }
 
-  // Private helper methods
-
-  // Apply current filters and search to the exercises list
-  void _applyFilters() {
-    List<ExerciseTemplate> filtered = List.from(_allExercises);
-
-    // Apply type filter
-    if (_selectedType != null) {
-      filtered = filtered
-          .where((exercise) => exercise.type == _selectedType)
-          .toList();
-    }
-
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      filtered = filtered.where((exercise) {
-        return exercise.title.toLowerCase().contains(query) ||
-            (exercise.description?.toLowerCase().contains(query) ?? false) ||
-            exercise.type.arabicName.toLowerCase().contains(query);
-      }).toList();
-    }
-
-    // Sort by title
-    filtered.sort((a, b) => a.title.compareTo(b.title));
-
-    _displayedExercises = filtered;
-    notifyListeners();
-  }
 
   // Set loading state
   Future<void> _setLoadingState(bool loading) async {

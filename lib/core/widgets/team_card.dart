@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/CustomIcon.dart';
@@ -70,6 +71,10 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
   }
 
   Future<bool?> _showDeleteDialog() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return showDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -81,7 +86,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
         content: Container(
           width: 320.w,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.dialogBackgroundColor,
             borderRadius: BorderRadius.circular(16.r),
           ),
           child: Column(
@@ -92,7 +97,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                 width: double.infinity,
                 padding: EdgeInsets.all(24.w),
                 decoration: BoxDecoration(
-                  color: ColorsManager.errorFill.withOpacity(0.1),
+                  color: ColorsManager.errorFill.withOpacity(isDark ? 0.15 : 0.1),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(16.r),
                     topRight: Radius.circular(16.r),
@@ -110,7 +115,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                       width: 48.w,
                       height: 48.h,
                       decoration: BoxDecoration(
-                        color: ColorsManager.errorFill.withOpacity(0.15),
+                        color: ColorsManager.errorFill.withOpacity(isDark ? 0.2 : 0.15),
                         borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(
                           color: ColorsManager.errorFill.withOpacity(0.3),
@@ -129,19 +134,16 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'تأكيد الحذف',
-                            style: TextStyle(
-                              fontSize: 18.sp,
+                            l10n.confirmDelete,
+                            style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: ColorsManager.defaultText,
                             ),
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            'هذا الإجراء لا يمكن التراجع عنه',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: ColorsManager.defaultTextSecondary,
+                            l10n.actionCannotBeUndone,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                             ),
                           ),
                         ],
@@ -157,10 +159,8 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                 child: Column(
                   children: [
                     Text(
-                      'هل أنت متأكد من حذف فريق "${widget.team.name}"؟',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: ColorsManager.defaultText,
+                      l10n.deleteTeamConfirmation(widget.team.name),
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,
@@ -189,7 +189,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                           SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
-                              'سيتم حذف جميع البيانات المرتبطة بالفريق',
+                              l10n.allRelatedDataWillBeDeleted,
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 color: ColorsManager.warningText,
@@ -209,14 +209,14 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                 width: double.infinity,
                 padding: EdgeInsets.all(24.w),
                 decoration: BoxDecoration(
-                  color: ColorsManager.defaultSurface,
+                  color: theme.cardColor,
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(16.r),
                     bottomRight: Radius.circular(16.r),
                   ),
                   border: Border(
                     top: BorderSide(
-                      color: ColorsManager.inputBorder.withOpacity(0.3),
+                      color: theme.dividerColor.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
@@ -229,17 +229,17 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.symmetric(vertical: 12.h),
                           backgroundColor: Colors.transparent,
-                          foregroundColor: ColorsManager.defaultTextSecondary,
+                          foregroundColor: theme.textTheme.bodyLarge?.color,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8.r),
                             side: BorderSide(
-                              color: ColorsManager.inputBorder.withOpacity(0.5),
+                              color: theme.dividerColor.withOpacity(0.5),
                               width: 1,
                             ),
                           ),
                         ),
                         child: Text(
-                          'إلغاء',
+                          l10n.cancel,
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w600,
@@ -269,7 +269,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                             ),
                             SizedBox(width: 6.w),
                             Text(
-                              'حذف',
+                              l10n.delete,
                               style: TextStyle(
                                 fontSize: 15.sp,
                                 fontWeight: FontWeight.bold,
@@ -290,15 +290,21 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
   }
 
   Future<void> _deleteTeam() async {
+    final l10n = AppLocalizations.of(context);
+
     try {
       final teamProvider = Provider.of<TeamProvider>(context, listen: false);
       await teamProvider.deleteTeam(widget.team.id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم حذف الفريق بنجاح'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text(l10n.teamDeletedSuccessfully),
+            backgroundColor: ColorsManager.successFill,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+            ),
           ),
         );
       }
@@ -306,8 +312,12 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في حذف الفريق: $e'),
-            backgroundColor: Colors.red,
+            content: Text('${l10n.errorDeletingTeam}: $e'),
+            backgroundColor: ColorsManager.errorFill,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+            ),
           ),
         );
       }
@@ -316,7 +326,9 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    // Get screen dimensions for responsive design
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
 
@@ -364,12 +376,12 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                   topRight: Radius.circular(SizeApp.radiusMed),
                   bottomRight: Radius.circular(SizeApp.radiusMed),
                 ),
-                color: ColorsManager.defaultSurface,
+                color: theme.cardColor,
                 boxShadow: [
                   BoxShadow(
                     color: _isPressed
-                        ? ColorsManager.primaryColor.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.06),
+                        ? ColorsManager.primaryColor.withOpacity(isDark ? 0.3 : 0.2)
+                        : (isDark ? Colors.black45 : Colors.black.withOpacity(0.06)),
                     blurRadius: _isPressed ? 20 : 12,
                     offset: const Offset(0, 4),
                     spreadRadius: _isPressed ? 2 : 0,
@@ -378,13 +390,13 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                 border: Border.all(
                   color: _isPressed
                       ? ColorsManager.primaryColor.withOpacity(0.3)
-                      : ColorsManager.inputBorder.withOpacity(0.3),
+                      : theme.dividerColor.withOpacity(0.3),
                   width: 1.5,
                 ),
               ),
               child: Stack(
                 children: [
-                  // خط ملون على الجانب الأيسر
+                  // Colored accent line
                   Positioned(
                     left: 0,
                     top: 0,
@@ -401,8 +413,8 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                     ),
                   ),
 
-                  // Background decorative element - responsive size
-                  if (!isSmallScreen) // Hide on very small screens
+                  // Background decorative element
+                  if (!isSmallScreen)
                     Positioned(
                       right: -20,
                       top: -20,
@@ -411,12 +423,12 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                         height: (screenWidth * 0.25).clamp(80.0, 120.0),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: ColorsManager.primaryColor.withOpacity(0.03),
+                          color: ColorsManager.primaryColor.withOpacity(isDark ? 0.05 : 0.03),
                         ),
                       ),
                     ),
 
-                  // المحتوى الرئيسي
+                  // Main content
                   Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: isSmallScreen ? SizeApp.s16 : SizeApp.s20,
@@ -425,7 +437,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // الجزء العلوي - اسم الفريق مع badge
+                        // Top section - team name with badge
                         Expanded(
                           flex: 2,
                           child: Row(
@@ -437,14 +449,18 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                                   children: [
                                     Text(
                                       widget.team.name,
-                                      style: Theme.of(context).textTheme.titleMedium,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                       maxLines: isSmallScreen ? 1 : 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     SizedBox(height: 2.h),
                                     Text(
-                                      widget.team.ageCategory.arabicName,
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      widget.team.ageCategory.getLocalizedName(context),
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -454,7 +470,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
 
                               SizedBox(width: SizeApp.s8),
 
-                              // Circular Progress Badge - responsive size
+                              // Circular Progress Badge
                               _buildCircularBadge(isSmallScreen),
                             ],
                           ),
@@ -462,10 +478,10 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
 
                         SizedBox(height: SizeApp.s8),
 
-                        // الجزء السفلي - معلومات إضافية
+                        // Bottom section - additional info
                         Row(
                           children: [
-                            // عدد الأعضاء
+                            // Members count
                             Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: isSmallScreen ? SizeApp.s8 : SizeApp.s12,
@@ -489,7 +505,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                                   ),
                                   SizedBox(width: 4.w),
                                   Text(
-                                    '${widget.team.memberCount} عضو',
+                                    '${widget.team.memberCount} ${widget.team.memberCount == 1 ? l10n.member : l10n.members}',
                                     style: TextStyle(
                                       fontSize: isSmallScreen ? 10.sp : 11.sp,
                                       fontWeight: FontWeight.w600,
@@ -508,13 +524,13 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                               padding: EdgeInsets.all(isSmallScreen ? 6.w : SizeApp.s8),
                               decoration: BoxDecoration(
                                 color: _isPressed
-                                    ? ColorsManager.primaryColor.withOpacity(0.15)
-                                    : ColorsManager.defaultSurface,
+                                    ? ColorsManager.primaryColor.withOpacity(isDark ? 0.2 : 0.15)
+                                    : theme.cardColor,
                                 borderRadius: BorderRadius.circular(SizeApp.s8),
                                 border: Border.all(
                                   color: _isPressed
                                       ? ColorsManager.primaryColor.withOpacity(0.3)
-                                      : ColorsManager.inputBorder.withOpacity(0.3),
+                                      : theme.dividerColor.withOpacity(0.3),
                                   width: 1,
                                 ),
                               ),
@@ -523,7 +539,7 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
                                 size: isSmallScreen ? 14.sp : SizeApp.iconSizeSmall,
                                 color: _isPressed
                                     ? ColorsManager.primaryColor
-                                    : ColorsManager.defaultTextSecondary,
+                                    : theme.iconTheme.color?.withOpacity(0.6),
                               ),
                             ),
                           ],
@@ -572,7 +588,6 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
     );
   }
 
-  // Helper Method
   Color _getPercentageColor(double percentage) {
     if (percentage >= 80) return ColorsManager.successFill;
     if (percentage >= 50) return ColorsManager.warningFill;

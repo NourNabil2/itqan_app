@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
+
 enum AgeCategory {
-  u6('U6', 'تحت 6 سنوات'),
-  u7('U7', 'تحت 7 سنوات'),
-  u8('U8', 'تحت 8 سنوات'),
-  u9('U9', 'تحت 9 سنوات'),
-  u10('U10', 'تحت 10 سنوات'),
-  u11('U11', 'تحت 11 سنوات'), // ✅ مصحح
-  u12('U12', 'تحت 12 سنوات'),
-  u13('U13', 'تحت 13 سنوات'),
-  u14('U14', 'تحت 14 سنوات');
+  u6('U6'),
+  u7('U7'),
+  u8('U8'),
+  u9('U9'),
+  u10('U10'),
+  u11('U11'),
+  u12('U12'),
+  u13('U13'),
+  u14('U14');
 
   final String code;
-  final String arabicName;
-  const AgeCategory(this.code, this.arabicName);
+  const AgeCategory(this.code);
+
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return l10n.ageCategory(code);
+  }
 }
+
 AgeCategory? ageFromCodeSafe(String code) {
   for (final a in AgeCategory.values) {
     if (a.code.toLowerCase() == code.toLowerCase()) {
@@ -23,79 +31,140 @@ AgeCategory? ageFromCodeSafe(String code) {
   }
   return null;
 }
+
 enum ExerciseType {
-  warmup('warmup', 'الإحماء'),
-  stretching('stretching', 'الإطالة'),
-  conditioning('conditioning', 'اللياقة البدنية');
+  warmup('warmup'),
+  stretching('stretching'),
+  conditioning('conditioning');
 
   final String value;
-  final String arabicName;
+  const ExerciseType(this.value);
 
-  const ExerciseType(this.value, this.arabicName);
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case ExerciseType.warmup:
+        return l10n.warmup;
+      case ExerciseType.stretching:
+        return l10n.stretching;
+      case ExerciseType.conditioning:
+        return l10n.conditioning;
+    }
+  }
 }
-
-
 
 enum MediaType {
   image('image'),
   video('video');
 
   final String value;
-
   const MediaType(this.value);
 }
 
 enum ProgressStatus {
-  notStarted('NotStarted', 'لم يبدأ'),
-  inProgress('InProgress', 'قيد التنفيذ'),
-  mastered('Mastered', 'متقن');
+  notStarted('NotStarted'),
+  inProgress('InProgress'),
+  mastered('Mastered');
 
   final String value;
-  final String arabicName;
+  const ProgressStatus(this.value);
 
-  const ProgressStatus(this.value, this.arabicName);
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case ProgressStatus.notStarted:
+        return l10n.notStarted;
+      case ProgressStatus.inProgress:
+        return l10n.inProgress;
+      case ProgressStatus.mastered:
+        return l10n.mastered;
+    }
+  }
 }
 
-// Enums for better type safety
 enum NoteType {
-  general('general', 'عام', Icons.note_outlined),
-  performance('performance', 'الأداء', Icons.trending_up_rounded),
-  behavior('behavior', 'السلوك', Icons.psychology_outlined),
-  health('health', 'الصحة', Icons.health_and_safety_outlined);
+  general('general', Icons.note_outlined),
+  performance('performance', Icons.trending_up_rounded),
+  behavior('behavior', Icons.psychology_outlined),
+  health('health', Icons.health_and_safety_outlined);
 
-  const NoteType(this.value, this.arabicName, this.icon);
+  const NoteType(this.value, this.icon);
   final String value;
-  final String arabicName;
   final IconData icon;
+
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case NoteType.general:
+        return l10n.general;
+      case NoteType.performance:
+        return l10n.performance;
+      case NoteType.behavior:
+        return l10n.behavior;
+      case NoteType.health:
+        return l10n.health;
+    }
+  }
 }
 
 enum NotePriority {
-  low('low', 'منخفضة', Colors.green),
-  normal('normal', 'عادية', Colors.blue),
-  high('high', 'عالية', Colors.red);
+  low('low', Colors.green),
+  normal('normal', Colors.blue),
+  high('high', Colors.red);
 
-  const NotePriority(this.value, this.arabicName, this.color);
+  const NotePriority(this.value, this.color);
   final String value;
-  final String arabicName;
   final Color color;
+
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case NotePriority.low:
+        return l10n.lowPriority;
+      case NotePriority.normal:
+        return l10n.normalPriority;
+      case NotePriority.high:
+        return l10n.highPriority;
+    }
+  }
 }
 
 enum Apparatus {
-  floor('floor', 'الحركات الأرضية'),
-  pommelHorse('pommel_horse', 'حصان الحلق'),
-  stillRings('still_rings', 'الحلق'),
-  vault('vault', 'طاولة القفز'),
-  parallelBars('parallel_bars', 'المتوازي'),
-  horizontalBar('horizontal_bar', 'العقلة'),
-  unevenBars('uneven_bars', 'المتوازي المختلف'),
-  beam('beam', 'عارضة التوازن');
+  floor('floor'),
+  pommelHorse('pommel_horse'),
+  stillRings('still_rings'),
+  vault('vault'),
+  parallelBars('parallel_bars'),
+  horizontalBar('horizontal_bar'),
+  unevenBars('uneven_bars'),
+  beam('beam');
 
   final String value;
-  final String arabicName;
-  const Apparatus(this.value, this.arabicName);
+  const Apparatus(this.value);
+
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (this) {
+      case Apparatus.floor:
+        return l10n.floor;
+      case Apparatus.pommelHorse:
+        return l10n.pommelHorse;
+      case Apparatus.stillRings:
+        return l10n.stillRings;
+      case Apparatus.vault:
+        return l10n.vault;
+      case Apparatus.parallelBars:
+        return l10n.parallelBars;
+      case Apparatus.horizontalBar:
+        return l10n.horizontalBar;
+      case Apparatus.unevenBars:
+        return l10n.unevenBars;
+      case Apparatus.beam:
+        return l10n.beam;
+    }
+  }
 }
 
-// دالة الألوان المطابقة
 Color getApparatusColor(Apparatus apparatus) {
   switch (apparatus) {
     case Apparatus.floor:

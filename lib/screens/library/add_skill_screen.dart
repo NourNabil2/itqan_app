@@ -157,7 +157,7 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
                           EditInfoNotice(
                             message: _isEditing
                                 ? 'سيتم حفظ التعديلات في المكتبة'
-                                : 'سيتم إضافة المهارة إلى مكتبة ${_selectedApparatus.arabicName}',
+                                : 'سيتم إضافة المهارة إلى مكتبة ${_selectedApparatus.getLocalizedName(context)}',
                             icon: Icons.info_outline_rounded,
                             backgroundColor: color.withOpacity(0.1),
                             textColor: color,
@@ -228,7 +228,7 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
                       ),
                     ),
                     SizedBox(width: SizeApp.s12),
-                    Text(apparatus.arabicName),
+                    Text(apparatus.getLocalizedName(context)),
                   ],
                 ),
               );

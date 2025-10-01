@@ -87,7 +87,7 @@ class SkillCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Text(
-                        skill.apparatus.arabicName,
+                        skill.apparatus.getLocalizedName(context),
                         style: TextStyle(
                           fontSize: 11.sp,
                           color: getApparatusColor(skill.apparatus),

@@ -1,11 +1,10 @@
-// ============= Age Category Tile Widget =============
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 
-/// ✅ Age Category Tile - بطاقة اختيار الفئة العمرية
 class AgeCategoryTile extends StatelessWidget {
   final AgeCategory category;
   final AgeCategory? selectedCategory;
@@ -50,19 +49,21 @@ class AgeCategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       margin: margin ?? EdgeInsets.only(bottom: SizeApp.s8),
       decoration: BoxDecoration(
         color: isSelected
-            ? (selectedColor ?? ColorsManager.primaryColor.withOpacity(0.1))
-            : (unselectedColor ?? Colors.white),
+            ? (selectedColor ?? theme.primaryColor.withOpacity(0.1))
+            : (unselectedColor ?? theme.cardColor),
         borderRadius: BorderRadius.circular(
           borderRadius ?? SizeApp.radiusMed,
         ),
         border: Border.all(
           color: isSelected
-              ? (selectedBorderColor ?? ColorsManager.primaryColor)
-              : (unselectedBorderColor ?? ColorsManager.inputBorder.withOpacity(0.3)),
+              ? (selectedBorderColor ?? theme.primaryColor)
+              : (unselectedBorderColor ?? theme.dividerColor.withOpacity(0.3)),
           width: isSelected
               ? (selectedBorderWidth ?? 2)
               : (unselectedBorderWidth ?? 1),
@@ -70,7 +71,7 @@ class AgeCategoryTile extends StatelessWidget {
         boxShadow: (showShadow && isSelected)
             ? [
           BoxShadow(
-            color: ColorsManager.primaryColor.withOpacity(0.1),
+            color: theme.primaryColor.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -86,27 +87,27 @@ class AgeCategoryTile extends StatelessWidget {
           vertical: SizeApp.s4,
         ),
         title: Text(
-          category.arabicName,
-          style: titleStyle ?? _buildTitleStyle(),
+          category.getLocalizedName(context),
+          style: titleStyle ?? _buildTitleStyle(theme),
         ),
-        subtitle: showCode ? _buildCodeWidget() : null,
-        activeColor: selectedBorderColor ?? ColorsManager.primaryColor,
+        subtitle: showCode ? _buildCodeWidget(theme) : null,
+        activeColor: selectedBorderColor ?? theme.primaryColor,
         controlAffinity: controlAffinity,
       ),
     );
   }
 
-  TextStyle _buildTitleStyle() {
+  TextStyle _buildTitleStyle(ThemeData theme) {
     return TextStyle(
       fontSize: 16.sp,
       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
       color: isSelected
-          ? (selectedBorderColor ?? ColorsManager.primaryColor)
-          : ColorsManager.defaultText,
+          ? (selectedBorderColor ?? theme.primaryColor)
+          : theme.textTheme.bodyLarge?.color,
     );
   }
 
-  Widget _buildCodeWidget() {
+  Widget _buildCodeWidget(ThemeData theme) {
     return Container(
       margin: EdgeInsets.only(top: 4.h),
       padding: EdgeInsets.symmetric(
@@ -115,29 +116,28 @@ class AgeCategoryTile extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: isSelected
-            ? (selectedBorderColor ?? ColorsManager.primaryColor).withOpacity(0.1)
-            : ColorsManager.backgroundSurface,
+            ? (selectedBorderColor ?? theme.primaryColor).withOpacity(0.1)
+            : theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: Text(
         category.code,
-        style: codeStyle ?? _buildCodeStyle(),
+        style: codeStyle ?? _buildCodeStyle(theme),
       ),
     );
   }
 
-  TextStyle _buildCodeStyle() {
+  TextStyle _buildCodeStyle(ThemeData theme) {
     return TextStyle(
       fontSize: 12.sp,
       color: isSelected
-          ? (selectedBorderColor ?? ColorsManager.primaryColor)
-          : ColorsManager.defaultTextSecondary,
+          ? (selectedBorderColor ?? theme.primaryColor)
+          : theme.textTheme.bodySmall?.color,
       fontWeight: FontWeight.w500,
     );
   }
 }
 
-/// ✅ Age Category Grid - شبكة الفئات العمرية (للمساحات الضيقة)
 class AgeCategoryGrid extends StatelessWidget {
   final AgeCategory? selectedCategory;
   final Function(AgeCategory?) onChanged;
@@ -170,6 +170,9 @@ class AgeCategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Padding(
       padding: padding ?? EdgeInsets.zero,
       child: Column(
@@ -181,16 +184,14 @@ class AgeCategoryGrid extends StatelessWidget {
               children: [
                 Icon(
                   Icons.cake_outlined,
-                  color: ColorsManager.primaryColor,
+                  color: theme.primaryColor,
                   size: 16.sp,
                 ),
                 SizedBox(width: SizeApp.s6),
                 Text(
-                  title ?? 'الفئة العمرية',
-                  style: TextStyle(
-                    fontSize: 14.sp,
+                  title ?? l10n.ageCategoryTitle,
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: ColorsManager.defaultText,
                   ),
                 ),
               ],
@@ -219,18 +220,18 @@ class AgeCategoryGrid extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? ColorsManager.primaryColor
-                        : Colors.white,
+                        ? theme.primaryColor
+                        : theme.cardColor,
                     borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
                     border: Border.all(
                       color: isSelected
-                          ? ColorsManager.primaryColor
-                          : ColorsManager.inputBorder.withOpacity(0.3),
+                          ? theme.primaryColor
+                          : theme.dividerColor.withOpacity(0.3),
                     ),
                     boxShadow: isSelected
                         ? [
                       BoxShadow(
-                        color: ColorsManager.primaryColor.withOpacity(0.3),
+                        color: theme.primaryColor.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -241,13 +242,13 @@ class AgeCategoryGrid extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        category.arabicName,
+                        category.getLocalizedName(context),
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
                           color: isSelected
                               ? Colors.white
-                              : ColorsManager.defaultText,
+                              : theme.textTheme.bodyLarge?.color,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -259,7 +260,7 @@ class AgeCategoryGrid extends StatelessWidget {
                             fontSize: 11.sp,
                             color: isSelected
                                 ? Colors.white.withOpacity(0.8)
-                                : ColorsManager.defaultTextSecondary,
+                                : theme.textTheme.bodySmall?.color,
                           ),
                           textAlign: TextAlign.center,
                         ),

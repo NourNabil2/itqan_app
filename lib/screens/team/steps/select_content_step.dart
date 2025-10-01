@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/data/models/skill_template.dart';
 import 'package:itqan_gym/providers/skill_library_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/exercise_library_provider.dart';
-
 
 class SelectContentStep extends StatefulWidget {
   final List<String> selectedExercises;
@@ -47,6 +47,9 @@ class _SelectContentStepState extends State<SelectContentStep>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -56,19 +59,16 @@ class _SelectContentStepState extends State<SelectContentStep>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'اختيار المحتوى',
-                style: TextStyle(
-                  fontSize: 24.sp,
+                l10n.selectContent,
+                style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2C3E50),
                 ),
               ),
               SizedBox(height: 8.h),
               Text(
-                'اختر التمارين والمهارات من المكتبة العالمية',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: Colors.grey[600],
+                l10n.selectContentDescription,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                 ),
               ),
             ],
@@ -77,17 +77,17 @@ class _SelectContentStepState extends State<SelectContentStep>
 
         // Tabs
         Container(
-          color: Colors.white,
+          color: theme.cardColor,
           child: TabBar(
             controller: _tabController,
-            labelColor: const Color(0xFF2196F3),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: const Color(0xFF2196F3),
-            tabs: const [
-              Tab(text: 'الإحماء'),
-              Tab(text: 'الإطالة'),
-              Tab(text: 'اللياقة'),
-              Tab(text: 'المهارات'),
+            labelColor: theme.primaryColor,
+            unselectedLabelColor: theme.textTheme.bodySmall?.color,
+            indicatorColor: theme.primaryColor,
+            tabs: [
+              Tab(text: ExerciseType.warmup.getLocalizedName(context)),
+              Tab(text: ExerciseType.stretching.getLocalizedName(context)),
+              Tab(text: ExerciseType.conditioning.getLocalizedName(context)),
+              Tab(text: l10n.skills),
             ],
           ),
         ),
@@ -107,22 +107,21 @@ class _SelectContentStepState extends State<SelectContentStep>
 
         // Selected Count
         Container(
-          color: Colors.white,
+          color: theme.cardColor,
           padding: EdgeInsets.all(16.w),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'العناصر المختارة',
-                style: TextStyle(
-                  fontSize: 14.sp,
+                l10n.selectedItems,
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2196F3).withOpacity(0.1),
+                  color: theme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Text(
@@ -130,7 +129,7 @@ class _SelectContentStepState extends State<SelectContentStep>
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF2196F3),
+                    color: theme.primaryColor,
                   ),
                 ),
               ),
@@ -142,6 +141,9 @@ class _SelectContentStepState extends State<SelectContentStep>
   }
 
   Widget _buildExerciseList(ExerciseType type) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Consumer<ExerciseLibraryProvider>(
       builder: (context, provider, child) {
         final exercises = provider.getExercisesByType(type);
@@ -154,22 +156,20 @@ class _SelectContentStepState extends State<SelectContentStep>
                 Icon(
                   Icons.inbox,
                   size: 60.sp,
-                  color: Colors.grey[300],
+                  color: theme.iconTheme.color?.withOpacity(0.3),
                 ),
                 SizedBox(height: 16.h),
                 Text(
-                  'لا توجد تمارين ${type.arabicName}',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    color: Colors.grey[600],
+                  l10n.noExercisesAvailable(type.getLocalizedName(context)),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                   ),
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  'أضف تمارين من المكتبة أولاً',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.grey[500],
+                  l10n.addFromLibraryFirst,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
                   ),
                 ),
               ],
@@ -186,7 +186,9 @@ class _SelectContentStepState extends State<SelectContentStep>
 
             return Card(
               margin: EdgeInsets.only(bottom: 12.h),
-              color: isSelected ? const Color(0xFF2196F3).withOpacity(0.05) : null,
+              color: isSelected
+                  ? theme.primaryColor.withOpacity(0.05)
+                  : theme.cardColor,
               child: CheckboxListTile(
                 value: isSelected,
                 onChanged: (value) {
@@ -201,8 +203,7 @@ class _SelectContentStepState extends State<SelectContentStep>
                 },
                 title: Text(
                   exercise.title,
-                  style: TextStyle(
-                    fontSize: 16.sp,
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -211,22 +212,22 @@ class _SelectContentStepState extends State<SelectContentStep>
                   exercise.description!,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12.sp),
+                  style: theme.textTheme.bodySmall,
                 )
                     : null,
                 secondary: Container(
                   width: 48.w,
                   height: 48.h,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2196F3).withOpacity(0.1),
+                    color: theme.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
                     _getExerciseIcon(type),
-                    color: const Color(0xFF2196F3),
+                    color: theme.primaryColor,
                   ),
                 ),
-                activeColor: const Color(0xFF2196F3),
+                activeColor: theme.primaryColor,
                 checkColor: Colors.white,
               ),
             );
@@ -237,6 +238,9 @@ class _SelectContentStepState extends State<SelectContentStep>
   }
 
   Widget _buildSkillsList() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Consumer<SkillLibraryProvider>(
       builder: (context, provider, child) {
         if (provider.skills.isEmpty) {
@@ -247,22 +251,20 @@ class _SelectContentStepState extends State<SelectContentStep>
                 Icon(
                   Icons.sports_gymnastics,
                   size: 60.sp,
-                  color: Colors.grey[300],
+                  color: theme.iconTheme.color?.withOpacity(0.3),
                 ),
                 SizedBox(height: 16.h),
                 Text(
-                  'لا توجد مهارات',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    color: Colors.grey[600],
+                  l10n.noSkillsAvailable,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                   ),
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  'أضف مهارات من المكتبة أولاً',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.grey[500],
+                  l10n.addFromLibraryFirst,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
                   ),
                 ),
               ],
@@ -289,11 +291,9 @@ class _SelectContentStepState extends State<SelectContentStep>
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.h),
                   child: Text(
-                    apparatus.arabicName,
-                    style: TextStyle(
-                      fontSize: 16.sp,
+                    apparatus.getLocalizedName(context),
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2C3E50),
                     ),
                   ),
                 ),
@@ -302,7 +302,9 @@ class _SelectContentStepState extends State<SelectContentStep>
 
                   return Card(
                     margin: EdgeInsets.only(bottom: 8.h),
-                    color: isSelected ? const Color(0xFF2196F3).withOpacity(0.05) : null,
+                    color: isSelected
+                        ? theme.primaryColor.withOpacity(0.05)
+                        : theme.cardColor,
                     child: CheckboxListTile(
                       value: isSelected,
                       onChanged: (value) {
@@ -315,7 +317,10 @@ class _SelectContentStepState extends State<SelectContentStep>
                           widget.onSkillsChanged(_tempSelectedSkills.toList());
                         });
                       },
-                      title: Text(skill.skillName),
+                      title: Text(
+                        skill.skillName,
+                        style: theme.textTheme.bodyLarge,
+                      ),
                       secondary: Container(
                         width: 48.w,
                         height: 48.h,
@@ -328,11 +333,11 @@ class _SelectContentStepState extends State<SelectContentStep>
                           color: getApparatusColor(apparatus),
                         ),
                       ),
-                      activeColor: const Color(0xFF2196F3),
+                      activeColor: theme.primaryColor,
                       checkColor: Colors.white,
                     ),
                   );
-                }).toList(),
+                }),
               ],
             );
           },
@@ -351,6 +356,4 @@ class _SelectContentStepState extends State<SelectContentStep>
         return Icons.fitness_center;
     }
   }
-
-
 }

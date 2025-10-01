@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
@@ -10,9 +11,6 @@ import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/screens/member/member_details/member_detail_screen.dart';
 import 'package:provider/provider.dart';
 
-
-
-// ============= 2. Updated Member Card Widget =============
 class MemberCard extends StatefulWidget {
   final Member member;
   final VoidCallback? onTap;
@@ -34,7 +32,6 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
 
-  // Dynamic data
   MemberCardData? _cardData;
   bool _isLoadingData = false;
 
@@ -66,7 +63,6 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
     try {
       final provider = context.read<ExerciseAssignmentProvider>();
 
-      // Load skills and statistics
       final results = await Future.wait([
         provider.loadMemberSkills(widget.member.id),
         provider.getMemberStatistics(widget.member.id),
@@ -75,11 +71,9 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
       final skills = results[0] as List<AssignedSkill>;
       final stats = results[1] as Map<String, dynamic>;
 
-      // Calculate skills progress
       final skillsProgress = skills.isEmpty ? 0.0 :
       skills.fold<double>(0, (sum, skill) => sum + skill.progress) / skills.length;
 
-      // Extract statistics
       final exerciseStats = stats['exercises'] ?? {};
 
       if (mounted) {
@@ -157,7 +151,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
             child: Container(
               margin: EdgeInsets.only(bottom: SizeApp.s16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(SizeApp.radiusMed),
                 boxShadow: [
                   BoxShadow(
@@ -179,7 +173,7 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
               child: Column(
                 children: [
                   _buildHeader(isSmallScreen, theme),
-                  _buildDivider(),
+                  _buildDivider(theme),
                   _buildStats(isSmallScreen, theme),
                 ],
               ),
@@ -195,12 +189,8 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
       padding: EdgeInsets.all(SizeApp.padding),
       child: Row(
         children: [
-          // Member Avatar
           _buildAvatar(isSmallScreen),
-
           SizedBox(width: SizeApp.s16),
-
-          // Member Info
           Expanded(
             child: _buildMemberInfo(isSmallScreen, theme),
           ),
@@ -257,6 +247,8 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
   }
 
   Widget _buildMemberInfo(bool isSmallScreen, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -268,7 +260,6 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: isSmallScreen ? 18.sp : 20.sp,
                   fontWeight: FontWeight.w700,
-                  color: ColorsManager.defaultText,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -281,41 +272,33 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    ColorsManager.primaryColor.withOpacity(0.6),
+                    theme.primaryColor.withOpacity(0.6),
                   ),
                 ),
               ),
           ],
         ),
-
         SizedBox(height: 6.h),
-
-        // Badges Row
         Wrap(
           spacing: 8.w,
           runSpacing: 4.h,
           children: [
-            // Age Badge
             if (widget.member.age != null)
               _buildBadge(
                 icon: Icons.cake_outlined,
-                text: '${widget.member.age} سنة',
+                text: l10n.yearsOld(widget.member.age!),
                 color: ColorsManager.infoText,
                 backgroundColor: ColorsManager.infoSurface,
               ),
-
-            // Level Badge
             _buildBadge(
               text: widget.member.level,
               color: _getLevelColor(widget.member.level),
               backgroundColor: _getLevelColor(widget.member.level).withOpacity(0.15),
             ),
-
-            // Skills Count Badge
             if (_cardData != null && _cardData!.skillsCount > 0)
               _buildBadge(
                 icon: Icons.star,
-                text: '${_cardData!.skillsCount} مهارة',
+                text: l10n.skillsCount(_cardData!.skillsCount),
                 color: ColorsManager.warningText,
                 backgroundColor: ColorsManager.warningSurface,
               ),
@@ -360,16 +343,16 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(ThemeData theme) {
     return Container(
       height: 1,
       margin: EdgeInsets.symmetric(horizontal: SizeApp.s16),
-      color: ColorsManager.inputBorder.withOpacity(0.1),
+      color: theme.dividerColor.withOpacity(0.1),
     );
   }
 
   Widget _buildStats(bool isSmallScreen, ThemeData theme) {
-    // Use real data if available, otherwise use placeholder values
+    final l10n = AppLocalizations.of(context);
     final skillsCount = _cardData?.skillsCount ?? 0;
     final skillsProgress = _cardData?.skillsProgress ?? 0;
     final lastActivityDays = _calculateDaysSinceActivity();
@@ -380,27 +363,27 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
         children: [
           Expanded(
             child: _buildStatItem(
-              title: 'المهارات',
+              title: l10n.skills,
               value: skillsCount.toString(),
               icon: Icons.star_rounded,
               color: ColorsManager.warningFill,
               theme: theme,
             ),
           ),
-          _buildStatDivider(),
+          _buildStatDivider(theme),
           Expanded(
             child: _buildStatItem(
-              title: 'التقدم',
+              title: l10n.progress,
               value: '${skillsProgress.toInt()}%',
               icon: Icons.trending_up_rounded,
               color: ColorsManager.successFill,
               theme: theme,
             ),
           ),
-          _buildStatDivider(),
+          _buildStatDivider(theme),
           Expanded(
             child: _buildStatItem(
-              title: 'النشاط',
+              title: l10n.activity,
               value: _formatLastActivity(lastActivityDays),
               icon: Icons.schedule_rounded,
               color: _getActivityColor(lastActivityDays),
@@ -447,34 +430,34 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
           style: theme.textTheme.bodySmall?.copyWith(
             fontSize: 10.sp,
             fontWeight: FontWeight.w500,
-            color: ColorsManager.defaultTextSecondary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatDivider() {
+  Widget _buildStatDivider(ThemeData theme) {
     return Container(
       width: 1,
       height: 40.h,
-      color: ColorsManager.inputBorder.withOpacity(0.2),
+      color: theme.dividerColor.withOpacity(0.2),
     );
   }
 
-  // Helper methods
   int _calculateDaysSinceActivity() {
     if (_cardData?.lastActivity == null) return -1;
     return DateTime.now().difference(_cardData!.lastActivity!).inDays;
   }
 
   String _formatLastActivity(int days) {
-    if (days < 0) return 'جديد';
-    if (days == 0) return 'اليوم';
-    if (days == 1) return 'أمس';
-    if (days <= 7) return '$days أيام';
-    if (days <= 30) return '${(days / 7).floor()} أسابيع';
-    return '+30 يوم';
+    final l10n = AppLocalizations.of(context);
+
+    if (days < 0) return l10n.new_;
+    if (days == 0) return l10n.today;
+    if (days == 1) return l10n.yesterday;
+    if (days <= 7) return l10n.daysCount(days);
+    if (days <= 30) return l10n.weeksCount((days / 7).floor());
+    return l10n.moreThan30Days;
   }
 
   Color _getActivityColor(int days) {

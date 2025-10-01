@@ -184,7 +184,7 @@ class _MemberSkillsTabState extends State<MemberSkillsTab>
                                   borderRadius: BorderRadius.circular(8.r),
                                 ),
                                 child: Text(
-                                  skill.apparatus.arabicName,
+                                  skill.apparatus.getLocalizedName(context),
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     color: apparatusColor,

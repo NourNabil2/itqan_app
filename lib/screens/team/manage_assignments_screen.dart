@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
@@ -16,7 +17,7 @@ import '../../data/models/skill_template.dart';
 import '../../providers/exercise_library_provider.dart';
 import '../../providers/skill_library_provider.dart';
 import '../../providers/team_provider.dart';
-/// todo :: refactor this screen
+
 class ManageAssignmentsScreen extends StatefulWidget {
   final Team team;
 
@@ -36,36 +37,36 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   bool _isLoading = false;
   String? _errorMessage;
 
-  static const List<AssignmentTab> _tabs = [
+  List<AssignmentTab> get _tabs => [
     AssignmentTab(
-      title: 'الإحماء',
+      title: ExerciseType.warmup.getLocalizedName(context),
       icon: Icons.whatshot_rounded,
       exerciseType: ExerciseType.warmup,
-      color: Color(0xFFFF5722),
+      color: const Color(0xFFFF5722),
     ),
     AssignmentTab(
-      title: 'الإطالة',
+      title: ExerciseType.stretching.getLocalizedName(context),
       icon: Icons.accessibility_new_rounded,
       exerciseType: ExerciseType.stretching,
-      color: Color(0xFF4CAF50),
+      color: const Color(0xFF4CAF50),
     ),
     AssignmentTab(
-      title: 'اللياقة',
+      title: ExerciseType.conditioning.getLocalizedName(context),
       icon: Icons.fitness_center_rounded,
       exerciseType: ExerciseType.conditioning,
-      color: Color(0xFF2196F3),
+      color: const Color(0xFF2196F3),
     ),
     AssignmentTab(
-      title: 'المهارات',
+      title: AppLocalizations.of(context).skills,
       icon: Icons.star_rounded,
-      color: Color(0xFF9C27B0),
+      color: const Color(0xFF9C27B0),
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadCurrentAssignments();
   }
 
@@ -92,8 +93,11 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: ColorsManager.backgroundSurface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: CustomAppBar(
         title: widget.team.name,
         action: _buildSaveButton(),
@@ -102,17 +106,17 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         children: [
           // Header Section
           SectionHeader(
-            title: 'تعيين المحتوى للفريق',
-            subtitle: 'اختر التمارين والمهارات المناسبة لـ ${widget.team.name}',
+            title: l10n.assignContentToTeam,
+            subtitle: l10n.assignContentDescription(widget.team.name),
             leading: Container(
               padding: EdgeInsets.all(SizeApp.s8),
               decoration: BoxDecoration(
-                color: ColorsManager.primaryColor.withOpacity(0.1),
+                color: theme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(SizeApp.s8),
               ),
               child: Icon(
                 Icons.assignment_rounded,
-                color: ColorsManager.primaryColor,
+                color: theme.primaryColor,
                 size: SizeApp.iconSize,
               ),
             ),
@@ -120,7 +124,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
             showDivider: true,
           ),
 
-          // Error Display using custom ErrorContainer
+          // Error Display
           if (_errorMessage != null)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
@@ -137,22 +141,22 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
               ),
             ),
 
-          // Search Bar using AppTextField
+          // Search Bar
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: SizeApp.s16,
               vertical: SizeApp.s8,
             ),
             child: AppTextFieldFactory.search(
-              hintText: 'البحث في المحتوى...',
+              hintText: l10n.searchInContent,
               controller: _searchController,
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value.toLowerCase();
                 });
               },
-              fillColor: ColorsManager.backgroundCard,
-              focusedFillColor: ColorsManager.backgroundCard,
+              fillColor: theme.cardColor,
+              focusedFillColor: theme.cardColor,
               borderRadius: SizeApp.radiusSmall,
               contentPadding: EdgeInsets.symmetric(
                 horizontal: SizeApp.s16,
@@ -162,7 +166,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
                   ? IconButton(
                 icon: Icon(
                   Icons.clear_rounded,
-                  color: ColorsManager.defaultTextSecondary,
+                  color: theme.iconTheme.color?.withOpacity(0.6),
                   size: 20.sp,
                 ),
                 onPressed: () {
@@ -200,20 +204,22 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Widget _buildSaveButton() {
+    final l10n = AppLocalizations.of(context);
+
     return TextButton.icon(
       onPressed: _isLoading ? null : _saveAssignments,
       icon: _isLoading
           ? SizedBox(
         width: 16.w,
         height: 16.h,
-        child: CircularProgressIndicator(
+        child: const CircularProgressIndicator(
           strokeWidth: 2,
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
       )
           : Icon(Icons.check_rounded, size: SizeApp.iconSize),
       label: Text(
-        _isLoading ? 'جاري الحفظ...' : 'حفظ',
+        _isLoading ? l10n.saving : l10n.save,
         style: TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 14.sp,
@@ -234,13 +240,15 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Widget _buildTabBar() {
+    final theme = Theme.of(context);
+
     return Container(
-      color: Colors.white,
+      color: theme.cardColor,
       child: TabBar(
         controller: _tabController,
-        labelColor: ColorsManager.primaryColor,
-        unselectedLabelColor: ColorsManager.defaultTextSecondary,
-        indicatorColor: ColorsManager.primaryColor,
+        labelColor: theme.primaryColor,
+        unselectedLabelColor: theme.textTheme.bodySmall?.color,
+        indicatorColor: theme.primaryColor,
         indicatorWeight: 3,
         labelStyle: TextStyle(
           fontSize: 13.sp,
@@ -267,13 +275,15 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Widget _buildSelectedCountBanner() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final totalSelected = _selectedExercises.length + _selectedSkills.length;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       color: totalSelected > 0
-          ? ColorsManager.primaryColor.withOpacity(0.1)
-          : ColorsManager.backgroundCard,
+          ? theme.primaryColor.withOpacity(0.1)
+          : theme.cardColor,
       padding: EdgeInsets.symmetric(
         horizontal: SizeApp.s16,
         vertical: SizeApp.s12,
@@ -285,16 +295,16 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
             children: [
               Icon(
                 Icons.checklist_rounded,
-                color: ColorsManager.primaryColor,
+                color: theme.primaryColor,
                 size: 16.sp,
               ),
               SizedBox(width: SizeApp.s8),
               Text(
-                'العناصر المختارة',
+                l10n.selectedItems,
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
-                  color: ColorsManager.primaryColor,
+                  color: theme.primaryColor,
                 ),
               ),
             ],
@@ -306,8 +316,8 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
             ),
             decoration: BoxDecoration(
               color: totalSelected > 0
-                  ? ColorsManager.primaryColor
-                  : ColorsManager.defaultTextSecondary,
+                  ? theme.primaryColor
+                  : theme.iconTheme.color?.withOpacity(0.6),
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: Text(
@@ -325,12 +335,13 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Widget _buildExerciseList(ExerciseType type) {
+    final l10n = AppLocalizations.of(context);
+
     return Consumer<ExerciseLibraryProvider>(
       builder: (context, provider, child) {
         final exercises = provider.getExercisesByType(type);
         final tabColor = _tabs.firstWhere((tab) => tab.exerciseType == type).color;
 
-        // Apply search filter
         final filteredExercises = _searchQuery.isEmpty
             ? exercises
             : exercises.where((e) =>
@@ -341,16 +352,13 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         if (filteredExercises.isEmpty) {
           return EmptyStateWidget(
             title: _searchQuery.isNotEmpty
-                ? 'لا توجد نتائج'
-                : 'لا توجد تمارين ${type.arabicName}',
+                ? l10n.noResultsFound
+                : l10n.noExercisesInCategory(type.getLocalizedName(context)),
             subtitle: _searchQuery.isNotEmpty
-                ? 'جرب البحث بكلمات مختلفة'
-                : 'قم بإضافة تمارين جديدة من المكتبة',
-            buttonText: 'إضافة تمرين',
-            onPressed: () {
-              // Navigate to add exercise screen
-              Navigator.pop(context);
-            },
+                ? l10n.tryDifferentKeywords
+                : l10n.addNewFromLibrary,
+            buttonText: l10n.addExercise,
+            onPressed: () => Navigator.pop(context),
             assetSvgPath: _getAssetForExerciseType(type),
             buttonIcon: Icons.add_rounded,
             circleSize: 100,
@@ -364,7 +372,6 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
           itemBuilder: (context, index) {
             final exercise = filteredExercises[index];
             final isSelected = _selectedExercises.contains(exercise.id);
-
             return _buildExerciseCard(exercise, isSelected, tabColor);
           },
         );
@@ -373,32 +380,29 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Widget _buildSkillsList() {
+    final l10n = AppLocalizations.of(context);
+
     return Consumer<SkillLibraryProvider>(
       builder: (context, provider, child) {
         final skills = provider.skills;
-        const tabColor = Color(0xFF9C27B0);
 
-        // Apply search filter
         final filteredSkills = _searchQuery.isEmpty
             ? skills
             : skills.where((s) =>
         s.skillName.toLowerCase().contains(_searchQuery) ||
-            s.apparatus.arabicName.toLowerCase().contains(_searchQuery)
+            s.apparatus.getLocalizedName(context).toLowerCase().contains(_searchQuery)
         ).toList();
 
         if (filteredSkills.isEmpty) {
           return EmptyStateWidget(
             title: _searchQuery.isNotEmpty
-                ? 'لا توجد نتائج'
-                : 'لا توجد مهارات',
+                ? l10n.noResultsFound
+                : l10n.noSkillsAvailable,
             subtitle: _searchQuery.isNotEmpty
-                ? 'جرب البحث بكلمات مختلفة'
-                : 'قم بإضافة مهارات جديدة من المكتبة',
-            buttonText: 'إضافة مهارة',
-            onPressed: () {
-              // Navigate to add skill screen
-              Navigator.pop(context);
-            },
+                ? l10n.tryDifferentKeywords
+                : l10n.addNewFromLibrary,
+            buttonText: l10n.addSkill,
+            onPressed: () => Navigator.pop(context),
             assetSvgPath: AssetsManager.iconsGymnastEx2,
             buttonIcon: Icons.add_rounded,
             circleSize: 100,
@@ -406,7 +410,6 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
           );
         }
 
-        // Group skills by apparatus
         final skillsByApparatus = <Apparatus, List<SkillTemplate>>{};
         for (final skill in filteredSkills) {
           skillsByApparatus.putIfAbsent(skill.apparatus, () => []).add(skill);
@@ -422,7 +425,6 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Apparatus Header
                 Container(
                   margin: EdgeInsets.only(
                     bottom: SizeApp.s12,
@@ -446,7 +448,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
                       ),
                       SizedBox(width: SizeApp.s8),
                       Text(
-                        apparatus.arabicName,
+                        apparatus.getLocalizedName(context),
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
@@ -456,12 +458,10 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
                     ],
                   ),
                 ),
-
-                // Skills List
                 ...apparatusSkills.map((skill) {
                   final isSelected = _selectedSkills.contains(skill.id);
                   return _buildSkillCard(skill, isSelected);
-                }).toList(),
+                }),
               ],
             );
           },
@@ -471,15 +471,17 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Widget _buildExerciseCard(ExerciseTemplate exercise, bool isSelected, Color accentColor) {
+    final theme = Theme.of(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s12),
       decoration: BoxDecoration(
-        color: isSelected ? accentColor.withOpacity(0.05) : Colors.white,
+        color: isSelected ? accentColor.withOpacity(0.05) : theme.cardColor,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         border: Border.all(
           color: isSelected
               ? accentColor.withOpacity(0.3)
-              : ColorsManager.inputBorder.withOpacity(0.2),
+              : theme.dividerColor.withOpacity(0.2),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: [
@@ -504,10 +506,8 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         contentPadding: EdgeInsets.all(SizeApp.s12),
         title: Text(
           exercise.title,
-          style: TextStyle(
-            fontSize: 16.sp,
+          style: theme.textTheme.bodyLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: ColorsManager.defaultText,
           ),
         ),
         subtitle: exercise.description != null
@@ -517,9 +517,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
             exercise.description!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 13.sp,
-              color: ColorsManager.defaultTextSecondary,
+            style: theme.textTheme.bodySmall?.copyWith(
               height: 1.3,
             ),
           ),
@@ -546,17 +544,18 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Widget _buildSkillCard(SkillTemplate skill, bool isSelected) {
+    final theme = Theme.of(context);
     final apparatusColor = getApparatusColor(skill.apparatus);
 
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s8),
       decoration: BoxDecoration(
-        color: isSelected ? apparatusColor.withOpacity(0.05) : Colors.white,
+        color: isSelected ? apparatusColor.withOpacity(0.05) : theme.cardColor,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         border: Border.all(
           color: isSelected
               ? apparatusColor.withOpacity(0.3)
-              : ColorsManager.inputBorder.withOpacity(0.2),
+              : theme.dividerColor.withOpacity(0.2),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: [
@@ -581,10 +580,8 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         contentPadding: EdgeInsets.all(SizeApp.s12),
         title: Text(
           skill.skillName,
-          style: TextStyle(
-            fontSize: 16.sp,
+          style: theme.textTheme.bodyLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: ColorsManager.defaultText,
           ),
         ),
         secondary: Container(
@@ -630,6 +627,8 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 
   Future<void> _saveAssignments() async {
+    final l10n = AppLocalizations.of(context);
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -653,7 +652,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('تم حفظ التعيينات بنجاح'),
+              content: Text(l10n.assignmentsSavedSuccessfully),
               backgroundColor: ColorsManager.successFill,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -663,7 +662,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
           );
         }
       } else {
-        throw Exception(teamProvider.errorMessage ?? 'خطأ في حفظ التعيينات');
+        throw Exception(teamProvider.errorMessage ?? l10n.errorSavingAssignments);
       }
     } catch (e) {
       setState(() {
@@ -677,7 +676,6 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   }
 }
 
-// Helper Classes
 class AssignmentTab {
   final String title;
   final IconData icon;

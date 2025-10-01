@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/providers/settings_provider.dart';
-import 'package:itqan_gym/screens/settings/widgets/setting_card/settings_toggle.dart';
 import 'package:provider/provider.dart';
-
-import 'setting_card/settings_card.dart';
 
 class LanguageSelectionDialog extends StatelessWidget {
   final String currentLanguage;
@@ -19,12 +17,22 @@ class LanguageSelectionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return AlertDialog(
+      backgroundColor: theme.dialogBackgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+      ),
       title: Row(
         children: [
-          const Icon(Icons.language, color: ColorsManager.primaryColor),
+          Icon(
+            Icons.language,
+            color: ColorsManager.primaryColor,
+          ),
           SizedBox(width: SizeApp.s8),
-          const Text('اختر اللغة'),
+          Text(l10n.selectLanguage),
         ],
       ),
       content: Column(
@@ -33,14 +41,14 @@ class LanguageSelectionDialog extends StatelessWidget {
           _buildLanguageOption(
             context: context,
             code: 'ar',
-            title: 'العربية',
+            title: l10n.arabic,
             flag: '🇸🇦',
           ),
           SizedBox(height: SizeApp.s8),
           _buildLanguageOption(
             context: context,
             code: 'en',
-            title: 'English',
+            title: l10n.english,
             flag: '🇺🇸',
           ),
         ],
@@ -54,6 +62,7 @@ class LanguageSelectionDialog extends StatelessWidget {
     required String title,
     required String flag,
   }) {
+    final theme = Theme.of(context);
     final isSelected = currentLanguage == code;
 
     return InkWell(
@@ -73,7 +82,7 @@ class LanguageSelectionDialog extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? ColorsManager.primaryColor
-                : Colors.grey.withOpacity(0.3),
+                : theme.dividerColor,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -84,11 +93,9 @@ class LanguageSelectionDialog extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? ColorsManager.primaryColor
-                      : null,
+                  color: isSelected ? ColorsManager.primaryColor : null,
                 ),
               ),
             ),
@@ -101,34 +108,6 @@ class LanguageSelectionDialog extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-// ============= 8. Notifications Section ============= //todo:: remove this
-class NotificationsSection extends StatelessWidget {
-  final bool enabled;
-
-  const NotificationsSection({
-    super.key,
-    required this.enabled,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SettingsCard(
-      title: 'الإشعارات',
-      icon: Icons.notifications_outlined,
-      children: [
-        SettingsToggle(
-          icon: Icons.notifications_active,
-          title: 'الإشعارات',
-          subtitle: 'تلقي إشعارات التطبيق',
-          value: enabled,
-          onChanged: (value) {
-            context.read<SettingsProvider>().toggleNotifications(value);
-          },
-        ),
-      ],
     );
   }
 }

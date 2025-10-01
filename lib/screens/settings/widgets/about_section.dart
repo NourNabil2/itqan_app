@@ -1,5 +1,5 @@
-// ============= 11. About Section =============
 import 'package:flutter/material.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 
 import 'setting_card/settings_card.dart';
 import 'setting_card/settings_tile.dart';
@@ -9,33 +9,35 @@ class AboutSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SettingsCard(
-      title: 'حول التطبيق',
+      title: l10n.about,
       icon: Icons.info_outline,
       children: [
         SettingsTile(
           icon: Icons.privacy_tip_outlined,
-          title: 'سياسة الخصوصية',
+          title: l10n.privacyPolicy,
           onTap: () {},
         ),
         SettingsTile(
           icon: Icons.description_outlined,
-          title: 'شروط الاستخدام',
+          title: l10n.termsOfService,
           onTap: () {},
         ),
         SettingsTile(
           icon: Icons.share_outlined,
-          title: 'مشاركة التطبيق',
+          title: l10n.shareApp,
           onTap: () {},
         ),
         SettingsTile(
           icon: Icons.star_outline,
-          title: 'تقييم التطبيق',
+          title: l10n.rateApp,
           onTap: () {},
         ),
         SettingsTile(
           icon: Icons.code,
-          title: 'الإصدار',
+          title: l10n.version,
           subtitle: '1.0.0',
           onTap: null,
         ),

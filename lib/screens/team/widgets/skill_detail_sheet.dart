@@ -235,7 +235,7 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
                       Icon(getApparatusIcon(widget.skill.apparatus), color: Colors.white, size: 14.sp),
                       SizedBox(width: 6.w),
                       Text(
-                        widget.skill.apparatus.arabicName,
+                        widget.skill.apparatus.getLocalizedName(context),
                         style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: Colors.white),
                       ),
                     ],
@@ -798,7 +798,7 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
               Expanded(
                 child: _buildModernInfoCard(
                   'الجهاز',
-                  widget.skill.apparatus.arabicName,
+                  widget.skill.apparatus.getLocalizedName(context),
                   getApparatusIcon(widget.skill.apparatus),
                   getApparatusColor(widget.skill.apparatus),
                 ),

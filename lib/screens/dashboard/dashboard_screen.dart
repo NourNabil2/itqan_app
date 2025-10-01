@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/theme/text_theme.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
@@ -20,7 +21,7 @@ import '../../screens/library/library_screen.dart';
 import '../../screens/member/member_library_screen.dart';
 import '../member/add_member_screen/add_member_screen.dart';
 import 'add_team_screen.dart';
-import 'widgets/logo_box_header.dart'; // يحتوي CreateTeamFlow
+import 'widgets/logo_box_header.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -45,7 +46,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
     _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
     _fadeCtrl.forward();
   }
@@ -65,21 +69,27 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Status bar
+    final l10n = AppLocalizations.of(context);
+
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
     );
 
     return Scaffold(
       body: SafeArea(
-        child: FadeTransition(opacity: _fade, child: _buildBody(_index)),
+        child: FadeTransition(
+          opacity: _fade,
+          child: _buildBody(_index),
+        ),
       ),
-
 
       floatingActionButton: SpeedDial(
         icon: Icons.add,
         activeIcon: Icons.close,
-        backgroundColor:Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 6,
         spacing: 6,
@@ -90,31 +100,41 @@ class _DashboardScreenState extends State<DashboardScreen>
         overlayOpacity: 0.15,
         shape: const StadiumBorder(),
         children: [
-          // إضافة عضو للمكتبة
+          // Add member
           SpeedDialChild(
-            label: 'إضافة عضو',
+            label: l10n.addMemberToLibrary,
             labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
             labelBackgroundColor: ColorsManager.secondaryColor,
-            child: const Icon(Icons.person_add, color: ColorsManager.backgroundSurface),
+            child: const Icon(
+              Icons.person_add,
+              color: ColorsManager.backgroundSurface,
+            ),
             backgroundColor: ColorsManager.secondaryColor,
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AddGlobalMemberScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const AddGlobalMemberScreen(),
+                ),
               );
             },
           ),
-          // إنشاء فريق
+          // Add team
           SpeedDialChild(
-            label: 'إضافة فريق',
+            label: l10n.addTeam,
             labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
             labelBackgroundColor: ColorsManager.secondLightColor,
-            child: const Icon(Icons.group_add, color: ColorsManager.backgroundSurface),
+            child: const Icon(
+              Icons.group_add,
+              color: ColorsManager.backgroundSurface,
+            ),
             backgroundColor: ColorsManager.secondLightColor,
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const CreateTeamFlow()),
+                MaterialPageRoute(
+                  builder: (_) => const CreateTeamFlow(),
+                ),
               );
             },
           ),
@@ -123,7 +143,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      /// Bottom bar
       bottomNavigationBar: AnimatedBottomNavigationBar(
         icons: _icons,
         activeIndex: _index,
@@ -155,8 +174,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-  // ===== Teams Tab =====
   Widget _buildTeamsTab() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return Consumer<TeamProvider>(
       builder: (context, teamProvider, _) {
         if (teamProvider.isLoading) {
@@ -165,64 +186,58 @@ class _DashboardScreenState extends State<DashboardScreen>
 
         return CustomScrollView(
           slivers: [
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: LogoBoxHeader(
                 title: 'ITQAN',
-                subtitle: 'Manage teams & track skills',
+                subtitle: l10n.manageTeamsTrackSkills,
                 assetLogo: AssetsManager.logo,
               ),
             ),
 
-            // حالة: لا توجد فرق
+            // Empty state
             if (teamProvider.teams.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: EmptyStateWidget(
-                  title: 'لا توجد فرق بعد',
-                  subtitle: 'ابدأ بإنشاء أول فريق لك لتنظيم الأعضاء والتمارين.',
-                  buttonText: 'إنشاء فريق',
+                  title: l10n.noTeamsYet,
+                  subtitle: l10n.noTeamsSubtitle,
+                  buttonText: l10n.createTeam,
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const CreateTeamFlow()),
+                      MaterialPageRoute(
+                        builder: (_) => const CreateTeamFlow(),
+                      ),
                     );
                   },
-                  assetSvgPath: AssetsManager.iconsTeamIcons, // أو استخدم iconData
+                  assetSvgPath: AssetsManager.iconsTeamIcons,
                   buttonIcon: Icons.group_add,
                 ),
               )
             else ...[
-              // عنوان القسم
+              // Section title
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: SizeApp.padding),
                   child: Row(
                     children: [
-                      // Divider على الجهة اليسرى
                       Expanded(
                         child: Divider(
                           thickness: 1,
-                          color: Colors.grey.shade400,
+                          color: theme.dividerColor,
                         ),
                       ),
-
-                      // مسافة صغيرة
-                      const SizedBox(width: 8),
-
-                      // النص في المنتصف
-                      Text(
-                        'Teams',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w),
+                        child: Text(
+                          l10n.teams,
+                          style: theme.textTheme.titleLarge,
+                        ),
                       ),
-
-                      // مسافة صغيرة
-                      const SizedBox(width: 8),
-
-                      // Divider على الجهة اليمنى
                       Expanded(
                         child: Divider(
                           thickness: 1,
-                          color: Colors.grey.shade400,
+                          color: theme.dividerColor,
                         ),
                       ),
                     ],
@@ -230,21 +245,21 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
 
-
-              // الليست
+              // Teams list
               SliverPadding(
                 padding: EdgeInsets.all(SizeApp.padding),
                 sliver: SliverList.separated(
                   itemCount: AgeCategory.values.length,
                   separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                  itemBuilder: (_, idx) =>
-                      _buildAgeSection(AgeCategory.values[idx], teamProvider),
+                  itemBuilder: (_, idx) => _buildAgeSection(
+                    AgeCategory.values[idx],
+                    teamProvider,
+                  ),
                 ),
               ),
             ],
           ],
         );
-
       },
     );
   }
@@ -254,12 +269,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (teams.isEmpty) return const SizedBox.shrink();
 
     return AgeGroupSection(
-      title: category.arabicName,
+      title: category.getLocalizedName(context),
       count: teams.length,
-      initiallyExpanded: true, // أو false لو عايزها مقفولة افتراضياً
+      initiallyExpanded: true,
       children: teams.map((t) => TeamCard(team: t)).toList(),
     );
   }
-
-
 }

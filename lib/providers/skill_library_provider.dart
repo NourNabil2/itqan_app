@@ -4,7 +4,6 @@ import '../data/models/skill_template.dart';
 import '../data/database/db_helper.dart';
 import '../core/utils/enums.dart';
 
-/// ✅ Enhanced Skill Library Provider with improved state management
 class SkillLibraryProvider extends ChangeNotifier {
   // Core data
   List<SkillTemplate> _allSkills = [];
@@ -18,6 +17,7 @@ class SkillLibraryProvider extends ChangeNotifier {
   Apparatus? _selectedApparatus;
   String _searchQuery = '';
   Timer? _searchTimer;
+  Map<Apparatus, String>? _apparatusLocalizations; // ✅ إضافة هذا
 
   // Getters
   List<SkillTemplate> get skills => _displayedSkills;
@@ -42,7 +42,6 @@ class SkillLibraryProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  // ✅ Load skills from database
   Future<void> loadSkills() async {
     await _setLoadingState(true);
 
@@ -58,13 +57,11 @@ class SkillLibraryProvider extends ChangeNotifier {
     await _setLoadingState(false);
   }
 
-  // ✅ Create new skill
   Future<String?> createSkill(SkillTemplate skill) async {
     try {
       _clearError();
       final id = await _dbHelper.createSkillTemplate(skill);
 
-      // Add to local list instead of reloading everything
       final newSkill = skill.copyWith(id: id);
       _allSkills.add(newSkill);
       _applyFilters();
@@ -77,13 +74,11 @@ class SkillLibraryProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ Update existing skill
   Future<bool> updateSkill(SkillTemplate skill) async {
     try {
       _clearError();
       await _dbHelper.updateSkillTemplate(skill);
 
-      // Update local list
       final index = _allSkills.indexWhere((s) => s.id == skill.id);
       if (index != -1) {
         _allSkills[index] = skill;
@@ -98,13 +93,11 @@ class SkillLibraryProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ Delete skill
   Future<bool> deleteSkill(String id) async {
     try {
       _clearError();
       await _dbHelper.deleteSkillTemplate(id);
 
-      // Remove from local list
       _allSkills.removeWhere((s) => s.id == id);
       _applyFilters();
 
@@ -116,7 +109,6 @@ class SkillLibraryProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ Filter by apparatus
   void filterByApparatus(Apparatus? apparatus) {
     if (_selectedApparatus == apparatus) return;
 
@@ -124,14 +116,15 @@ class SkillLibraryProvider extends ChangeNotifier {
     _applyFilters();
   }
 
-  // ✅ Search skills with debouncing
-  void searchSkills(String query) {
+  // ✅ Search skills with localized apparatus names
+  void searchSkills(String query, {Map<Apparatus, String>? apparatusLocalizations}) {
     if (_searchQuery == query) return;
 
     _searchQuery = query.trim();
-
-    // Cancel previous timer
     _searchTimer?.cancel();
+
+    // Store localizations for use in _applyFilters
+    _apparatusLocalizations = apparatusLocalizations;
 
     // Debounce search to avoid excessive filtering
     _searchTimer = Timer(const Duration(milliseconds: 300), () {
@@ -139,7 +132,6 @@ class SkillLibraryProvider extends ChangeNotifier {
     });
   }
 
-  // ✅ Clear search
   void clearSearch() {
     if (_searchQuery.isEmpty) return;
 
@@ -148,7 +140,6 @@ class SkillLibraryProvider extends ChangeNotifier {
     _applyFilters();
   }
 
-  // ✅ Clear all filters
   void clearAllFilters() {
     bool hasChanges = false;
 
@@ -168,17 +159,14 @@ class SkillLibraryProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ Refresh data
   Future<void> refresh() async {
     await loadSkills();
   }
 
-  // ✅ Get skills by apparatus (without changing current filter)
   List<SkillTemplate> getSkillsByApparatus(Apparatus apparatus) {
     return _allSkills.where((s) => s.apparatus == apparatus).toList();
   }
 
-  // ✅ Get skills count by apparatus
   Map<Apparatus, int> getSkillsCountByApparatus() {
     final Map<Apparatus, int> counts = {};
 
@@ -191,10 +179,8 @@ class SkillLibraryProvider extends ChangeNotifier {
     return counts;
   }
 
-  // ✅ Get total skills count
   int get totalSkillsCount => _allSkills.length;
 
-  // ✅ Check if skill name exists (for validation)
   bool isSkillNameExists(String name, {String? excludeId}) {
     return _allSkills.any((skill) =>
     skill.skillName.toLowerCase() == name.toLowerCase() &&
@@ -202,7 +188,6 @@ class SkillLibraryProvider extends ChangeNotifier {
     );
   }
 
-  // ✅ Get skill by id
   SkillTemplate? getSkillById(String id) {
     try {
       return _allSkills.firstWhere((skill) => skill.id == id);
@@ -211,9 +196,7 @@ class SkillLibraryProvider extends ChangeNotifier {
     }
   }
 
-  // Private helper methods
-
-  // Apply current filters and search to the skills list
+  // ✅ Apply current filters and search with localization support
   void _applyFilters() {
     List<SkillTemplate> filtered = List.from(_allSkills);
 
@@ -228,9 +211,19 @@ class SkillLibraryProvider extends ChangeNotifier {
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       filtered = filtered.where((skill) {
-        return skill.skillName.toLowerCase().contains(query) ||
-            (skill.technicalAnalysis?.toLowerCase().contains(query) ?? false) ||
-            skill.apparatus.arabicName.toLowerCase().contains(query);
+        // Search in skill name and technical analysis
+        final matchesBasic = skill.skillName.toLowerCase().contains(query) ||
+            (skill.technicalAnalysis?.toLowerCase().contains(query) ?? false);
+
+        // Search in English apparatus value
+        final matchesEnglish = skill.apparatus.value.toLowerCase().contains(query);
+
+        // Search in localized apparatus name if available
+        final matchesLocalized = _apparatusLocalizations != null
+            ? (_apparatusLocalizations![skill.apparatus]?.toLowerCase().contains(query) ?? false)
+            : false;
+
+        return matchesBasic || matchesEnglish || matchesLocalized;
       }).toList();
     }
 
@@ -241,26 +234,22 @@ class SkillLibraryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Set loading state
   Future<void> _setLoadingState(bool loading) async {
     if (_isLoading == loading) return;
 
     _isLoading = loading;
     notifyListeners();
 
-    // Small delay to ensure UI updates
     if (loading) {
       await Future.delayed(const Duration(milliseconds: 50));
     }
   }
 
-  // Set error message
   void _setError(String message) {
     _errorMessage = message;
     notifyListeners();
   }
 
-  // Clear error message
   void _clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
@@ -269,7 +258,6 @@ class SkillLibraryProvider extends ChangeNotifier {
   }
 }
 
-/// ✅ Extension for better skill template handling
 extension SkillTemplateExtension on SkillTemplate {
   SkillTemplate copyWith({
     String? id,
