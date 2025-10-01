@@ -5,28 +5,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
+import 'package:itqan_gym/data/models/member/member_card_model.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/screens/member/member_details/member_detail_screen.dart';
 import 'package:provider/provider.dart';
 
-// ============= 1. Enhanced Member Card Model =============
-class MemberCardData {
-  final int skillsCount;
-  final double skillsProgress;
-  final int attendanceDays;
-  final double attendanceRate;
-  final DateTime? lastActivity;
-  final int completedExercises;
 
-  const MemberCardData({
-    this.skillsCount = 0,
-    this.skillsProgress = 0,
-    this.attendanceDays = 0,
-    this.attendanceRate = 0,
-    this.lastActivity,
-    this.completedExercises = 0,
-  });
-}
 
 // ============= 2. Updated Member Card Widget =============
 class MemberCard extends StatefulWidget {
@@ -96,7 +80,6 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
       skills.fold<double>(0, (sum, skill) => sum + skill.progress) / skills.length;
 
       // Extract statistics
-      final skillStats = stats['skills'] ?? {};
       final exerciseStats = stats['exercises'] ?? {};
 
       if (mounted) {
@@ -389,8 +372,6 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
     // Use real data if available, otherwise use placeholder values
     final skillsCount = _cardData?.skillsCount ?? 0;
     final skillsProgress = _cardData?.skillsProgress ?? 0;
-    final completedExercises = _cardData?.completedExercises ?? 0;
-    final attendanceRate = _cardData?.attendanceRate ?? 0;
     final lastActivityDays = _calculateDaysSinceActivity();
 
     return Container(
@@ -501,13 +482,6 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
     if (days <= 3) return ColorsManager.successFill;
     if (days <= 7) return ColorsManager.primaryColor;
     if (days <= 14) return ColorsManager.warningFill;
-    return ColorsManager.errorFill;
-  }
-
-  Color _getProgressColor(double progress) {
-    if (progress >= 80) return ColorsManager.successFill;
-    if (progress >= 60) return ColorsManager.primaryColor;
-    if (progress >= 40) return ColorsManager.warningFill;
     return ColorsManager.errorFill;
   }
 
