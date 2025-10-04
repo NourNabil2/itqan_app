@@ -1,7 +1,8 @@
+// lib/screens/member/member_details/widgets/progress/performance_chart.dart
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/badges/ImprovementBadge.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
@@ -36,11 +37,15 @@ class _PerformanceChartState extends State<PerformanceChart> {
   }
 
   Future<void> _loadChartData() async {
+    if (!mounted) return;
+
     setState(() => _isLoading = true);
 
     try {
       final provider = context.read<ExerciseAssignmentProvider>();
       final skills = await provider.loadMemberSkills(widget.member.id);
+
+      if (!mounted) return;
 
       if (skills.isEmpty) {
         setState(() {
@@ -51,11 +56,9 @@ class _PerformanceChartState extends State<PerformanceChart> {
         return;
       }
 
-      // فحص إذا كان العضو جديد (أقل من 7 أيام)
       final memberAge = DateTime.now().difference(widget.member.createdAt).inDays;
 
       if (memberAge < 7) {
-        // عضو جديد - لا توجد بيانات كافية
         setState(() {
           _chartData = [];
           _isLoading = false;
@@ -64,7 +67,6 @@ class _PerformanceChartState extends State<PerformanceChart> {
         return;
       }
 
-      // حساب البيانات الحقيقية من التواريخ
       _chartData = _calculateRealProgressOverTime(skills);
       _hasRealData = _chartData.length >= 2;
 
@@ -79,19 +81,20 @@ class _PerformanceChartState extends State<PerformanceChart> {
       });
     } catch (e) {
       debugPrint('Error loading chart data: $e');
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-        _chartData = [];
-        _hasRealData = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _chartData = [];
+          _hasRealData = false;
+        });
+      }
     }
   }
 
   List<FlSpot> _calculateRealProgressOverTime(List<AssignedSkill> skills) {
     if (skills.isEmpty) return [];
 
-    // تجميع المهارات حسب الأسبوع
     final now = DateTime.now();
     final weeklyProgress = <int, List<double>>{};
 
@@ -102,10 +105,8 @@ class _PerformanceChartState extends State<PerformanceChart> {
       }
     }
 
-    // إذا لم يكن هناك بيانات كافية
     if (weeklyProgress.isEmpty) return [];
 
-    // حساب متوسط التقدم لكل أسبوع
     final spots = <FlSpot>[];
     for (int week = 0; week < 6; week++) {
       if (weeklyProgress.containsKey(week)) {
@@ -115,9 +116,7 @@ class _PerformanceChartState extends State<PerformanceChart> {
       }
     }
 
-    // ترتيب النقاط من الأقدم للأحدث
     spots.sort((a, b) => a.x.compareTo(b.x));
-
     return spots;
   }
 
@@ -137,27 +136,33 @@ class _PerformanceChartState extends State<PerformanceChart> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: SizeApp.padding),
       child: Container(
         padding: EdgeInsets.all(SizeApp.s16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: colorScheme.outlineVariant),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: colorScheme.shadow.withOpacity(0.05),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_hasRealData && !_isLoading)
+            if (_hasRealData && !_isLoading) ...[
               ImprovementBadge(improvement: _improvement),
-            SizedBox(height: SizeApp.s16),
+              SizedBox(height: SizeApp.s16),
+            ],
             if (_isLoading)
               _buildLoadingState()
             else if (_hasError)
@@ -174,6 +179,8 @@ class _PerformanceChartState extends State<PerformanceChart> {
 
   Widget _buildChart() {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
     final maxY = _calculateMaxY();
 
     return SizedBox(
@@ -186,7 +193,7 @@ class _PerformanceChartState extends State<PerformanceChart> {
             horizontalInterval: 20,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: ColorsManager.inputBorder.withOpacity(0.15),
+                color: colorScheme.outlineVariant,
                 strokeWidth: 1,
                 dashArray: [5, 5],
               );
@@ -202,17 +209,19 @@ class _PerformanceChartState extends State<PerformanceChart> {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 45,
+                reservedSize: 40.w,
                 interval: 20,
                 getTitlesWidget: (value, meta) {
                   return Padding(
-                    padding: EdgeInsets.only(right: 8.w),
+                    padding: EdgeInsets.only(right: 6.w),
                     child: Text(
                       '${value.toInt()}%',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: ColorsManager.defaultTextSecondary,
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 10.sp,
                       ),
+                      maxLines: 1,
                     ),
                   );
                 },
@@ -221,19 +230,28 @@ class _PerformanceChartState extends State<PerformanceChart> {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 32,
+                reservedSize: 28.h,
                 getTitlesWidget: (value, meta) {
-                  final weeks = ['أ1', 'أ2', 'أ3', 'أ4', 'أ5', 'أ6'];
+                  final weeks = [
+                    l10n.week(1),
+                    l10n.week(2),
+                    l10n.week(3),
+                    l10n.week(4),
+                    l10n.week(5),
+                    l10n.week(6),
+                  ];
                   final index = value.toInt();
                   if (index >= 0 && index < weeks.length) {
                     return Padding(
-                      padding: EdgeInsets.only(top: 8.h),
+                      padding: EdgeInsets.only(top: 6.h),
                       child: Text(
                         weeks[index],
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: ColorsManager.defaultTextSecondary,
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 10.sp,
                         ),
+                        maxLines: 1,
                       ),
                     );
                   }
@@ -246,11 +264,11 @@ class _PerformanceChartState extends State<PerformanceChart> {
             show: true,
             border: Border(
               bottom: BorderSide(
-                color: ColorsManager.inputBorder.withOpacity(0.2),
+                color: colorScheme.outlineVariant,
                 width: 1,
               ),
               left: BorderSide(
-                color: ColorsManager.inputBorder.withOpacity(0.2),
+                color: colorScheme.outlineVariant,
                 width: 1,
               ),
             ),
@@ -262,8 +280,8 @@ class _PerformanceChartState extends State<PerformanceChart> {
               curveSmoothness: 0.35,
               gradient: LinearGradient(
                 colors: [
-                  ColorsManager.primaryColor,
-                  ColorsManager.primaryColor.withOpacity(0.8),
+                  colorScheme.primary,
+                  colorScheme.primary.withOpacity(0.8),
                 ],
               ),
               barWidth: 3.5,
@@ -273,9 +291,9 @@ class _PerformanceChartState extends State<PerformanceChart> {
                 getDotPainter: (spot, percent, barData, index) {
                   return FlDotCirclePainter(
                     radius: 5,
-                    color: Colors.white,
+                    color: colorScheme.surface,
                     strokeWidth: 3,
-                    strokeColor: ColorsManager.primaryColor,
+                    strokeColor: colorScheme.primary,
                   );
                 },
               ),
@@ -283,8 +301,8 @@ class _PerformanceChartState extends State<PerformanceChart> {
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    ColorsManager.primaryColor.withOpacity(0.25),
-                    ColorsManager.primaryColor.withOpacity(0.05),
+                    colorScheme.primary.withOpacity(0.25),
+                    colorScheme.primary.withOpacity(0.05),
                     Colors.transparent,
                   ],
                   begin: Alignment.topCenter,
@@ -298,7 +316,7 @@ class _PerformanceChartState extends State<PerformanceChart> {
           lineTouchData: LineTouchData(
             enabled: true,
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: ColorsManager.primaryColor,
+              tooltipBgColor: colorScheme.primary,
               tooltipRoundedRadius: 8.r,
               tooltipPadding: EdgeInsets.symmetric(
                 horizontal: 12.w,
@@ -308,11 +326,11 @@ class _PerformanceChartState extends State<PerformanceChart> {
                 return touchedSpots.map((spot) {
                   final week = spot.x.toInt() + 1;
                   return LineTooltipItem(
-                    'الأسبوع $week\n${spot.y.toStringAsFixed(1)}%',
+                    '${l10n.week(week)}\n${spot.y.toStringAsFixed(1)}%',
                     TextStyle(
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 12.sp,
+                      fontSize: 11.sp,
                     ),
                   );
                 }).toList();
@@ -325,11 +343,13 @@ class _PerformanceChartState extends State<PerformanceChart> {
   }
 
   Widget _buildLoadingState() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SizedBox(
       height: 220.h,
       child: Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(ColorsManager.primaryColor),
+          color: colorScheme.primary,
         ),
       ),
     );
@@ -337,43 +357,55 @@ class _PerformanceChartState extends State<PerformanceChart> {
 
   Widget _buildErrorState() {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       height: 220.h,
       decoration: BoxDecoration(
-        color: ColorsManager.errorFill.withOpacity(0.05),
+        color: colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: ColorsManager.errorFill.withOpacity(0.2),
+          color: colorScheme.error.withOpacity(0.3),
         ),
       ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 40.sp,
-              color: ColorsManager.errorFill,
-            ),
-            SizedBox(height: SizeApp.s16),
-            Text(
-              'خطأ في تحميل البيانات',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.errorText,
+        child: Padding(
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 36.sp,
+                color: colorScheme.error,
               ),
-            ),
-            SizedBox(height: SizeApp.s8),
-            TextButton.icon(
-              onPressed: _loadChartData,
-              icon: Icon(Icons.refresh, size: 16.sp),
-              label: Text('إعادة المحاولة'),
-              style: TextButton.styleFrom(
-                foregroundColor: ColorsManager.primaryColor,
+              SizedBox(height: 12.h),
+              Text(
+                l10n.errorLoadingData,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onErrorContainer,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              SizedBox(height: 8.h),
+              TextButton.icon(
+                onPressed: _loadChartData,
+                icon: Icon(Icons.refresh, size: 14.sp),
+                label: Text(
+                  l10n.retryAgain,
+                  style: TextStyle(fontSize: 12.sp),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -381,60 +413,66 @@ class _PerformanceChartState extends State<PerformanceChart> {
 
   Widget _buildEmptyState() {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
     final memberAge = DateTime.now().difference(widget.member.createdAt).inDays;
 
-    String message;
-    if (memberAge < 7) {
-      message = 'عضو جديد - سيتم عرض البيانات بعد أسبوع من التدريب';
-    } else {
-      message = 'لا توجد بيانات كافية - ابدأ بتعيين مهارات للعضو';
-    }
+    final message = memberAge < 7
+        ? l10n.newMemberDataAfterWeek
+        : l10n.insufficientDataAssignSkills;
 
     return Container(
       height: 220.h,
       decoration: BoxDecoration(
-        color: ColorsManager.backgroundCard,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: ColorsManager.inputBorder.withOpacity(0.2),
+          color: colorScheme.outlineVariant,
         ),
       ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: EdgeInsets.all(16.sp),
-              decoration: BoxDecoration(
-                color: ColorsManager.primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: EdgeInsets.all(14.w),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.bar_chart_rounded,
+                  size: 32.sp,
+                  color: colorScheme.primary,
+                ),
               ),
-              child: Icon(
-                Icons.bar_chart_rounded,
-                size: 40.sp,
-                color: ColorsManager.primaryColor.withOpacity(0.5),
-              ),
-            ),
-            SizedBox(height: SizeApp.s16),
-            Text(
-              'لا توجد بيانات للعرض',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultTextSecondary,
-              ),
-            ),
-            SizedBox(height: SizeApp.s8),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32.w),
-              child: Text(
-                message,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: ColorsManager.defaultTextSecondary.withOpacity(0.7),
+              SizedBox(height: 12.h),
+              Text(
+                l10n.noDataToDisplay,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              SizedBox(height: 6.h),
+              Text(
+                message,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 11.sp,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

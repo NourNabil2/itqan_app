@@ -36,6 +36,39 @@ abstract class AppLocalizations {
   String get yes;
   String get no;
 
+  // ============= Auth Section =============
+  String get emailRequired;
+  String get emailInvalid;
+  String get passwordRequired;
+  String get password;
+  String get email;
+  String get passwordTooShort;
+  String get forgotPassword;
+  String get dontHaveAccount;
+  String get signUpTitle;
+  String get timeManipulationDetected;
+  String get signUpDescription;
+  String get confirmPassword;
+  String get confirmPasswordRequired;
+  String get passwordsDoNotMatch;
+  String get mustAgreeToTerms;
+  String get iAgreeToThe;
+  String get termsAndConditions;
+  String get verifyEmail;
+  String get verificationEmailSent;
+  String get resendEmail;
+  String get gotIt;
+  String get alreadyHaveAccount;
+  String get upgradeToPremium;
+  String get monthlyPlan;
+  String get lifetimePlan;
+  String get perMonth;
+  String get oneTime;
+  String get bestValue;
+  String get whatsIncluded;
+  String get continueToPayment;
+  String get maybeLater;
+
   // ============= Teams Section =============
   String get teams;
   String get addTeam;
@@ -109,7 +142,54 @@ abstract class AppLocalizations {
   String get neverBackedUp;
   String get premiumFeature;
   String get upgradeToAccess;
+  String get createBackup;
+  String get createBackupConfirmation;
+  String get backupSuccess;
+  String get backupFailed;
+  String get restoreWarning;
+  String get restoreSuccess;
+  String get restartAppMessage;
+  String get closeApp;
+  String get noBackupsFound;
+  String get backupHistory;
+  String get viewBackupHistory;
+  String get backupsAvailable;
+  String get errorLoadingBackups;
+  String get restoreFailed;
+  String get deleteBackup;
+  String get deleteBackupConfirmation;
+  String get backupDeleted;
 
+  // payment
+  String get payment;
+  String get viewPaymentRequests;
+  String get paymentMethod;
+  String get backupDate;
+  String get size;
+  String get close;
+  String get totalAmount;
+  String get egp;
+  String get paymentInstructions;
+  String get paymentInstructionsDetails;
+  String get phoneNumber;
+  String get copiedToClipboard;
+  String get vodafoneCash;
+  String get instaPay;
+  String get transactionReference;
+  String get transactionReferenceOptional;
+  String get uploadPaymentProof;
+  String get tapToUploadProof;
+  String get submitPaymentRequest;
+  String get paymentRequestSubmitted;
+  String get paymentUnderReview;
+  String get paymentStatus;
+  String get noPaymentRequests;
+  String get pending;
+  String get approved;
+  String get rejected;
+  String get submittedAt;
+  String get reviewedAt;
+  String get adminNotes;
   // About Section
   String get about;
   String get version;
@@ -186,6 +266,24 @@ abstract class AppLocalizations {
 
   // ============= Member Notes Screen =============
   String memberNotes(String memberName);
+  String get generalCoachNote;
+  String get noGeneralNoteDescription;
+  String get viewMore;
+  String get noDetailedNotes;
+  String get addFirstNote;
+  String get completed;
+  String get inProgress;
+  String get notStarted;
+  String get updateProgress;
+  String get addNote;
+  String get removeSkill;
+  String get progress;
+  String get progressUpdated;
+  String get noteSaved;
+  String get skillRemoved;
+  String get confirmRemoval;
+  String get confirmRemoveSkill;
+  String get enterNoteHere;
   String get loadingNotes;
   String get errorOccurred;
   String get couldNotLoadNotes;
@@ -200,7 +298,6 @@ abstract class AppLocalizations {
   String healthNotesCount(int count);
   String get noNotes;
   String get noNotesOfThisType;
-  String get addNote;
   String get editNote;
   String get addNewNote;
   String get noteTitle;
@@ -229,7 +326,6 @@ abstract class AppLocalizations {
   String get updateFailed;
   String get addDetailedNote;
   String get viewAllNotes;
-  String get close;
   String get viewAll;
   String get details;
   String get type;
@@ -279,6 +375,19 @@ abstract class AppLocalizations {
 
   // Progress Status
   String get beginning;
+  String get performanceChart;
+  String get trackProgressOverTime;
+  String get last6Weeks;
+  String get skillsProgress;
+  String get addedSkillsCompletion;
+  String get performanceStatistics;
+  String get overallPerformanceView;
+  String get detailedNotes;
+  String get advancedNotesWithDates;
+  String get upgradeNow;
+  String get availableForPremium;
+  String get newMemberDataAfterWeek;
+  String get insufficientDataAssignSkills;
 
   // Member Info
   String get age;
@@ -291,13 +400,10 @@ abstract class AppLocalizations {
   String noExercisesAvailable(String type);
   String get noSkillsAvailable;
   String get addFromLibraryFirst;
-
-  // ============= Skills Progress =============
-  String get progress;
-  String get completed;
-  String get inProgress;
-  String get notStarted;
   String get mastered;
+  String week(int number);
+  String get errorLoadingData;
+  String get noDataToDisplay;
   String viewAllSkills(int count);
 
   // ============= Dashboard =============
@@ -339,6 +445,18 @@ abstract class AppLocalizations {
   String get noMembersInLibrary;
   String get startAddingFirstMember;
   String get addFirstMember;
+  String get excellentPerformance;
+  String get goodProgress;
+  String get goodStart;
+  String get startTrainingJourney;
+  String get overallProgress;
+  String get editMemberData;
+  String get additionalInfo;
+  String get registrationDate;
+  String get editMemberNotice;
+  String get errorPickingImage;
+  String get memberDataUpdatedSuccessfully;
+  String get errorUpdatingMemberData;
 
   // ============= Member Card =============
   String get activity;
@@ -348,6 +466,18 @@ abstract class AppLocalizations {
   String daysCount(int days);
   String weeksCount(int weeks);
   String get moreThan30Days;
+  String get editMember;
+  String get memberNotesHint;
+  String get notesOptional;
+  String get editMemberLibraryNotice;
+  String get addMemberLibraryNotice;
+  String get saveChanges;
+  String get addMember;
+  String get memberUpdatedSuccessfully;
+  String get memberAddedSuccessfully;
+  String get errorSavingMember;
+  String get deleteMember;
+  String get errorDeletingMember;
 
   // ============= Note Priority =============
   String get lowPriority;

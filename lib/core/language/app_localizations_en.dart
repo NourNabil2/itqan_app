@@ -49,6 +49,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get no => 'No';
 
+  @override
+  String get emailRequired => 'Email is required';
+
+  @override
+  String get emailInvalid => 'Invalid email address';
+
+  @override
+  String get passwordRequired => 'Password is required';
+
+  @override
+  String get password => 'Password';
+
+
+  @override
+  String get passwordTooShort => 'Password is too short (minimum 6 characters)';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get dontHaveAccount => 'Don’t have an account?';
+
+  @override
+  String get signUpTitle => 'Create Account';
+
+  @override
+  String get timeManipulationDetected => 'Device time manipulation detected';
+
   // ============= Premium Section =============
   @override
   String get premiumTitle => 'Get Premium Version';
@@ -76,6 +104,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumSupport => 'Premium Support 24/7';
+
+  @override
+  String get performanceChart => 'Performance Chart';
+
+  @override
+  String get trackProgressOverTime => 'Track progress over time';
+
+  @override
+  String get last6Weeks => 'Last 6 weeks';
+
+  @override
+  String get skillsProgress => 'Skills Progress';
+
+  @override
+  String get addedSkillsCompletion => 'Added skills and completion rate';
+
+  @override
+  String get performanceStatistics => 'Performance Statistics';
+
+  @override
+  String get overallPerformanceView => 'Overall performance overview';
+
+  @override
+  String get detailedNotes => 'Detailed Notes';
+
+  @override
+  String get advancedNotesWithDates => 'Record advanced notes with dates and categories';
+
+  @override
+  String get premiumFeature => 'Premium Feature';
+
+  @override
+  String get upgradeNow => 'Upgrade Now';
+
+  @override
+  String get availableForPremium => 'Available for premium members only';
 
   // ============= Settings Screen =============
   @override
@@ -152,6 +216,217 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsDescription => 'Get alerts about updates and activities';
+
+  @override
+  String get signUpDescription => 'Create an account to get started';
+
+  @override
+  String get confirmPassword => 'Confirm Password';
+
+  @override
+  String get confirmPasswordRequired => 'Confirm password is required';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get mustAgreeToTerms => 'You must agree to the terms and conditions';
+
+  @override
+  String get iAgreeToThe => 'I agree to the ';
+
+  @override
+  String get termsAndConditions => 'Terms and Conditions';
+
+  @override
+  String get verifyEmail => 'Verify Email';
+
+  @override
+  String get verificationEmailSent => 'A verification email has been sent to your inbox';
+
+  @override
+  String get resendEmail => 'Resend';
+
+  @override
+  String get gotIt => 'Got it';
+
+  @override
+  String get alreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get upgradeToPremium => 'Upgrade to Premium';
+
+  @override
+  String get monthlyPlan => 'Monthly Plan';
+
+  @override
+  String get lifetimePlan => 'Lifetime Plan';
+
+  @override
+  String get perMonth => 'Per month';
+
+  @override
+  String get oneTime => 'One-time';
+
+  @override
+  String get bestValue => 'Best Value';
+
+  @override
+  String get whatsIncluded => 'What’s included:';
+
+  @override
+  String get continueToPayment => 'Continue to Payment';
+
+  @override
+  String get maybeLater => 'Maybe later';
+
+  // Backup & Restore
+  @override
+  String get createBackup => 'Create Backup';
+
+  @override
+  String get createBackupConfirmation => 'Do you want to create a backup of your data now? It will be uploaded to the cloud.';
+
+  @override
+  String get backupSuccess => 'Backup created successfully';
+
+  @override
+  String get backupFailed => 'Backup failed';
+
+  @override
+  String get restoreWarning => 'Warning: All current data will be replaced with the backup. This action cannot be undone. Do you want to continue?';
+
+  @override
+  String get restoreSuccess => 'Data restored successfully';
+
+  @override
+  String get restartAppMessage => 'The app must be restarted to apply changes. The app will close now.';
+
+  @override
+  String get closeApp => 'Close App';
+
+  @override
+  String get noBackupsFound => 'No backups available';
+
+  @override
+  String get backupHistory => 'Backup History';
+
+  @override
+  String get viewBackupHistory => 'View all saved backups';
+
+  @override
+  String get backupsAvailable => 'backups available';
+
+  @override
+  String get lastBackup => 'Last backup';
+
+  @override
+  String get errorLoadingBackups => 'Error loading backups';
+
+  @override
+  String get restore => 'Restore';
+
+  @override
+  String get restoreFailed => 'Restore failed';
+
+  @override
+  String get deleteBackup => 'Delete Backup';
+
+  @override
+  String get deleteBackupConfirmation => 'Do you want to delete this backup? This action cannot be undone.';
+
+  @override
+  String get backupDeleted => 'Backup deleted';
+  @override
+  String get payment => 'Payment';
+
+  @override
+  String get totalAmount => 'Total Amount';
+
+  @override
+  String get egp => 'EGP';
+
+  @override
+  String get paymentInstructions => 'Payment Instructions';
+
+  @override
+  String get paymentInstructionsDetails => 'Transfer the required amount to the number below using Vodafone Cash or InstaPay, then upload a screenshot of the payment proof.';
+
+  @override
+  String get phoneNumber => 'Phone Number';
+
+  @override
+  String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get vodafoneCash => 'Vodafone Cash';
+
+  @override
+  String get instaPay => 'InstaPay';
+
+  @override
+  String get transactionReference => 'Transaction Reference';
+
+  @override
+  String get transactionReferenceOptional => 'Transaction Reference (Optional)';
+
+  @override
+  String get uploadPaymentProof => 'Upload Payment Proof';
+
+  @override
+  String get tapToUploadProof => 'Tap to upload payment proof image';
+
+  @override
+  String get submitPaymentRequest => 'Submit Payment Request';
+
+  @override
+  String get paymentRequestSubmitted => 'Payment request submitted successfully';
+
+  @override
+  String get paymentUnderReview => 'Your request is under review, your subscription will be activated once approved.';
+
+  @override
+  String get paymentStatus => 'Payment Status';
+
+  @override
+  String get noPaymentRequests => 'No payment requests';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get approved => 'Approved';
+
+  @override
+  String get rejected => 'Rejected';
+
+  @override
+  String get paymentMethod => 'Payment Method';
+
+  @override
+  String get viewPaymentRequests => 'View payment requests status';
+
+  @override
+  String get backupDate => 'Backup date';
+
+  @override
+  String get size => 'Size';
+
+  @override
+  String get close => 'Close';
+
+
+  @override
+  String get submittedAt => 'Submitted At';
+
+  @override
+  String get reviewedAt => 'Reviewed At';
+
+  @override
+  String get adminNotes => 'Admin Notes';
+
+  @override
+  String get email => 'Email';
 
   @override
   String get pushNotifications => 'Push Notifications';
@@ -593,19 +868,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupDescription => 'Keep your data safe';
 
   @override
-  String get restore => 'Restore';
-
-  @override
-  String get lastBackup => 'Last Backup';
-
-  @override
   String get neverBackedUp => 'Never Backed Up';
 
   @override
-  String get premiumFeature => 'Premium Feature';
+  String get upgradeToAccess => 'Upgrade to Access';
 
   @override
-  String get upgradeToAccess => 'Upgrade to Access';
+  String get generalCoachNote => 'Coach\'s general note';
+
+  @override
+  String get noGeneralNoteDescription =>
+      'No general note.\nYou can add a general note about the member here.';
+
+  @override
+  String get viewMore => 'View more';
+
+  @override
+  String get noDetailedNotes => 'No detailed notes';
+
+  @override
+  String get addFirstNote => 'Add the first detailed note for the member';
+
+  @override
+  String get completed => 'Completed';
+
+  @override
+  String get updateProgress => 'Update progress';
+
+  @override
+  String get removeSkill => 'Remove skill';
+
+  @override
+  String get progressUpdated => 'Progress updated to';
+
+  @override
+  String get noteSaved => 'Note saved';
+
+  @override
+  String get skillRemoved => 'Skill removed';
+
+  @override
+  String get confirmRemoval => 'Confirm removal';
+
+  @override
+  String get confirmRemoveSkill => 'Are you sure you want to remove the skill?';
+
+  @override
+  String get enterNoteHere => 'Enter the note here...';
+
+
+  @override
+  String get newMemberDataAfterWeek =>
+      'New member — data will be displayed after one week of training';
+
+  @override
+  String get insufficientDataAssignSkills =>
+      'Insufficient data — start assigning skills to the member';
 
   // About Section
   @override
@@ -625,6 +943,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   String get exercises => 'Exercises';
 
+  @override
   String get statistics => 'Statistics';
 
   String get reports => 'Reports';
@@ -747,9 +1066,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewAllNotes => 'View All Notes';
-
-  @override
-  String get close => 'Close';
 
   @override
   String get viewAll => 'View All';
@@ -886,9 +1202,6 @@ class AppLocalizationsEn extends AppLocalizations {
   // Skills Progress
 
   @override
-  String get completed => 'Completed';
-
-  @override
   String viewAllSkills(int count) => 'View All Skills ($count)';
 
   // Library Screen
@@ -957,4 +1270,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notFound => 'Not found';
+
+  @override
+  String week(int number) => 'W$number';
+
+  @override
+  String get errorLoadingData => 'Error loading data';
+
+  @override
+  String get noDataToDisplay => 'No data to display';
+
+  @override
+  String get excellentPerformance => 'Excellent performance! Keep going';
+
+  @override
+  String get goodProgress => 'Good progress, keep it up';
+
+  @override
+  String get goodStart => 'Good start, continue!';
+
+  @override
+  String get startTrainingJourney => 'Start your training journey now';
+
+  @override
+  String get overallProgress => 'Overall Progress';
+
+  @override
+  String get editMemberData => 'Edit Member Data';
+
+  @override
+  String get additionalInfo => 'Additional Information';
+
+  @override
+  String get registrationDate => 'Registration Date';
+
+  @override
+  String get editMemberNotice =>
+      'Editing this data will affect all exercises and assessments linked to this member. Make sure the data is correct before saving.';
+
+  @override
+  String get errorPickingImage => 'Error picking image';
+
+  @override
+  String get memberDataUpdatedSuccessfully => 'Member data updated successfully';
+
+  @override
+  String get errorUpdatingMemberData => 'Error updating member data';
+
+  @override
+  String get editMember => 'Edit Member';
+
+  @override
+  String get memberNotesHint => 'Any notes or additional information about the member...';
+
+  @override
+  String get notesOptional => 'Notes (Optional)';
+
+  @override
+  String get editMemberLibraryNotice =>
+      'Changes will be saved to this member in the general library';
+
+  @override
+  String get addMemberLibraryNotice =>
+      'This member will be added to the general library and can be added to any team later';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get addMember => 'Add Member';
+
+  @override
+  String get memberUpdatedSuccessfully => 'Member updated successfully';
+
+  @override
+  String get memberAddedSuccessfully => 'Member added successfully';
+
+  @override
+  String get errorSavingMember => 'Error saving member data';
+
+  @override
+  String get deleteMember => 'Delete Member';
+
+  @override
+  String get errorDeletingMember => 'Error deleting member';
 }

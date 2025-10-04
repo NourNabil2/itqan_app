@@ -27,6 +27,6 @@ class SizeApp {
   static double s70 = 70.0.w;
   static double s110 = 110.0.h;
   static double homeIcons = 60.0;
-  static double logoSize = 165.0;
+  static double logoSize = 150.0;
   static double imageIconSize = 300.0;
 }

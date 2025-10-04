@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/screens/settings/widgets/premium_dialog.dart';
 
 class PremiumSection extends StatelessWidget {
   const PremiumSection({super.key});
@@ -288,8 +289,9 @@ class PremiumSection extends StatelessWidget {
     );
   }
 
+//  _showPremiumDialog
   void _showPremiumDialog(BuildContext context) {
     HapticFeedback.mediumImpact();
-    // Show premium subscription dialog
+    PremiumDialog.show(context);
   }
 }

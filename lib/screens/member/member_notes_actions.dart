@@ -6,9 +6,11 @@ import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/data/models/member/member_notes.dart';
+import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:itqan_gym/screens/member/edit_member/edit_member_screen.dart';
 import 'package:itqan_gym/screens/member/member_notes/member_notes_screen.dart';
+import 'package:itqan_gym/screens/settings/widgets/premium_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -22,7 +24,6 @@ class MemberNotesActions {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final controller = TextEditingController(text: currentMember.notes ?? '');
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -324,6 +325,8 @@ class MemberProfileActions {
   }) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isPremium = authProvider.isPremium;
 
     showModalBottomSheet(
       context: context,
@@ -349,12 +352,19 @@ class MemberProfileActions {
               ),
             ),
             SizedBox(height: SizeApp.s20),
+            // Share option - Show to all but lock for non-premium
             _buildOptionTile(
               context: context,
-              icon: Icons.share_rounded,
-              title: l10n.shareProfile,
-              color: ColorsManager.primaryColor,
-              onTap: () => _shareMember(context, member),
+              icon: isPremium ? Icons.share_rounded : Icons.lock_rounded,
+              title: isPremium ? l10n.shareProfile : '${l10n.shareProfile} (Premium)',
+              color: isPremium ? ColorsManager.primaryColor : ColorsManager.defaultTextSecondary,
+              onTap: isPremium
+                  ? () => _shareMember(context, member)
+                  : () {
+                Navigator.pop(context);
+                // Show premium dialog
+                PremiumDialog.show(context);
+              },
             ),
             if (teamId != null)
               _buildOptionTile(
@@ -397,7 +407,7 @@ class MemberProfileActions {
       ),
       title: Text(
         title,
-        style: theme.textTheme.bodyLarge?.copyWith(
+        style: theme.textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w500,
           color: title.contains(AppLocalizations.of(context).delete)
               ? color

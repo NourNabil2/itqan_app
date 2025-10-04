@@ -29,12 +29,6 @@ class StatisticsSection extends StatelessWidget {
         ColorsManager.successFill,
       ),
       StatItem(
-        'التمارين المكتملة',
-        '${exerciseStats['completed'] ?? 0}',
-        Icons.check_circle_rounded,
-        ColorsManager.successFill,
-      ),
-      StatItem(
         'قيد التقدم',
         '${(skillStats['in_progress'] ?? 0) + (exerciseStats['in_progress'] ?? 0)}',
         Icons.schedule_rounded,
@@ -56,7 +50,7 @@ class StatisticsSection extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: SizeApp.s12,
         mainAxisSpacing: SizeApp.s12,
-        childAspectRatio: 1.6, // Increased from 1.4 for more horizontal space
+        childAspectRatio: 1.5, // Increased from 1.4 for more horizontal space
       ),
       itemCount: stats.length,
       itemBuilder: (context, index) => StatCard(stat: stats[index]),

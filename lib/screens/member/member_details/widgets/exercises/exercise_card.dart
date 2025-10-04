@@ -1,158 +1,149 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/utils/enums.dart';
+import 'package:itqan_gym/data/models/exercise_template.dart';
+import 'package:itqan_gym/screens/library/add_exercise_screen.dart';
 
-import 'package:itqan_gym/core/theme/colors.dart';
-import 'package:itqan_gym/core/utils/app_size.dart';
 
-/// Exercise Card Widget
 class ExerciseCard extends StatelessWidget {
-  final Map<String, dynamic> exercise;
-  final VoidCallback? onTap;
+  final ExerciseTemplate exercise;
 
-  const ExerciseCard({
-    super.key,
-    required this.exercise,
-    this.onTap,
-  });
+  const ExerciseCard({super.key, required this.exercise});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-          child: Container(
-            padding: EdgeInsets.all(SizeApp.s16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildExerciseHeader(),
-                SizedBox(height: SizeApp.s12),
-                _buildProgressBar(),
-                if (exercise['lastUpdated'] != null) ...[
-                  SizedBox(height: SizeApp.s8),
-                  _buildLastUpdateText(),
-                ],
-              ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddExerciseScreen(
+              type: exercise.type,
+              exerciseToEdit: exercise,
             ),
           ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12.h),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildExerciseHeader() {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.all(SizeApp.s8),
-          decoration: BoxDecoration(
-            color: (exercise['color'] as Color).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(SizeApp.s8),
-          ),
-          child: Icon(
-            exercise['icon'],
-            color: exercise['color'],
-            size: 20.sp,
-          ),
-        ),
-
-        SizedBox(width: SizeApp.s12),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: EdgeInsets.all(12.w),
+          child: Row(
             children: [
-              Text(
-                exercise['name'],
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: ColorsManager.defaultText,
+              Container(
+                width: 48.w,
+                height: 48.h,
+                decoration: BoxDecoration(
+                  color: _getTypeColor(exercise.type).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(
+                  _getTypeIcon(exercise.type),
+                  color: _getTypeColor(exercise.type),
+                  size: 24.sp,
                 ),
               ),
-              SizedBox(height: 4.h),
-              Text(
-                exercise['status'],
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  color: exercise['color'],
-                  fontWeight: FontWeight.w500,
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      exercise.title,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2C3E50),
+                      ),
+                    ),
+                    if (exercise.description != null) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        exercise.description!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                    if (exercise.assignedTeamsCount > 0) ...[
+                      SizedBox(height: 4.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 2.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Text(
+                          'معين إلى ${exercise.assignedTeamsCount} فريق',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
+              if (exercise.mediaPath != null)
+                Container(
+                  padding: EdgeInsets.all(4.w),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    exercise.mediaType == MediaType.video
+                        ? Icons.videocam
+                        : Icons.image,
+                    size: 16.sp,
+                    color: Colors.grey[600],
+                  ),
+                ),
             ],
           ),
         ),
-
-        Text(
-          '${exercise['progress'].toInt()}%',
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w700,
-            color: exercise['color'],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProgressBar() {
-    return Container(
-      height: 6.h,
-      decoration: BoxDecoration(
-        color: ColorsManager.defaultSurface,
-        borderRadius: BorderRadius.circular(3.r),
-      ),
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: exercise['progress'] / 100,
-        child: Container(
-          decoration: BoxDecoration(
-            color: exercise['color'],
-            borderRadius: BorderRadius.circular(3.r),
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildLastUpdateText() {
-    return Text(
-      'آخر تحديث: ${_formatDate(exercise['lastUpdated'])}',
-      style: TextStyle(
-        fontSize: 11.sp,
-        color: ColorsManager.defaultTextSecondary,
-      ),
-    );
+  Color _getTypeColor(ExerciseType type) {
+    switch (type) {
+      case ExerciseType.warmup:
+        return Colors.orange;
+      case ExerciseType.stretching:
+        return Colors.blue;
+      case ExerciseType.conditioning:
+        return Colors.purple;
+    }
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'اليوم';
-    } else if (difference.inDays == 1) {
-      return 'أمس';
-    } else if (difference.inDays < 7) {
-      return 'منذ ${difference.inDays} أيام';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
+  IconData _getTypeIcon(ExerciseType type) {
+    switch (type) {
+      case ExerciseType.warmup:
+        return Icons.directions_run;
+      case ExerciseType.stretching:
+        return Icons.self_improvement;
+      case ExerciseType.conditioning:
+        return Icons.fitness_center;
     }
   }
 }

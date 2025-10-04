@@ -1,8 +1,9 @@
+// lib/screens/settings/settings_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/providers/settings_provider.dart';
 import 'package:itqan_gym/screens/settings/widgets/about_section.dart';
 import 'package:itqan_gym/screens/settings/widgets/account_section.dart';
@@ -19,14 +20,27 @@ class SettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, _) {
+    return Consumer2<AuthProvider, SettingsProvider>(
+      builder: (context, auth, settings, _) {
+        // Wait for auth to initialize
+        if (!auth.isInitialized) {
+          return Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final isLoggedIn = auth.isLoggedIn;
+        final isPremium = auth.isPremium;
+
+        // Debug info
+        debugPrint('🔍 Settings Screen - isLoggedIn: $isLoggedIn, isPremium: $isPremium');
+
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // Simple App Bar
               SliverAppBar(
                 floating: true,
                 snap: true,
@@ -39,7 +53,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 actions: [
-                  if (settings.isPremium)
+                  if (isPremium)
                     Padding(
                       padding: EdgeInsets.only(right: 16.w),
                       child: Center(
@@ -82,27 +96,26 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
 
-              // Settings Content
               SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // User Info Card (if logged in)
-                    if (settings.isLoggedIn)
-                      _buildUserInfoCard(context, settings.isPremium),
+                    if (isLoggedIn)
+                      _buildUserInfoCard(
+                        context,
+                        isPremium,
+                        auth.currentUser?.email,
+                      ),
 
-                    if (settings.isLoggedIn)
-                      SizedBox(height: 16.h),
+                    if (isLoggedIn) SizedBox(height: 16.h),
 
-                    // Account Section
                     AccountSection(
-                      isLoggedIn: settings.isLoggedIn,
-                      isPremium: settings.isPremium,
+                      isLoggedIn: isLoggedIn,
+                      isPremium: isPremium,
                     ),
 
                     SizedBox(height: 12.h),
 
-                    // Appearance Section
                     AppearanceSection(
                       currentTheme: settings.themeMode,
                       currentLanguage: settings.languageCode,
@@ -110,22 +123,19 @@ class SettingsScreen extends StatelessWidget {
 
                     SizedBox(height: 12.h),
 
-                    // Backup Section
                     BackupSection(
                       autoBackupEnabled: settings.autoBackupEnabled,
-                      isPremium: settings.isPremium,
+                      isPremium: isPremium,
                     ),
 
                     SizedBox(height: 12.h),
 
-                    // Premium Section
-                    if (!settings.isPremium) ...[
+                    if (!isPremium) ...[
                       const PremiumSection(),
                       SizedBox(height: 12.h),
                     ],
 
-                    // About Section
-                    const AboutSection(),
+                // todo:: const AboutSection(),
 
                     SizedBox(height: 32.h),
                   ]),
@@ -138,7 +148,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUserInfoCard(BuildContext context, bool isPremium) {
+  Widget _buildUserInfoCard(
+      BuildContext context,
+      bool isPremium,
+      String? email,
+      ) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
@@ -154,7 +168,6 @@ class SettingsScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Avatar
           Container(
             width: 56.w,
             height: 56.w,
@@ -171,7 +184,6 @@ class SettingsScreen extends StatelessWidget {
 
           SizedBox(width: 16.w),
 
-          // User Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,6 +195,16 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 4.h),
+                if (email != null)
+                  Text(
+                    email,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11.sp,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                SizedBox(height: 2.h),
                 Text(
                   isPremium ? l10n.premiumMember : l10n.basicMember,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -195,7 +217,6 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
 
-          // Premium Badge Icon
           if (isPremium)
             Container(
               padding: EdgeInsets.all(8.w),
@@ -214,4 +235,3 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
-

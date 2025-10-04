@@ -15,7 +15,7 @@ class AssetsManager {
   static const loadingSpinner = 'assets/icons/loading.json';
   /// application logo
   static const fullLogo = 'assets/icons/full_logo.svg';
-  static const logo = 'assets/images/logo_image.png';
+  static const logo = 'assets/images/logo.png';
   /// application Icons
 
   /// lottie icons

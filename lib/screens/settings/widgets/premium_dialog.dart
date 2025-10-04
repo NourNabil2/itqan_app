@@ -1,0 +1,490 @@
+// lib/screens/subscription/premium_dialog.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/providers/auth_provider.dart';
+import 'package:itqan_gym/screens/settings/screens/login_screen.dart';
+import 'package:provider/provider.dart';
+
+import '../screens/payment_screen.dart';
+
+class PremiumDialog extends StatefulWidget {
+  const PremiumDialog({super.key});
+
+  @override
+  State<PremiumDialog> createState() => _PremiumDialogState();
+
+  static Future<void> show(BuildContext context) {
+    return showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => const PremiumDialog(),
+    );
+  }
+}
+
+class _PremiumDialogState extends State<PremiumDialog> {
+  String _selectedPlan = 'monthly';
+  bool _isNavigating = false;
+
+  Color get _accent => const Color(0xFFFF8A00);
+  List<Color> get _headerGradient => const [Color(0xFFFFB800), Color(0xFFFF8A00)];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 40.h),
+      child: SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            // أكبر شوية علشان المحتوى الطويل
+            maxWidth: 520.w,
+            maxHeight: size.height * 0.9,
+          ),
+          child: Material(
+            color: theme.dialogBackgroundColor,
+            borderRadius: BorderRadius.circular(24.r),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24.r),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: _headerGradient),
+                    ),
+                    child: Stack(
+                      children: [
+                        Align(
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.workspace_premium, size: 48.sp, color: Colors.white),
+                              SizedBox(height: 8.h),
+                              Text(
+                                l10n.upgradeToAccess,
+                                style: TextStyle(
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            icon: Icon(Icons.close_rounded, color: Colors.white, size: 22.sp),
+                            onPressed: () => Navigator.pop(context),
+                            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Content (scrollable)
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth >= 420; // Grid لو في مساحة
+                        return SingleChildScrollView(
+                          padding: EdgeInsets.all(20.w),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Plans
+                              if (isWide)
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _PlanCard(
+                                        title: l10n.monthlyPlan,
+                                        price: 99.97,
+                                        period: l10n.perMonth,
+                                        value: 'monthly',
+                                        isSelected: _selectedPlan == 'monthly',
+                                        accent: _accent,
+                                        onTap: () => setState(() => _selectedPlan = 'monthly'),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12.w),
+                                    Expanded(
+                                      child: _PlanCard(
+                                        title: l10n.lifetimePlan,
+                                        price: 599.97,
+                                        period: l10n.oneTime,
+                                        value: 'lifetime',
+                                        isSelected: _selectedPlan == 'lifetime',
+                                        accent: _accent,
+                                        badgeText: l10n.bestValue,
+                                        onTap: () => setState(() => _selectedPlan = 'lifetime'),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else ...[
+                                _PlanCard(
+                                  title: l10n.monthlyPlan,
+                                  price: 99.97,
+                                  period: l10n.perMonth,
+                                  value: 'monthly',
+                                  isSelected: _selectedPlan == 'monthly',
+                                  accent: _accent,
+                                  onTap: () => setState(() => _selectedPlan = 'monthly'),
+                                ),
+                                SizedBox(height: 12.h),
+                                _PlanCard(
+                                  title: l10n.lifetimePlan,
+                                  price: 599.97,
+                                  period: l10n.oneTime,
+                                  value: 'lifetime',
+                                  isSelected: _selectedPlan == 'lifetime',
+                                  accent: _accent,
+                                  badgeText: l10n.bestValue,
+                                  onTap: () => setState(() => _selectedPlan = 'lifetime'),
+                                ),
+                              ],
+
+                              SizedBox(height: 20.h),
+
+                              // Features (بدون قص نص — Wrap متعدد الأسطر)
+                              Container(
+                                padding: EdgeInsets.all(14.w),
+                                decoration: BoxDecoration(
+                                  color: theme.cardColor,
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.whatsIncluded,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14.sp,
+                                      ),
+                                    ),
+                                    SizedBox(height: 10.h),
+
+                                    // هنا العرض كله بدون ellipsis
+                                    _FeatureRow(text: l10n.removeAds),
+                                    _FeatureRow(text: l10n.cloudBackup),
+                                    _FeatureRow(text: l10n.syncDevices),
+                                    _FeatureRow(text: l10n.premiumSupport),
+
+                                    // مثال: لو عندك مميزات كتير، استخدم Wrap:
+                                    // Wrap(
+                                    //   spacing: 8.w,
+                                    //   runSpacing: 8.h,
+                                    //   children: [
+                                    //     _FeatureChip(text: l10n.removeAds),
+                                    //     _FeatureChip(text: l10n.cloudBackup),
+                                    //     _FeatureChip(text: l10n.syncDevices),
+                                    //     _FeatureChip(text: l10n.premiumSupport),
+                                    //   ],
+                                    // ),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(height: 16.h),
+
+                              // CTA
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isNavigating ? null : _onSubscribePressed,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _accent,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: _isNavigating
+                                        ? SizedBox(
+                                      key: const ValueKey('loading'),
+                                      width: 18.w,
+                                      height: 18.w,
+                                      child: const CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                        : Text(
+                                      key: const ValueKey('text'),
+                                      l10n.continueToPayment,
+                                      style: TextStyle(
+                                        fontSize: 15.sp,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 8.h),
+
+                              Center(
+                                child: TextButton(
+                                  onPressed: _isNavigating ? null : () => Navigator.pop(context),
+                                  child: Text(l10n.maybeLater, style: TextStyle(fontSize: 13.sp)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onSubscribePressed() async {
+    HapticFeedback.lightImpact();
+    setState(() => _isNavigating = true);
+    try {
+      await _handleSubscribe();
+    } finally {
+      if (mounted) setState(() => _isNavigating = false);
+    }
+  }
+
+  Future<void> _handleSubscribe() async {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isLoggedIn) {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen(returnToPremium: true)),
+      );
+      return;
+    }
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          subscriptionType: _selectedPlan,
+          amount: _selectedPlan == 'monthly' ? 99.97 : 599.97,
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  final String text;
+  const _FeatureRow({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle, size: 18.sp, color: Colors.green),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.sp),
+              softWrap: true,          // ✅ يسمح بلف النص
+              overflow: TextOverflow.visible, // ✅ لا تستخدم ellipsis
+              // maxLines: null,        // (اختياري) لتأكيد عدم تحديد عدد أسطر
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Plan Card widget
+/// Plan Card widget (no text clipping, responsive)
+class _PlanCard extends StatelessWidget {
+  final String title;
+  final double price;
+  final String period;
+  final String value;
+  final bool isSelected;
+  final Color accent;
+  final String? badgeText;
+  final VoidCallback onTap;
+
+  const _PlanCard({
+    required this.title,
+    required this.price,
+    required this.period,
+    required this.value,
+    required this.isSelected,
+    required this.accent,
+    required this.onTap,
+    this.badgeText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12.r),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.all(14.w),
+          margin: EdgeInsets.only(bottom: 6.h),
+          decoration: BoxDecoration(
+            color: isSelected ? accent.withOpacity(0.08) : theme.cardColor,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: isSelected ? accent : theme.dividerColor.withOpacity(0.2),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Radio
+              Padding(
+                padding: EdgeInsets.only(top: 4.h),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 20.w,
+                  height: 20.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? accent : theme.dividerColor,
+                      width: 2,
+                    ),
+                    color: isSelected ? accent : Colors.transparent,
+                  ),
+                  child: isSelected
+                      ? Center(
+                    child: Container(
+                      width: 6.w,
+                      height: 6.w,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                      : null,
+                ),
+              ),
+
+              SizedBox(width: 10.w),
+
+              // Info (multi-line, no ellipsis)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title + optional badge
+                    Wrap(
+                      spacing: 6.w,
+                      runSpacing: 6.h,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        // العنوان بدون قص
+                        Text(
+                          title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.sp,
+                          ),
+                          softWrap: true,
+                        ),
+                        if (badgeText != null)
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ColorsManager.successFill,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: Text(
+                              badgeText!,
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    SizedBox(height: 6.h),
+
+                    // الفترة بدون قص
+                    Text(
+                      period,
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 11.sp),
+                      softWrap: true,
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(width: 10.w),
+
+              // Price (doesn't push text; shrinks if tight)
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  // مساحة معقولة تمنع تكسير الـ Row
+                  minWidth: 72.w,
+                  maxWidth: 110.w,
+                ),
+                child: FittedBox(
+                  alignment: Alignment.centerRight,
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${l10n.egp} ${price.toStringAsFixed(2)}',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

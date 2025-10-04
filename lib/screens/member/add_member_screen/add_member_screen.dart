@@ -1,19 +1,20 @@
+// lib/screens/member/add_global_member/add_global_member_screen.dart
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/constants/image_picker_helper.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/error_container_widget.dart';
+import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/image_picker_helper.dart';
-import '../../../data/models/member/member.dart';
 import '../widgets/editInfo_notice.dart';
 import '../widgets/form_action_buttons.dart';
 import '../widgets/member_basicInfo_form.dart';
-import '../widgets/member_photo_upload.dart'; // استيراد المكونات المخصصة
+import '../widgets/member_photo_upload.dart';
 
 class AddGlobalMemberScreen extends StatefulWidget {
   final Member? memberToEdit;
@@ -49,7 +50,7 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
     final member = widget.memberToEdit!;
     _nameController.text = member.name;
     _ageController.text = member.age.toString();
-    _notesController.text = member.notes ?? '';
+      _notesController.text = member.notes ?? '';
     _selectedLevel = member.level;
     _photoPath = member.photoPath;
   }
@@ -64,17 +65,23 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
-      backgroundColor: ColorsManager.backgroundSurface,
+      backgroundColor: colorScheme.surface,
       appBar: CustomAppBar(
-        title: _isEditing ? 'تعديل العضو' : 'إضافة عضو للمكتبة',
+        title: _isEditing ? l10n.editMember : l10n.addMemberToLibrary,
         action: _isEditing
             ? IconButton(
           onPressed: _showDeleteDialog,
           icon: Icon(
             Icons.delete_rounded,
-            color: ColorsManager.errorFill,
-            size: SizeApp.iconSize,
+            size: 22.sp,
+          ),
+          style: IconButton.styleFrom(
+            foregroundColor: colorScheme.error,
           ),
         )
             : null,
@@ -89,14 +96,15 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Error Display
-                    if (_error != null)
+                    // Error display
+                    if (_error != null) ...[
                       ErrorContainer(
                         errors: [_error!],
                         margin: EdgeInsets.only(bottom: SizeApp.s16),
                       ),
+                    ],
 
-                    // Photo Upload Section
+                    // Photo upload section
                     MemberPhotoUpload(
                       photoPath: _photoPath,
                       memberName: _nameController.text,
@@ -106,35 +114,33 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
 
                     SizedBox(height: SizeApp.s32),
 
-                    // Basic Info Form
+                    // Basic info form
                     MemberBasicInfoForm(
                       nameController: _nameController,
                       ageController: _ageController,
                       selectedLevel: _selectedLevel,
                       onLevelChanged: (level) {
-                        setState(() {
-                          _selectedLevel = level;
-                        });
+                        setState(() => _selectedLevel = level);
                       },
                     ),
 
                     SizedBox(height: SizeApp.s16),
 
-                    // Notes Field - استخدام المصنع المخصص للملاحظات
+                    // Notes field
                     AppTextFieldFactory.textArea(
                       controller: _notesController,
-                      hintText: 'أي ملاحظات أو معلومات إضافية عن العضو...',
-                      title: 'ملاحظات (اختياري)',
+                      hintText: l10n.memberNotesHint,
+                      title: l10n.notesOptional,
                       maxLines: 4,
                     ),
 
                     SizedBox(height: SizeApp.s24),
 
-                    // Info Notice
+                    // Info notice
                     EditInfoNotice(
                       message: _isEditing
-                          ? 'سيتم حفظ التعديلات على هذا العضو في المكتبة العامة'
-                          : 'سيتم إضافة هذا العضو إلى المكتبة العامة ويمكن إضافته لأي فريق لاحقاً',
+                          ? l10n.editMemberLibraryNotice
+                          : l10n.addMemberLibraryNotice,
                     ),
                   ],
                 ),
@@ -142,12 +148,12 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
             ),
           ),
 
-          // Action Buttons
+          // Action buttons
           FormActionButtons(
             onSave: _saveMember,
             onCancel: () => Navigator.pop(context),
             isLoading: _isLoading,
-            saveText: _isEditing ? 'حفظ التعديلات' : 'إضافة العضو',
+            saveText: _isEditing ? l10n.saveChanges : l10n.addMember,
           ),
         ],
       ),
@@ -159,9 +165,7 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
       context: context,
       onImageSelected: (imagePath) {
         if (imagePath != null) {
-          setState(() {
-            _photoPath = imagePath;
-          });
+          setState(() => _photoPath = imagePath);
         }
       },
     );
@@ -176,10 +180,14 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
     });
 
     try {
+      final age = _ageController.text.trim().isNotEmpty
+          ? int.tryParse(_ageController.text)
+          : 0;
+
       final member = Member(
         id: widget.memberToEdit?.id,
         name: _nameController.text.trim(),
-        age: int.parse(_ageController.text),
+        age: age!,
         level: _selectedLevel,
         photoPath: _photoPath,
         notes: _notesController.text.trim().isNotEmpty
@@ -187,7 +195,7 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
             : null,
       );
 
-      final provider = Provider.of<MemberLibraryProvider>(context, listen: false);
+      final provider = context.read<MemberLibraryProvider>();
 
       if (_isEditing) {
         await provider.updateMember(member);
@@ -197,85 +205,79 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditing ? 'تم تحديث العضو بنجاح' : 'تم إضافة العضو بنجاح',
-            ),
-            backgroundColor: ColorsManager.successFill,
-          ),
+        _showSuccessSnackBar(
+          _isEditing
+              ? AppLocalizations.of(context).memberUpdatedSuccessfully
+              : AppLocalizations.of(context).memberAddedSuccessfully,
         );
       }
     } catch (e) {
-      _showError('حدث خطأ في حفظ بيانات العضو: ${e.toString()}');
-      log('خطأ في حفظ العضو: $e');
+      if (mounted) {
+        _showError(
+          '${AppLocalizations.of(context).errorSavingMember}: ${e.toString()}',
+        );
+      }
+      log('Error saving member: $e');
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
   void _showDeleteDialog() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+          borderRadius: BorderRadius.circular(16.r),
         ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_rounded,
-              color: ColorsManager.errorFill,
-              size: 24.sp,
-            ),
-            SizedBox(width: SizeApp.s8),
-            Text(
-              'حذف العضو',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.errorFill,
-              ),
-            ),
-          ],
+        icon: Container(
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: colorScheme.errorContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.delete_outline_rounded,
+            size: 32.sp,
+            color: colorScheme.error,
+          ),
+        ),
+        title: Text(
+          l10n.deleteMember,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: colorScheme.error,
+          ),
+          textAlign: TextAlign.center,
         ),
         content: Text(
-          'هل أنت متأكد من حذف "${widget.memberToEdit!.name}" من المكتبة نهائياً؟\n\nلا يمكن التراجع عن هذا الإجراء.',
-          style: TextStyle(
-            fontSize: 14.sp,
-            height: 1.4,
+          l10n.deleteMemberConfirmation(widget.memberToEdit!.name),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            height: 1.5,
           ),
+          textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(
-                color: ColorsManager.defaultTextSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(l10n.cancel),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: _deleteMember,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsManager.errorFill,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              ),
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
-            child: Text(
-              'حذف نهائياً',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: Text(l10n.deletePermanently),
           ),
         ],
       ),
@@ -285,37 +287,51 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
   Future<void> _deleteMember() async {
     Navigator.pop(context); // Close dialog
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
 
     try {
-      final provider = Provider.of<MemberLibraryProvider>(context, listen: false);
+      final provider = context.read<MemberLibraryProvider>();
       await provider.deleteMember(widget.memberToEdit!.id);
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم حذف العضو نهائياً'),
-            backgroundColor: ColorsManager.errorFill,
-          ),
+        _showSuccessSnackBar(
+          AppLocalizations.of(context).memberDeletedPermanently(widget.memberToEdit!.name),
         );
       }
     } catch (e) {
-      _showError('حدث خطأ في حذف العضو: ${e.toString()}');
+      if (mounted) {
+        _showError(
+          '${AppLocalizations.of(context).errorDeletingMember}: ${e.toString()}',
+        );
+      }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
   void _showError(String message) {
-    setState(() {
-      _error = message;
-    });
+    setState(() => _error = message);
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: colorScheme.tertiary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+        ),
+      ),
+    );
   }
 }

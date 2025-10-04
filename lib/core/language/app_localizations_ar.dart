@@ -49,6 +49,145 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get no => 'لا';
 
+  @override
+  String get emailRequired => 'البريد الإلكتروني مطلوب';
+
+  @override
+  String get email => 'البريد الإلكتروني';
+
+  @override
+  String get emailInvalid => 'البريد الإلكتروني غير صحيح';
+
+  @override
+  String get signUpDescription => 'أنشئ حساباً للبدء';
+
+  @override
+  String get confirmPassword => 'تأكيد كلمة المرور';
+
+  @override
+  String get confirmPasswordRequired => 'تأكيد كلمة المرور مطلوب';
+
+  @override
+  String get passwordsDoNotMatch => 'كلمات المرور غير متطابقة';
+
+  @override
+  String get mustAgreeToTerms => 'يجب الموافقة على الشروط والأحكام';
+
+  @override
+  String get iAgreeToThe => 'أوافق على ';
+
+  @override
+  String get termsAndConditions => 'الشروط والأحكام';
+
+  @override
+  String get verifyEmail => 'تأكيد البريد الإلكتروني';
+
+  @override
+  String get verificationEmailSent => 'تم إرسال رسالة التأكيد إلى بريدك الإلكتروني';
+
+  @override
+  String get resendEmail => 'إعادة إرسال';
+
+  @override
+  String get gotIt => 'فهمت';
+
+  @override
+  String get alreadyHaveAccount => 'لديك حساب بالفعل؟';
+
+  @override
+  String get upgradeToPremium => 'الترقية للنسخة المميزة';
+
+  @override
+  String get monthlyPlan => 'الاشتراك الشهري';
+
+  @override
+  String get lifetimePlan => 'اشتراك مدى الحياة';
+
+  @override
+  String get perMonth => 'شهرياً';
+
+  @override
+  String get oneTime => 'دفعة واحدة';
+
+  @override
+  String get bestValue => 'أفضل قيمة';
+
+  @override
+  String get whatsIncluded => 'ما المتضمن:';
+
+  @override
+  String get continueToPayment => 'الانتقال للدفع';
+
+  @override
+  String get maybeLater => 'ربما لاحقاً';
+
+  // Backup & Restore
+  @override
+  String get createBackup => 'إنشاء نسخة احتياطية';
+
+  @override
+  String get createBackupConfirmation => 'هل تريد إنشاء نسخة احتياطية من بياناتك الآن؟ سيتم رفعها إلى السحابة.';
+
+  @override
+  String get backupSuccess => 'تم إنشاء النسخة الاحتياطية بنجاح';
+
+  @override
+  String get backupFailed => 'فشل إنشاء النسخة الاحتياطية';
+
+  @override
+  String get restoreWarning => 'تحذير: سيتم استبدال جميع البيانات الحالية بالنسخة الاحتياطية. هذا الإجراء لا يمكن التراجع عنه. هل تريد المتابعة؟';
+
+  @override
+  String get restoreSuccess => 'تم استعادة البيانات بنجاح';
+
+  @override
+  String get restartAppMessage => 'يجب إعادة تشغيل التطبيق لتطبيق التغييرات. سيتم إغلاق التطبيق الآن.';
+
+  @override
+  String get closeApp => 'إغلاق التطبيق';
+
+  @override
+  String get noBackupsFound => 'لا توجد نسخ احتياطية متاحة';
+
+  @override
+  String get backupHistory => 'سجل النسخ الاحتياطية';
+
+  @override
+  String get viewBackupHistory => 'عرض جميع النسخ الاحتياطية المحفوظة';
+
+  @override
+  String get backupsAvailable => 'نسخة متاحة';
+
+  @override
+  String get lastBackup => 'آخر نسخة احتياطية';
+
+  @override
+  String get errorLoadingBackups => 'خطأ في تحميل النسخ الاحتياطية';
+
+  @override
+  String get restore => 'استعادة';
+
+  @override
+  String get passwordRequired => 'كلمة المرور مطلوبة';
+
+  @override
+  String get password => 'كلمة المرور';
+
+  @override
+  String get passwordTooShort => 'كلمة المرور قصيرة جداً (6 أحرف على الأقل)';
+
+  @override
+  String get forgotPassword => 'نسيت كلمة المرور؟';
+
+  @override
+  String get dontHaveAccount => 'ليس لديك حساب؟';
+
+  @override
+  String get signUpTitle => 'إنشاء حساب';
+
+  @override
+  String get timeManipulationDetected => 'تم اكتشاف تلاعب في وقت الجهاز';
+
   // ============= Premium Section =============
   @override
   String get premiumTitle => 'احصل على النسخة المميزة';
@@ -117,9 +256,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   // About Section
   @override
-  String get aboutApp => 'حول التطبيق';
-
-  @override
   String get privacyPolicy => 'سياسة الخصوصية';
 
   @override
@@ -130,9 +266,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get rateApp => 'تقييم التطبيق';
-
-  @override
-  String get appVersion => 'الإصدار';
 
 // Appearance Section
   @override
@@ -261,13 +394,100 @@ class AppLocalizationsAr extends AppLocalizations {
   String get backupDescription => 'احفظ بياناتك بشكل آمن';
 
   @override
-  String get restore => 'استعادة';
+  String get restoreFailed => 'الاستعاده فشلت';
 
   @override
-  String get lastBackup => 'آخر نسخة احتياطية';
+  String get deleteBackup => 'حذف النسخة الاحتياطية';
+
+  @override
+  String get deleteBackupConfirmation => 'هل تريد حذف هذه النسخة الاحتياطية؟ لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get backupDeleted => 'تم حذف النسخة الاحتياطية';
 
   @override
   String get neverBackedUp => 'لم يتم النسخ الاحتياطي';
+
+  @override
+  String get payment => 'الدفع';
+
+  @override
+  String get totalAmount => 'المبلغ الإجمالي';
+
+  @override
+  String get egp => 'جنيه';
+
+  @override
+  String get paymentInstructions => 'تعليمات الدفع';
+
+  @override
+  String get paymentInstructionsDetails => 'قم بتحويل المبلغ المطلوب إلى الرقم أدناه باستخدام فودافون كاش أو إنستا باي، ثم قم بإرفاق صورة إثبات الدفع.';
+
+  @override
+  String get phoneNumber => 'رقم الهاتف';
+
+  @override
+  String get copiedToClipboard => 'تم النسخ';
+
+  @override
+  String get vodafoneCash => 'فودافون كاش';
+
+  @override
+  String get instaPay => 'إنستا باي';
+
+  @override
+  String get transactionReference => 'رقم العملية';
+
+  @override
+  String get transactionReferenceOptional => 'رقم العملية (اختياري)';
+
+  @override
+  String get uploadPaymentProof => 'إرفاق إثبات الدفع';
+
+  @override
+  String get tapToUploadProof => 'اضغط لرفع صورة إثبات الدفع';
+
+  @override
+  String get submitPaymentRequest => 'إرسال طلب الدفع';
+
+  @override
+  String get paymentRequestSubmitted => 'تم إرسال طلب الدفع بنجاح';
+
+  @override
+  String get paymentUnderReview => 'طلبك قيد المراجعة، سيتم تفعيل اشتراكك بعد الموافقة.';
+
+  @override
+  String get paymentStatus => 'حالة الدفع';
+
+  @override
+  String get noPaymentRequests => 'لا توجد طلبات دفع';
+
+  @override
+  String get pending => 'قيد المراجعة';
+
+  @override
+  String get approved => 'تمت الموافقة';
+
+  @override
+  String get rejected => 'مرفوض';
+
+  @override
+  String get submittedAt => 'تاريخ الإرسال';
+
+  @override
+  String get reviewedAt => 'تاريخ المراجعة';
+
+  @override
+  String get adminNotes => 'ملاحظات الإدارة';
+
+  @override
+  String get paymentMethod => 'طرق الدفع';
+
+  @override
+  String get backupDate => 'تاريخ النسخة';
+
+  @override
+  String get size => 'الحجم';
 
   @override
   String get premiumFeature => 'ميزة مميزة';
@@ -951,5 +1171,175 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notFound => 'غير موجود';
+
+  @override
+  String get viewPaymentRequests => 'عرض حالة طلبات الدفع';
+
+  @override
+  String get performanceChart => 'مخطط الأداء';
+
+  @override
+  String get trackProgressOverTime => 'تتبع التقدم على مدار الوقت';
+
+  @override
+  String get last6Weeks => 'آخر 6 أسابيع';
+
+  @override
+  String get skillsProgress => 'تقدم المهارات';
+
+  @override
+  String get addedSkillsCompletion => 'المهارات المضافة ونسبة الإنجاز';
+
+  @override
+  String get performanceStatistics => 'إحصائيات الأداء';
+
+  @override
+  String get overallPerformanceView => 'نظرة شاملة على الأداء العام';
+
+  @override
+  String get detailedNotes => 'الملاحظات المفصلة';
+
+  @override
+  String get advancedNotesWithDates => 'سجل ملاحظات متقدمة مع التواريخ والفئات';
+
+  @override
+  String get generalCoachNote => 'ملاحظة المدرب العامة';
+
+  @override
+  String get noGeneralNoteDescription =>
+      'لا توجد ملاحظة عامة.\nيمكنك إضافة ملاحظة عامة عن العضو هنا.';
+
+  @override
+  String get viewMore => 'عرض المزيد';
+
+  @override
+  String get noDetailedNotes => 'لا توجد ملاحظات مفصلة';
+
+  @override
+  String get addFirstNote => 'أضف أول ملاحظة مفصلة للعضو';
+
+  @override
+  String get updateProgress => 'تحديث التقدم';
+
+  @override
+  String week(int number) => 'أ$number';
+
+  @override
+  String get errorLoadingData => 'خطأ في تحميل البيانات';
+
+  @override
+  String get noDataToDisplay => 'لا توجد بيانات للعرض';
+
+  @override
+  String get newMemberDataAfterWeek =>
+      'عضو جديد - سيتم عرض البيانات بعد أسبوع من التدريب';
+
+  @override
+  String get insufficientDataAssignSkills =>
+      'لا توجد بيانات كافية - ابدأ بتعيين مهارات للعضو';
+
+
+  @override
+  String get removeSkill => 'إزالة المهارة';
+
+
+  @override
+  String get progressUpdated => 'تم تحديث التقدم إلى';
+
+  @override
+  String get noteSaved => 'تم حفظ الملاحظة';
+
+  @override
+  String get skillRemoved => 'تم إزالة المهارة';
+
+  @override
+  String get confirmRemoval => 'تأكيد الإزالة';
+
+  @override
+  String get confirmRemoveSkill => 'هل أنت متأكد من إزالة مهارة';
+
+  @override
+  String get enterNoteHere => 'أدخل الملاحظة هنا...';
+
+  @override
+  String get upgradeNow => 'الترقية الآن';
+
+  @override
+  String get availableForPremium => 'متاح للأعضاء المميزين فقط';
+
+  @override
+  String get excellentPerformance => 'أداء ممتاز! استمر في التقدم';
+
+  @override
+  String get goodProgress => 'تقدم جيد، واصل العمل';
+
+  @override
+  String get goodStart => 'بداية جيدة، استمر!';
+
+  @override
+  String get startTrainingJourney => 'ابدأ رحلة التدريب الآن';
+
+  @override
+  String get overallProgress => 'التقدم الإجمالي';
+
+  @override
+  String get editMemberData => 'تعديل بيانات العضو';
+
+  @override
+  String get additionalInfo => 'معلومات إضافية';
+
+  @override
+  String get registrationDate => 'تاريخ التسجيل';
+
+  @override
+  String get editMemberNotice =>
+      'تعديل هذه البيانات سيؤثر على جميع التمارين والتقييمات المرتبطة بهذا العضو. تأكد من صحة البيانات قبل الحفظ.';
+
+  @override
+  String get errorPickingImage => 'حدث خطأ في اختيار الصورة';
+
+  @override
+  String get memberDataUpdatedSuccessfully => 'تم تحديث بيانات العضو بنجاح';
+
+  @override
+  String get errorUpdatingMemberData => 'حدث خطأ في تحديث بيانات العضو';
+
+  @override
+  String get editMember => 'تعديل العضو';
+
+  @override
+  String get memberNotesHint => 'أي ملاحظات أو معلومات إضافية عن العضو...';
+
+  @override
+  String get notesOptional => 'ملاحظات (اختياري)';
+
+  @override
+  String get editMemberLibraryNotice =>
+      'سيتم حفظ التعديلات على هذا العضو في المكتبة العامة';
+
+  @override
+  String get addMemberLibraryNotice =>
+      'سيتم إضافة هذا العضو إلى المكتبة العامة ويمكن إضافته لأي فريق لاحقاً';
+
+  @override
+  String get saveChanges => 'حفظ التعديلات';
+
+  @override
+  String get addMember => 'إضافة العضو';
+
+  @override
+  String get memberUpdatedSuccessfully => 'تم تحديث العضو بنجاح';
+
+  @override
+  String get memberAddedSuccessfully => 'تم إضافة العضو بنجاح';
+
+  @override
+  String get errorSavingMember => 'حدث خطأ في حفظ بيانات العضو';
+
+  @override
+  String get deleteMember => 'حذف العضو';
+
+  @override
+  String get errorDeletingMember => 'حدث خطأ في حذف العضو';
 
 }

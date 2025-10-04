@@ -1,10 +1,10 @@
+// lib/screens/member/member_details/widgets/notes/general_notes_section.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 
-/// General Notes Section كمكون منفصل
 class GeneralNotesSection extends StatelessWidget {
   final Member member;
   final VoidCallback onEditNotes;
@@ -17,15 +17,21 @@ class GeneralNotesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: colorScheme.shadow.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -33,79 +39,95 @@ class GeneralNotesSection extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           SizedBox(height: SizeApp.s12),
-          _buildNotesContent(),
+          _buildNotesContent(context),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(6.w),
-              decoration: BoxDecoration(
-                color: ColorsManager.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6.r),
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(
+                  Icons.edit_note_rounded,
+                  size: 18.sp,
+                  color: colorScheme.primary,
+                ),
               ),
-              child: Icon(
-                Icons.edit_note_rounded,
-                size: 16.sp,
-                color: ColorsManager.primaryColor,
+              SizedBox(width: SizeApp.s8),
+              Flexible(
+                child: Text(
+                  l10n.generalCoachNote,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            SizedBox(width: SizeApp.s8),
-            Text(
-              'ملاحظة المدرب العامة',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultText,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         IconButton(
           onPressed: onEditNotes,
           icon: Icon(
             Icons.edit_rounded,
             size: 20.sp,
-            color: ColorsManager.primaryColor,
+            color: colorScheme.primary,
+          ),
+          tooltip: l10n.edit,
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.primaryContainer.withOpacity(0.3),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildNotesContent() {
+  Widget _buildNotesContent(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
     final hasNotes = member.notes?.isNotEmpty == true;
 
     return Container(
       width: double.infinity,
+      constraints: BoxConstraints(minHeight: 60.h),
       padding: EdgeInsets.all(SizeApp.s12),
       decoration: BoxDecoration(
-        color: ColorsManager.defaultSurface,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         border: Border.all(
-          color: ColorsManager.inputBorder.withOpacity(0.2),
+          color: colorScheme.outlineVariant,
           width: 1,
         ),
       ),
       child: Text(
-        hasNotes
-            ? member.notes!
-            : 'لا توجد ملاحظة عامة.\nيمكنك إضافة ملاحظة عامة عن العضو هنا.',
-        style: TextStyle(
-          fontSize: 14.sp,
+        hasNotes ? member.notes! : l10n.noGeneralNoteDescription,
+        style: theme.textTheme.bodyMedium?.copyWith(
           color: hasNotes
-              ? ColorsManager.defaultText
-              : ColorsManager.defaultTextSecondary,
+              ? colorScheme.onSurface
+              : colorScheme.onSurfaceVariant,
           height: 1.5,
           fontStyle: hasNotes ? FontStyle.normal : FontStyle.italic,
         ),

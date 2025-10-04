@@ -1,25 +1,30 @@
+// lib/screens/member_notes/widgets/note_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
-import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
+import 'package:itqan_gym/core/utils/extension.dart';
 import 'package:itqan_gym/data/models/member/member_notes.dart';
 
 class NoteCard extends StatelessWidget {
   final MemberNote note;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const NoteCard({
     super.key,
     required this.note,
     required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     final noteType = NoteType.values.firstWhere(
           (type) => type.value == note.noteType,
@@ -31,114 +36,202 @@ class NoteCard extends StatelessWidget {
       orElse: () => NotePriority.normal,
     );
 
+    final isHighPriority = note.priority == 'high';
+
     return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: priority.color.withOpacity(0.2),
-          width: 1,
+          color: isHighPriority
+              ? colorScheme.error.withOpacity(0.5)
+              : colorScheme.outlineVariant,
+          width: isHighPriority ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
           onTap: onTap,
+          borderRadius: BorderRadius.circular(16.r),
           child: Padding(
-            padding: EdgeInsets.all(SizeApp.s12),
+            padding: EdgeInsets.all(16.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                // Header
                 Row(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(4.w),
+                      padding: EdgeInsets.all(8.w),
                       decoration: BoxDecoration(
                         color: priority.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4.r),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Icon(
                         noteType.icon,
-                        size: 12.sp,
+                        size: 18.sp,
                         color: priority.color,
                       ),
                     ),
-                    SizedBox(width: SizeApp.s8),
+                    SizedBox(width: 10.w),
                     Expanded(
                       child: Text(
                         note.title,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (note.priority == 'high')
+                    if (isHighPriority)
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 4.w,
-                          vertical: 1.h,
+                          horizontal: 8.w,
+                          vertical: 4.h,
                         ),
                         decoration: BoxDecoration(
-                          color: ColorsManager.errorFill,
-                          borderRadius: BorderRadius.circular(2.r),
+                          color: colorScheme.error,
+                          borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(
                           l10n.important,
                           style: TextStyle(
-                            fontSize: 8.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onError,
                           ),
                         ),
                       ),
+                    SizedBox(width: 4.w),
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert_rounded,
+                        size: 20.sp,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit_rounded,
+                                size: 18.sp,
+                                color: colorScheme.primary,
+                              ),
+                              SizedBox(width: 12.w),
+                              Text(l10n.edit),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_rounded,
+                                size: 18.sp,
+                                color: colorScheme.error,
+                              ),
+                              SizedBox(width: 12.w),
+                              Text(
+                                l10n.delete,
+                                style: TextStyle(color: colorScheme.error),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          onEdit();
+                        } else if (value == 'delete') {
+                          onDelete();
+                        }
+                      },
+                    ),
                   ],
                 ),
-                SizedBox(height: SizeApp.s8),
+
+                SizedBox(height: 12.h),
+
+                // Content
                 Text(
                   note.content,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    height: 1.3,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    height: 1.5,
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: SizeApp.s8),
-                Row(
+
+                SizedBox(height: 12.h),
+
+                // Footer
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 4.w,
-                        vertical: 2.h,
+                        horizontal: 10.w,
+                        vertical: 4.h,
                       ),
                       decoration: BoxDecoration(
-                        color: ColorsManager.infoSurface,
-                        borderRadius: BorderRadius.circular(3.r),
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(
                         noteType.getLocalizedName(context),
                         style: TextStyle(
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w500,
-                          color: ColorsManager.infoText,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSecondaryContainer,
                         ),
                       ),
                     ),
-                    const Spacer(),
+                    if (note.createdBy != null) ...[
+                      Text(
+                        '•',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        note.createdBy!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     Text(
-                      _formatDate(context, note.createdAt),
+                      '•',
                       style: TextStyle(
-                        fontSize: 9.sp,
-                        color: theme.textTheme.bodySmall?.color,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      note.createdAt.timeAgoCtx(context),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -149,21 +242,5 @@ class NoteCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(BuildContext context, DateTime date) {
-    final l10n = AppLocalizations.of(context);
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return l10n.today;
-    } else if (difference.inDays == 1) {
-      return l10n.yesterday;
-    } else if (difference.inDays < 7) {
-      return l10n.daysAgo(difference.inDays);
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
   }
 }

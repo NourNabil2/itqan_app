@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // إضافة هذا السطر
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
+import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/config/supabase_config.dart';
 import 'core/language/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/exercise_library_provider.dart';
@@ -15,13 +20,26 @@ import 'data/database/db_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // ============ Initialize Supabase ============
+  await Supabase.initialize(
+    url: SupabaseConfig.supabaseUrl,
+    anonKey: SupabaseConfig.supabaseAnonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+      autoRefreshToken: true,
+    ),
+  );
 
+
+  // ============ DataBase ============
   try {
     await DatabaseHelper.instance.fixExistingDatabase();
   } catch (e) {
     debugPrint('Database fix error: $e');
   }
 
+  // ============ Initialize AdMob ============
+  await AdsService.instance.initialize();
   runApp(const GymnasticsApp());
 }
 
@@ -37,6 +55,7 @@ class GymnasticsApp extends StatelessWidget {
       builder: (context, child) {
         return MultiProvider(
           providers: [
+            ChangeNotifierProvider(create: (_) => AuthProvider()),
             ChangeNotifierProvider(create: (_) => SettingsProvider()),
             ChangeNotifierProvider(create: (_) => TeamProvider()),
             ChangeNotifierProvider(create: (_) => MemberProvider()),
@@ -52,7 +71,6 @@ class GymnasticsApp extends StatelessWidget {
             builder: (context, settings, _) {
               return MaterialApp(
                 title: 'ITQAN Gym',
-                debugShowCheckedModeBanner: false,
 
                 // Theme configuration
                 theme: AppTheme.light,
@@ -73,6 +91,13 @@ class GymnasticsApp extends StatelessWidget {
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
                 ],
+
+                builder: (context, child) {
+                  return Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: child!,
+                  );
+                },
 
                 home: const DashboardScreen(),
               );

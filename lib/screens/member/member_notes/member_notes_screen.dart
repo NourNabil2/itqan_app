@@ -1,18 +1,18 @@
+// lib/screens/member_notes/member_notes_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
-import 'package:itqan_gym/core/utils/enums.dart';
-import 'package:itqan_gym/core/widgets/app_text_feild.dart';
-import 'package:itqan_gym/data/models/member/member.dart';
-import 'package:itqan_gym/data/models/member/member_notes.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
-import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
-import 'package:itqan_gym/core/widgets/error_container_widget.dart';
-import 'package:itqan_gym/core/assets/assets_manager.dart';
+import 'package:itqan_gym/data/models/member/member.dart';
+import 'package:itqan_gym/data/models/member/member_notes.dart';
+import 'package:itqan_gym/providers/member_provider.dart';
+import 'package:itqan_gym/screens/member/member_notes/widgets/delete_note_dialog.dart';
+import 'package:itqan_gym/screens/member/member_notes/widgets/note_card_widget.dart';
+import 'package:itqan_gym/screens/member/member_notes/widgets/note_details_dialog.dart';
+import 'package:itqan_gym/screens/member/member_notes/widgets/note_form_dialog.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/member_provider.dart';
 
 class MemberNotesScreen extends StatefulWidget {
   final Member member;
@@ -32,7 +32,7 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    _notesProvider = Provider.of<MemberNotesProvider>(context, listen: false);
+    _notesProvider = context.read<MemberNotesProvider>();
     _loadNotes();
   }
 
@@ -48,24 +48,25 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: CustomAppBar(
         title: l10n.memberNotes(widget.member.name),
         action: IconButton(
-          onPressed: () => _showAddNoteDialog(),
-          icon: Icon(
-            Icons.add_rounded,
-            color: theme.primaryColor,
-            size: SizeApp.iconSize,
+          onPressed: _handleAddNote,
+          icon: Icon(Icons.add_rounded, size: 24.sp),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.primaryContainer,
+            foregroundColor: colorScheme.primary,
           ),
         ),
       ),
       body: Consumer<MemberNotesProvider>(
-        builder: (context, provider, child) {
+        builder: (context, provider, _) {
           if (provider.isLoading) {
             return _buildLoadingState();
           }
@@ -77,42 +78,9 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
           return Column(
             children: [
               _buildStatsHeader(provider),
-              Container(
-                color: theme.cardColor,
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  labelColor: theme.primaryColor,
-                  unselectedLabelColor: theme.textTheme.bodySmall?.color,
-                  indicatorColor: theme.primaryColor,
-                  labelStyle: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  unselectedLabelStyle: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  tabs: [
-                    Tab(text: l10n.allNotesCount(provider.allNotes.length)),
-                    Tab(text: l10n.generalNotesCount(provider.getNotesCountByType('general'))),
-                    Tab(text: l10n.performanceNotesCount(provider.getNotesCountByType('performance'))),
-                    Tab(text: l10n.behaviorNotesCount(provider.getNotesCountByType('behavior'))),
-                    Tab(text: l10n.healthNotesCount(provider.getNotesCountByType('health'))),
-                  ],
-                ),
-              ),
+              _buildTabBar(provider),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildNotesTab(provider.allNotes),
-                    _buildNotesTab(provider.getNotesByType('general')),
-                    _buildNotesTab(provider.getNotesByType('performance')),
-                    _buildNotesTab(provider.getNotesByType('behavior')),
-                    _buildNotesTab(provider.getNotesByType('health')),
-                  ],
-                ),
+                child: _buildTabBarView(provider),
               ),
             ],
           );
@@ -122,8 +90,9 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
   }
 
   Widget _buildLoadingState() {
-    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Center(
       child: Column(
@@ -132,21 +101,21 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
           Container(
             width: 60.w,
             height: 60.h,
-            padding: EdgeInsets.all(SizeApp.s16),
+            padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(SizeApp.radius),
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(16.r),
             ),
             child: CircularProgressIndicator(
-              color: theme.primaryColor,
+              color: colorScheme.primary,
               strokeWidth: 3,
             ),
           ),
-          SizedBox(height: SizeApp.s16),
+          SizedBox(height: 16.h),
           Text(
             l10n.loadingNotes,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
+              color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -156,41 +125,72 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
   }
 
   Widget _buildErrorState(String error) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context);
 
-    return Column(
-      children: [
-        SizedBox(height: SizeApp.s20),
-        ErrorContainer(
-          errors: [error],
-          margin: EdgeInsets.symmetric(horizontal: SizeApp.s16),
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(24.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                color: colorScheme.errorContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 48.sp,
+                color: colorScheme.error,
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              l10n.errorOccurred,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              error,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 24.h),
+            FilledButton.icon(
+              onPressed: () {
+                _notesProvider.clearError();
+                _loadNotes();
+              },
+              icon: Icon(Icons.refresh, size: 18.sp),
+              label: Text(l10n.retryAgain),
+            ),
+          ],
         ),
-        const Spacer(),
-        EmptyStateWidget(
-          title: l10n.errorOccurred,
-          subtitle: l10n.couldNotLoadNotes,
-          buttonText: l10n.retryAgain,
-          assetSvgPath: AssetsManager.notFoundIcon,
-          onPressed: () {
-            _notesProvider.clearError();
-            _loadNotes();
-          },
-        ),
-        const Spacer(),
-      ],
+      ),
     );
   }
 
   Widget _buildStatsHeader(MemberNotesProvider provider) {
-    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final highPriorityCount = provider.getHighPriorityNotes().length;
-    final recentNotesCount = provider.allNotes.where((note) =>
-    DateTime.now().difference(note.createdAt).inDays <= 7).length;
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
-    return Container(
-      color: theme.cardColor,
-      padding: EdgeInsets.all(SizeApp.s16),
+    final highPriorityCount = provider.getHighPriorityNotes().length;
+    final recentNotesCount = provider.allNotes
+        .where((note) => DateTime.now().difference(note.createdAt).inDays <= 7)
+        .length;
+
+    return Padding(
+      padding: EdgeInsets.all(16.w),
       child: Row(
         children: [
           Expanded(
@@ -198,33 +198,33 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
               l10n.totalNotes,
               '${provider.allNotes.length}',
               Icons.note_outlined,
-              theme.primaryColor,
+              colorScheme.primary,
             ),
           ),
           Container(
             width: 1,
             height: 40.h,
-            color: theme.dividerColor.withOpacity(0.2),
+            color: colorScheme.outlineVariant,
           ),
           Expanded(
             child: _buildStatItem(
               l10n.highPriority,
               '$highPriorityCount',
               Icons.priority_high_rounded,
-              ColorsManager.errorFill,
+              colorScheme.error,
             ),
           ),
           Container(
             width: 1,
             height: 40.h,
-            color: theme.dividerColor.withOpacity(0.2),
+            color: colorScheme.outlineVariant,
           ),
           Expanded(
             child: _buildStatItem(
               l10n.thisWeek,
               '$recentNotesCount',
               Icons.schedule_rounded,
-              ColorsManager.successFill,
+              colorScheme.tertiary,
             ),
           ),
         ],
@@ -236,35 +236,75 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
     final theme = Theme.of(context);
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: EdgeInsets.all(8.w),
+          padding: EdgeInsets.all(10.w),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8.r),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: Icon(
-            icon,
-            size: 20.sp,
-            color: color,
-          ),
+          child: Icon(icon, size: 22.sp, color: color),
         ),
-        SizedBox(height: 6.h),
+        SizedBox(height: 8.h),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w700,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
             color: color,
           ),
         ),
+        SizedBox(height: 2.h),
         Text(
           title,
           style: theme.textTheme.bodySmall?.copyWith(
             fontWeight: FontWeight.w500,
           ),
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
+      ],
+    );
+  }
+
+  Widget _buildTabBar(MemberNotesProvider provider) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    return TabBar(
+      controller: _tabController,
+      isScrollable: true,
+      labelColor: colorScheme.primary,
+      unselectedLabelColor: colorScheme.onSurfaceVariant,
+      indicatorColor: colorScheme.primary,
+      indicatorWeight: 3,
+      labelStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
+      unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w500,
+      ),
+      tabs: [
+        Tab(text: l10n.allNotesCount(provider.allNotes.length)),
+        Tab(text: l10n.generalNotesCount(provider.getNotesCountByType('general'))),
+        Tab(text: l10n.performanceNotesCount(provider.getNotesCountByType('performance'))),
+        Tab(text: l10n.behaviorNotesCount(provider.getNotesCountByType('behavior'))),
+        Tab(text: l10n.healthNotesCount(provider.getNotesCountByType('health'))),
+      ],
+    );
+  }
+
+  Widget _buildTabBarView(MemberNotesProvider provider) {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildNotesTab(provider.allNotes),
+        _buildNotesTab(provider.getNotesByType('general')),
+        _buildNotesTab(provider.getNotesByType('performance')),
+        _buildNotesTab(provider.getNotesByType('behavior')),
+        _buildNotesTab(provider.getNotesByType('health')),
       ],
     );
   }
@@ -278,525 +318,71 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
         subtitle: l10n.noNotesOfThisType,
         buttonText: l10n.addNote,
         assetSvgPath: AssetsManager.iconsNoteIcon,
-        onPressed: () => _showAddNoteDialog(),
+        onPressed: _handleAddNote,
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.all(SizeApp.s16),
-      itemCount: notes.length,
-      itemBuilder: (context, index) {
-        return _buildNoteCard(notes[index]);
+    return RefreshIndicator(
+      onRefresh: _loadNotes,
+      child: ListView.builder(
+        padding: EdgeInsets.all(16.w),
+        itemCount: notes.length,
+        itemBuilder: (context, index) {
+          return NoteCard(
+            note: notes[index],
+            onTap: () => _handleNoteDetails(notes[index]),
+            onEdit: () => _handleEditNote(notes[index]),
+            onDelete: () => _handleDeleteNote(notes[index]),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==================== Handlers ====================
+
+  void _handleAddNote() {
+    NoteFormDialog.show(
+      context,
+      onSave: (title, content, type, priority) async {
+        await _saveNote(
+          title: title,
+          content: content,
+          type: type,
+          priority: priority,
+        );
       },
     );
   }
 
-  Widget _buildNoteCard(MemberNote note) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    final noteType = NoteType.values.firstWhere(
-          (type) => type.value == note.noteType,
-      orElse: () => NoteType.general,
-    );
-
-    final priority = NotePriority.values.firstWhere(
-          (p) => p.value == note.priority,
-      orElse: () => NotePriority.normal,
-    );
-
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s12),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: note.priority == 'high'
-            ? Border.all(color: ColorsManager.errorFill.withOpacity(0.3), width: 2)
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-          onTap: () => _showNoteDetails(note),
-          child: Padding(
-            padding: EdgeInsets.all(SizeApp.s16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(6.w),
-                      decoration: BoxDecoration(
-                        color: priority.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                      child: Icon(
-                        noteType.icon,
-                        size: 16.sp,
-                        color: priority.color,
-                      ),
-                    ),
-                    SizedBox(width: SizeApp.s8),
-                    Expanded(
-                      child: Text(
-                        note.title,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (note.priority == 'high')
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6.w,
-                          vertical: 2.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ColorsManager.errorFill,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                        child: Text(
-                          l10n.important,
-                          style: TextStyle(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert_rounded,
-                        size: 18.sp,
-                        color: theme.iconTheme.color?.withOpacity(0.6),
-                      ),
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit_rounded, size: 16.sp),
-                              SizedBox(width: 8.w),
-                              Text(l10n.edit),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.delete_rounded,
-                                size: 16.sp,
-                                color: ColorsManager.errorFill,
-                              ),
-                              SizedBox(width: 8.w),
-                              Text(
-                                l10n.delete,
-                                style: TextStyle(color: ColorsManager.errorFill),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          _showEditNoteDialog(note);
-                        } else if (value == 'delete') {
-                          _showDeleteNoteDialog(note);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: SizeApp.s12),
-                Text(
-                  note.content,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: SizeApp.s12),
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: ColorsManager.infoSurface,
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                      child: Text(
-                        noteType.getLocalizedName(context),
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w500,
-                          color: ColorsManager.infoText,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    if (note.createdBy != null) ...[
-                      Text(
-                        note.createdBy!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        '•',
-                        style: TextStyle(
-                          color: theme.textTheme.bodySmall?.color,
-                        ),
-                      ),
-                      SizedBox(width: 6.w),
-                    ],
-                    Text(
-                      _formatDate(note.createdAt),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  void _showAddNoteDialog() {
-    _showNoteDialog();
-  }
-
-  void _showEditNoteDialog(MemberNote note) {
-    _showNoteDialog(note: note);
-  }
-
-  void _showNoteDialog({MemberNote? note}) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final isEditing = note != null;
-    final titleController = TextEditingController(text: note?.title ?? '');
-    final contentController = TextEditingController(text: note?.content ?? '');
-    String selectedType = note?.noteType ?? 'general';
-    String selectedPriority = note?.priority ?? 'normal';
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: theme.dialogBackgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-          ),
-          title: Text(
-            isEditing ? l10n.editNote : l10n.addNewNote,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppTextField(
-                  controller: titleController,
-                  hintText: l10n.noteTitle,
-                  title: l10n.title,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.enterNoteTitle;
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: SizeApp.s12),
-                AppTextFieldFactory.textArea(
-                  controller: contentController,
-                  hintText: l10n.writeNoteHere,
-                  title: l10n.noteContent,
-                  maxLines: 4,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.enterNoteContent;
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: SizeApp.s12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.type,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          DropdownButtonFormField<String>(
-                            value: selectedType,
-                            decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12.w,
-                                vertical: 8.h,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                            ),
-                            items: NoteType.values.map((type) => DropdownMenuItem(
-                              value: type.value,
-                              child: Row(
-                                children: [
-                                  Icon(type.icon, size: 16.sp),
-                                  SizedBox(width: 8.w),
-                                  Text(type.getLocalizedName(context)),
-                                ],
-                              ),
-                            )).toList(),
-                            onChanged: (value) => setDialogState(() => selectedType = value!),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: SizeApp.s12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.priority,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          DropdownButtonFormField<String>(
-                            value: selectedPriority,
-                            decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12.w,
-                                vertical: 8.h,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                            ),
-                            items: NotePriority.values.map((priority) => DropdownMenuItem(
-                              value: priority.value,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 8.w,
-                                    height: 8.h,
-                                    decoration: BoxDecoration(
-                                      color: priority.color,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  Text(priority.getLocalizedName(context)),
-                                ],
-                              ),
-                            )).toList(),
-                            onChanged: (value) => setDialogState(() => selectedPriority = value!),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l10n.cancel),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (titleController.text.trim().isNotEmpty &&
-                    contentController.text.trim().isNotEmpty) {
-                  await _saveNote(
-                    note: note,
-                    title: titleController.text.trim(),
-                    content: contentController.text.trim(),
-                    type: selectedType,
-                    priority: selectedPriority,
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(isEditing ? l10n.update : l10n.save),
-            ),
-          ],
-        ),
-      ),
+  void _handleEditNote(MemberNote note) {
+    NoteFormDialog.show(
+      context,
+      note: note,
+      onSave: (title, content, type, priority) async {
+        await _saveNote(
+          note: note,
+          title: title,
+          content: content,
+          type: type,
+          priority: priority,
+        );
+      },
     );
   }
 
-  void _showNoteDetails(MemberNote note) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    final noteType = NoteType.values.firstWhere(
-          (type) => type.value == note.noteType,
-      orElse: () => NoteType.general,
-    );
-
-    final notePriority = NotePriority.values.firstWhere(
-          (p) => p.value == note.priority,
-      orElse: () => NotePriority.normal,
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: theme.dialogBackgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        ),
-        title: Row(
-          children: [
-            Icon(noteType.icon, color: theme.primaryColor),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: Text(
-                note.title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              note.content,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-            ),
-            SizedBox(height: SizeApp.s16),
-            Container(
-              padding: EdgeInsets.all(SizeApp.s12),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${l10n.noteDetails}:',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    '${l10n.type}: ${noteType.getLocalizedName(context)}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  Text(
-                    '${l10n.priority}: ${notePriority.getLocalizedName(context)}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  if (note.createdBy != null)
-                    Text(
-                      '${l10n.trainer}: ${note.createdBy}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  Text(
-                    '${l10n.date}: ${_formatDate(note.createdAt)}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.close),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showEditNoteDialog(note);
-            },
-            child: Text(l10n.edit),
-          ),
-        ],
-      ),
+  void _handleNoteDetails(MemberNote note) {
+    NoteDetailsDialog.show(
+      context,
+      note: note,
+      onEdit: () => _handleEditNote(note),
     );
   }
 
-  void _showDeleteNoteDialog(MemberNote note) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: theme.dialogBackgroundColor,
-        title: Text(
-          l10n.deleteNote,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: ColorsManager.errorFill,
-          ),
-        ),
-        content: Text(
-          l10n.deleteNoteConfirmation,
-          style: theme.textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _deleteNote(note);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsManager.errorFill,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
+  void _handleDeleteNote(MemberNote note) {
+    DeleteNoteDialog.show(
+      context,
+      onConfirm: () => _deleteNote(note),
     );
   }
 
@@ -808,6 +394,7 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
     required String priority,
   }) async {
     final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     try {
       if (note != null) {
@@ -831,64 +418,58 @@ class _MemberNotesScreenState extends State<MemberNotesScreen>
         await _notesProvider.addNote(newNote);
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            note != null
-                ? l10n.noteUpdatedSuccessfully
-                : l10n.noteAddedSuccessfully,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              note != null ? l10n.noteUpdatedSuccessfully : l10n.noteAddedSuccessfully,
+            ),
+            backgroundColor: colorScheme.tertiary,
+            behavior: SnackBarBehavior.floating,
           ),
-          backgroundColor: ColorsManager.successFill,
-        ),
-      );
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            note != null
-                ? l10n.errorUpdatingNote
-                : l10n.errorAddingNote,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              note != null ? l10n.errorUpdatingNote : l10n.errorAddingNote,
+            ),
+            backgroundColor: colorScheme.error,
+            behavior: SnackBarBehavior.floating,
           ),
-          backgroundColor: ColorsManager.errorFill,
-        ),
-      );
+        );
+      }
     }
   }
 
   Future<void> _deleteNote(MemberNote note) async {
     final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     try {
       await _notesProvider.deleteNote(note.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.noteDeletedSuccessfully),
-          backgroundColor: ColorsManager.successFill,
-        ),
-      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.noteDeletedSuccessfully),
+            backgroundColor: colorScheme.tertiary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.errorDeletingNote),
-          backgroundColor: ColorsManager.errorFill,
-        ),
-      );
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    final l10n = AppLocalizations.of(context);
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return l10n.today;
-    } else if (difference.inDays == 1) {
-      return l10n.yesterday;
-    } else if (difference.inDays < 7) {
-      return l10n.daysAgo(difference.inDays);
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.errorDeletingNote),
+            backgroundColor: colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }

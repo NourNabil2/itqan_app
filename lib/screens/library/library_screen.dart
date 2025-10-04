@@ -5,7 +5,6 @@ import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/utils/extension.dart';
-import 'package:itqan_gym/core/widgets/exercise_card.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:itqan_gym/core/widgets/skill_card.dart';
 import 'package:itqan_gym/data/models/exercise_template.dart';
@@ -15,6 +14,7 @@ import 'package:itqan_gym/providers/skill_library_provider.dart';
 import 'package:itqan_gym/screens/library/add_exercise_screen.dart';
 import 'package:itqan_gym/screens/library/add_skill_screen.dart';
 import 'package:itqan_gym/screens/library/library_tab.dart';
+import 'package:itqan_gym/screens/member/member_details/widgets/exercises/exercise_card.dart';
 import 'package:provider/provider.dart';
 
 import 'library_tab_bar.dart';
@@ -82,8 +82,6 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
     return Scaffold(
       backgroundColor: ColorsManager.backgroundSurface,
       body: Column(

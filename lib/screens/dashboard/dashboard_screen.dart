@@ -1,27 +1,17 @@
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/theme/text_theme.dart';
-import 'package:itqan_gym/core/utils/app_size.dart';
-import 'package:itqan_gym/core/widgets/Loading_widget.dart';
-import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
-import 'package:itqan_gym/screens/dashboard/widgets/age_group_section.dart';
 import 'package:itqan_gym/screens/settings/screens/settings_screen.dart';
-import 'package:provider/provider.dart';
-
-import '../../core/utils/enums.dart';
-import '../../core/widgets/team_card.dart';
-import '../../providers/team_provider.dart';
+import 'package:itqan_gym/screens/team/teams_tab.dart';
 import '../../screens/library/library_screen.dart';
 import '../../screens/member/member_library_screen.dart';
 import '../member/add_member_screen/add_member_screen.dart';
 import 'add_team_screen.dart';
-import 'widgets/logo_box_header.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -164,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 0:
         return const MemberLibraryScreen();
       case 1:
-        return _buildTeamsTab();
+        return const TeamsTab();
       case 2:
         return const LibraryScreen();
       case 3:
@@ -174,105 +164,4 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-  Widget _buildTeamsTab() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Consumer<TeamProvider>(
-      builder: (context, teamProvider, _) {
-        if (teamProvider.isLoading) {
-          return const LoadingSpinner();
-        }
-
-        return CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: LogoBoxHeader(
-                title: 'ITQAN',
-                subtitle: l10n.manageTeamsTrackSkills,
-                assetLogo: AssetsManager.logo,
-              ),
-            ),
-
-            // Empty state
-            if (teamProvider.teams.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: EmptyStateWidget(
-                  title: l10n.noTeamsYet,
-                  subtitle: l10n.noTeamsSubtitle,
-                  buttonText: l10n.createTeam,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CreateTeamFlow(),
-                      ),
-                    );
-                  },
-                  assetSvgPath: AssetsManager.iconsTeamIcons,
-                  buttonIcon: Icons.group_add,
-                ),
-              )
-            else ...[
-              // Section title
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: SizeApp.padding),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          thickness: 1,
-                          color: theme.dividerColor,
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w),
-                        child: Text(
-                          l10n.teams,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          thickness: 1,
-                          color: theme.dividerColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Teams list
-              SliverPadding(
-                padding: EdgeInsets.all(SizeApp.padding),
-                sliver: SliverList.separated(
-                  itemCount: AgeCategory.values.length,
-                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                  itemBuilder: (_, idx) => _buildAgeSection(
-                    AgeCategory.values[idx],
-                    teamProvider,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildAgeSection(AgeCategory category, TeamProvider provider) {
-    final teams = provider.getTeamsByAgeGroup(category);
-    if (teams.isEmpty) return const SizedBox.shrink();
-
-    return AgeGroupSection(
-      title: category.getLocalizedName(context),
-      count: teams.length,
-      initiallyExpanded: true,
-      children: teams.map((t) => TeamCard(team: t)).toList(),
-    );
-  }
 }

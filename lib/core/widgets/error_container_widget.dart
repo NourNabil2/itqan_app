@@ -101,7 +101,11 @@ class ErrorContainer extends StatelessWidget {
                       color: effectiveErrorColor,
                       fontSize: fontSize,
                     ),
-                  ),
+                    softWrap: true, // يلف الأسطر
+                    overflow: TextOverflow.visible, // مايقطعش النص
+                    maxLines: null, // يخلي النص يكبر لعدد أسطر غير محدود
+                  )
+
                 );
               }).toList(),
             ),

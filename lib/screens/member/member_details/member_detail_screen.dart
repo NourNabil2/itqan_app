@@ -119,7 +119,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorsManager.backgroundSurface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _buildAppBar(),
       body: _isLoading
           ? const LoadingSpinner()

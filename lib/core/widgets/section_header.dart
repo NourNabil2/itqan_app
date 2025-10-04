@@ -3,11 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
-import 'package:itqan_gym/core/utils/app_size.dart';
-
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -51,6 +46,7 @@ class SectionHeader extends StatelessWidget {
         Padding(
           padding: padding ?? EdgeInsets.symmetric(horizontal: SizeApp.padding),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Leading widget (optional)
               if (leading != null) ...[
@@ -64,12 +60,12 @@ class SectionHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontSize: titleSize ?? 18.sp,
-                        fontWeight: titleWeight ?? FontWeight.w700,
-                        color: titleColor ?? ColorsManager.defaultText,
+                    FittedBox(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: titleWeight ?? FontWeight.w700,
+                        ),
                       ),
                     ),
                     if (subtitle != null) ...[
