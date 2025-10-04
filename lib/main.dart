@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // إضافة هذا السطر
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/supabase_config.dart';
@@ -20,6 +20,7 @@ import 'data/database/db_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   // ============ Initialize Supabase ============
   await Supabase.initialize(
     url: SupabaseConfig.supabaseUrl,
@@ -41,6 +42,7 @@ void main() async {
   // ============ Initialize AdMob ============
   await AdsService.instance.initialize();
   runApp(const GymnasticsApp());
+
 }
 
 class GymnasticsApp extends StatelessWidget {

@@ -31,6 +31,8 @@ class AdsService extends ChangeNotifier {
   bool get isBannerAdLoaded => _isBannerLoaded;
   bool get isPremium => _premium;
   bool get isInitialized => _initialized && _premiumLoaded;
+  bool get isBannerAdReady => _isBannerLoaded && _bannerAd != null && _bannerAd!.responseInfo != null;
+
 
   // ====== Init ======
   Future<void> initialize() async {

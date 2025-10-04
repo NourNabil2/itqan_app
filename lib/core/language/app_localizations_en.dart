@@ -1099,6 +1099,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareProfile => 'Share Profile';
 
   @override
+  String editExerciseType(String type) => 'Edit $type';
+
+  @override
+  String addExerciseType(String type) => 'Add $type';
+
+  @override
+  String get editExercise => 'Edit Exercise';
+
+  @override
+  String get addNewExercise => 'Add New Exercise';
+
+  @override
+  String get enterExerciseDetails => 'Enter exercise details and media';
+
+  @override
+  String get exerciseTitleHint => 'Example: Jump Rope Exercise';
+
+  @override
+  String get exerciseTitle => 'Exercise Title';
+
+  @override
+  String get exerciseDescriptionHint => 'Describe how to perform the exercise...';
+
+  @override
+  String get instructionalMedia => 'Instructional Media';
+
+  @override
+  String get changesWillBeSaved => 'Changes will be saved to the library';
+
+  @override
+  String exerciseWillBeAddedToLibrary(String type) =>
+      'The exercise will be added to the $type library';
+
+  @override
+  String get addExercise => 'Add Exercise';
+
+  @override
+  String get exerciseTitleRequired => 'Exercise title is required';
+
+  @override
+  String get titleMinLength => 'The title must contain at least 3 characters';
+
+  @override
+  String get exerciseTitleExists => 'Another exercise with the same title already exists';
+
+  @override
+  String get exerciseUpdatedSuccessfully => 'Exercise updated successfully';
+
+  @override
+  String get exerciseAddedSuccessfully => 'Exercise added successfully';
+
+  @override
+  String get deleteExercise => 'Delete Exercise';
+
+  @override
+  String deleteExerciseConfirmation(String title) =>
+      'Are you sure you want to permanently delete "$title"?\n\nThis action cannot be undone.';
+
+  @override
+  String get exerciseDeletedPermanently => 'Exercise permanently deleted';
+
+  @override
+  String noItemsIn(String category) => 'No items in $category';
+
+  @override
+  String get startAddingItems => 'Start adding items to display here';
+
+  @override
+  String get addNow => 'Add Now';
+
+  @override
+  String get libraryStatistics => 'Library Statistics';
+  @override
   String get removeFromTeam => 'Remove from Team';
 
   @override
@@ -1171,10 +1244,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tryDifferentKeywords => 'Try different keywords';
 
   @override
-  String get addExercise => 'Add Exercise';
+  String get editSkill => 'Edit Skill';
+
+  @override
+  String get addNewSkill => 'Add New Skill';
+
+  @override
+  String get enterSkillDetails => 'Enter skill details and instructional media';
+
+  @override
+  String get skillNameHint => 'Example: Extended Back Handspring';
+
+  @override
+  String get skillName => 'Skill Name';
+
+  @override
+  String get apparatus => 'Apparatus';
+
+  @override
+  String get technicalAnalysis => 'Technical Analysis';
+
+  @override
+  String get preRequisites => 'Prerequisites';
+
+  @override
+  String get skillProgression => 'Skill Progression';
+
+  @override
+  String get skillDrills => 'Skill Drills';
+
+  @override
+  String get physicalPreparation => 'Physical Preparation';
+
+  @override
+  String enter(String field) => 'Enter $field...';
+
+  @override
+  String skillWillBeAddedToLibrary(String apparatus) =>
+      'The skill will be added to the $apparatus library';
 
   @override
   String get addSkill => 'Add Skill';
+
+  @override
+  String get skillNameRequired => 'Skill name is required';
+
+  @override
+  String get nameMinLength => 'The name must contain at least 3 characters';
+
+  @override
+  String get skillNameExists => 'Another skill with the same name already exists';
+
+  @override
+  String get skillUpdatedSuccessfully => 'Skill updated successfully';
+
+  @override
+  String get skillAddedSuccessfully => 'Skill added successfully';
+
+  @override
+  String get deleteSkill => 'Delete Skill';
+
+  @override
+  String deleteSkillConfirmation(String name) =>
+      'Are you sure you want to permanently delete "$name"?\n\nThis action cannot be undone.';
+
+  @override
+  String get skillDeletedPermanently => 'Skill permanently deleted';
 
   @override
   String get addNewFromLibrary => 'Add new items from library';
@@ -1218,13 +1353,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadingContent => 'Loading content...';
 
   @override
+  String get playbackSpeed => 'Playback Speed';
+
+  @override
+  String get normal => 'Normal';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get loadingVideo => 'Loading video...';
+
+  @override
+  String get cannotPlayVideo => 'Cannot play video';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
   String addFirst(String category) => 'Add first $category';
 
   @override
   String addNew(String category) => 'Add new $category';
 
   @override
-  String get addNewSkill => 'Add new skill';
+  String get assigned => 'Assigned';
+
+  @override
+  String get image => 'Image';
+
+  @override
+  String get selectImageSource => 'Select Image Source';
+
+  @override
+  String get gallery => 'Gallery';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get tapToZoom => 'Tap to Zoom';
+
+  @override
+  String get selectVideoSource => 'Select Video Source';
+
+  @override
+  String get selectVideo => 'Select Video';
+
+  @override
+  String get recordVideo => 'Record Video';
 
   @override
   String get addFirstSkill => 'Add first skill';

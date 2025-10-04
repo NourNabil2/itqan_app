@@ -83,7 +83,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorsManager.backgroundSurface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           _buildHeader(),
@@ -154,24 +154,25 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _buildExerciseList(ExerciseType type) {
     final l10n = AppLocalizations.of(context);
 
-    return Consumer<ExerciseLibraryProvider>(
-      builder: (context, provider, _) {
-        if (provider.isLoading) return _buildLoadingState();
+    return Padding(
+      padding: EdgeInsets.all(SizeApp.padding),
+      child: Consumer<ExerciseLibraryProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) return _buildLoadingState();
 
-        final exercises = provider.getExercisesByType(type);
+          final exercises = provider.getExercisesByType(type);
 
-        if (exercises.isEmpty) {
-          return LibraryEmptyState(
-            category: type.getLocalizedName(context),
-            icon: type.icon,
-            iconColor: type.color,
-            onAddPressed: () => _navigateToAdd(type: type),
-            addButtonText: l10n.addFirst(type.getLocalizedName(context)),
-          );
-        }
+          if (exercises.isEmpty) {
+            return LibraryEmptyState(
+              category: type.getLocalizedName(context),
+              icon: type.icon,
+              iconColor: type.color,
+              onAddPressed: () => _navigateToAdd(type: type),
+              addButtonText: l10n.addFirst(type.getLocalizedName(context)),
+            );
+          }
 
-        return LibraryListContainer(
-          child: Column(
+          return  Column(
             children: [
               LibraryAddButton(
                 onPressed: () => _navigateToAdd(type: type),
@@ -186,31 +187,32 @@ class _LibraryScreenState extends State<LibraryScreen>
                 ),
               ),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildSkillsList() {
     final l10n = AppLocalizations.of(context);
 
-    return Consumer<SkillLibraryProvider>(
-      builder: (context, provider, _) {
-        if (provider.isLoading) return _buildLoadingState();
+    return Padding(
+      padding: EdgeInsets.all(SizeApp.padding),
+      child: Consumer<SkillLibraryProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) return _buildLoadingState();
 
-        if (provider.skills.isEmpty) {
-          return LibraryEmptyState(
-            category: l10n.skills,
-            icon: Icons.star_rounded,
-            iconColor: ColorsManager.secondaryColor,
-            onAddPressed: () => _navigateToAdd(),
-            addButtonText: l10n.addFirstSkill,
-          );
-        }
+          if (provider.skills.isEmpty) {
+            return LibraryEmptyState(
+              category: l10n.skills,
+              icon: Icons.star_rounded,
+              iconColor: ColorsManager.secondaryColor,
+              onAddPressed: () => _navigateToAdd(),
+              addButtonText: l10n.addFirstSkill,
+            );
+          }
 
-        return LibraryListContainer(
-          child: Column(
+          return Column(
             children: [
               LibraryAddButton(
                 onPressed: () => _navigateToAdd(),
@@ -225,9 +227,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                 ),
               ),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

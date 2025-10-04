@@ -247,6 +247,10 @@ abstract class AppLocalizations {
   String get addNewSkill;
   String get addFirstSkill;
   String get skills;
+  String noItemsIn(String category);
+  String get startAddingItems;
+  String get addNow;
+  String get libraryStatistics;
 
   // ============= Team Detail Screen =============
   String get content;
@@ -262,8 +266,60 @@ abstract class AppLocalizations {
   String exerciseCount(int count);
   String skillCount(int count);
 
-// إضافة في abstract class AppLocalizations
-
+  String editExerciseType(String type);
+  String addExerciseType(String type);
+  String get editExercise;
+  String get addNewExercise;
+  String get enterExerciseDetails;
+  String get exerciseTitleHint;
+  String get exerciseTitle;
+  String get exerciseDescriptionHint;
+  String get instructionalMedia;
+  String get changesWillBeSaved;
+  String exerciseWillBeAddedToLibrary(String type);
+  String get exerciseTitleRequired;
+  String get titleMinLength;
+  String get exerciseTitleExists;
+  String get exerciseUpdatedSuccessfully;
+  String get exerciseAddedSuccessfully;
+  String get deleteExercise;
+  String deleteExerciseConfirmation(String title);
+  String get exerciseDeletedPermanently;
+  String get selectImageSource;
+  String get gallery;
+  String get camera;
+  String get selectVideoSource;
+  String get selectVideo;
+  String get recordVideo;
+  String get playbackSpeed;
+  String get normal;
+  String get video;
+  String get loadingVideo;
+  String get cannotPlayVideo;
+  String get retry;
+  String get tapToZoom;
+  String get image;
+  String get assigned;
+  String get editSkill;
+  String get enterSkillDetails;
+  String get skillNameHint;
+  String get skillName;
+  String get apparatus;
+  String get technicalAnalysis;
+  String get preRequisites;
+  String get skillProgression;
+  String get skillDrills;
+  String get physicalPreparation;
+  String enter(String field);
+  String skillWillBeAddedToLibrary(String apparatus);
+  String get skillNameRequired;
+  String get nameMinLength;
+  String get skillNameExists;
+  String get skillUpdatedSuccessfully;
+  String get skillAddedSuccessfully;
+  String get deleteSkill;
+  String deleteSkillConfirmation(String name);
+  String get skillDeletedPermanently;
   // ============= Member Notes Screen =============
   String memberNotes(String memberName);
   String get generalCoachNote;

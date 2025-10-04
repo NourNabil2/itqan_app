@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
-import 'package:itqan_gym/core/utils/app_size.dart';
-import 'package:itqan_gym/core/widgets/Loading_widget.dart';
+import 'package:itqan_gym/core/widgets/loading_widget.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/skill_template.dart';
-
+import 'package:itqan_gym/core/language/app_localizations.dart';
+// todo :: merge this with -> AssignExerciseToMembersSheet() make it one class
 class AssignSkillToMembersSheet extends StatefulWidget {
   final SkillTemplate skill;
   final String teamId;
@@ -19,59 +18,86 @@ class AssignSkillToMembersSheet extends StatefulWidget {
     required this.teamId,
   });
 
-  static Future<bool?> show(BuildContext context, SkillTemplate skill, String teamId) {
+  static Future<bool?> show(
+      BuildContext context, SkillTemplate skill, String teamId) {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AssignSkillToMembersSheet(skill: skill, teamId: teamId),
+      builder: (context) =>
+          AssignSkillToMembersSheet(skill: skill, teamId: teamId),
     );
   }
 
   @override
-  State<AssignSkillToMembersSheet> createState() => _AssignSkillToMembersSheetState();
+  State<AssignSkillToMembersSheet> createState() =>
+      _AssignSkillToMembersSheetState();
 }
 
-class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
+class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet>
+    with SingleTickerProviderStateMixin {
   final Set<String> _selectedMemberIds = {};
   List<Member> _availableMembers = [];
   List<Member> _assignedMembers = [];
   bool _isLoading = true;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation =
+        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
     _loadMembers();
+    _animationController.forward();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   Future<void> _loadMembers() async {
     try {
-      final memberProvider = Provider.of<MemberProvider>(context, listen: false);
-      final assignmentProvider = Provider.of<ExerciseAssignmentProvider>(context, listen: false);
-
+      final memberProvider =
+          Provider.of<MemberProvider>(context, listen: false);
+      final assignmentProvider =
+          Provider.of<ExerciseAssignmentProvider>(context, listen: false);
       await memberProvider.loadTeamMembers(widget.teamId);
       final teamMembers = memberProvider.members;
-
-      final assignedIds = await assignmentProvider.getSkillAssignedMemberIds(widget.skill.id);
-
+      final assignedIds =
+          await assignmentProvider.getSkillAssignedMemberIds(widget.skill.id);
       setState(() {
-        _assignedMembers = teamMembers.where((m) => assignedIds.contains(m.id)).toList();
-        _availableMembers = teamMembers.where((m) => !assignedIds.contains(m.id)).toList();
+        _assignedMembers =
+            teamMembers.where((m) => assignedIds.contains(m.id)).toList();
+        _availableMembers =
+            teamMembers.where((m) => !assignedIds.contains(m.id)).toList();
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ في تحميل الأعضاء: $e')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).errorLoadingData,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
+          ),
         );
       }
     }
@@ -89,57 +115,172 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(SizeApp.radiusMed),
-          topRight: Radius.circular(SizeApp.radiusMed),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            margin: EdgeInsets.only(top: SizeApp.s12),
-            width: 40.w,
-            height: 4.h,
-            decoration: BoxDecoration(
-              color: ColorsManager.inputBorder.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2.r),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
-          ),
-          _buildHeader(),
-          _buildSearchBar(),
-          Expanded(child: _isLoading ? const LoadingSpinner() : _buildContent()),
-          _buildBottomActions(),
-        ],
+          ],
+        ),
+        child: Column(
+          children: [
+// Handle
+            Container(
+              margin: EdgeInsets.only(top: 12.h),
+              width: 40.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: colorScheme.outlineVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+// Header
+            _buildHeader(theme, colorScheme, l10n),
+// Search Bar
+            _buildSearchBar(theme, colorScheme, l10n),
+// Content
+            Expanded(
+              child: _isLoading
+                  ? const LoadingSpinner()
+                  : SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 16.w, vertical: 12.h),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_assignedMembers.isNotEmpty) ...[
+                            _buildSectionTitle(
+                              l10n.assignedMembers(_assignedMembers.length),
+                              Icons.check_circle_rounded,
+                              theme,
+                              colorScheme,
+                            ),
+                            SizedBox(height: 8.h),
+                            ..._assignedMembers.map((m) =>
+                                _buildAssignedMemberCard(
+                                    m, theme, colorScheme, l10n)),
+                            SizedBox(height: 20.h),
+                          ],
+                          if (_filteredMembers.isNotEmpty) ...[
+                            _buildSectionTitle(
+                              l10n.members,
+                              Icons.people_rounded,
+                              theme,
+                              colorScheme,
+                              action: _selectedMemberIds.isNotEmpty
+                                  ? Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12.w, vertical: 4.h),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary,
+                                        borderRadius:
+                                            BorderRadius.circular(8.r),
+                                      ),
+                                      child: Text(
+                                        l10n.memberCount(
+                                            _selectedMemberIds.length),
+                                        style: TextStyle(
+                                            fontSize: 12.sp,
+                                            color: colorScheme.onPrimary,
+                                            fontWeight: FontWeight.w600),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            SizedBox(height: 8.h),
+                            ..._filteredMembers.map((m) =>
+                                _buildMemberSelectionCard(
+                                    m, theme, colorScheme, l10n)),
+                          ] else
+                            _buildEmptyState(theme, colorScheme, l10n),
+                        ],
+                      ),
+                    ),
+            ),
+// Bottom Actions
+            _buildBottomActions(theme, colorScheme, l10n),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: ColorsManager.primaryColor.withOpacity(0.05),
-        border: Border(
-          bottom: BorderSide(color: ColorsManager.inputBorder.withOpacity(0.2)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary.withOpacity(0.1),
+            colorScheme.primary.withOpacity(0.05),
+          ],
         ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
       ),
       child: Row(
         children: [
-          Icon(Icons.assignment_ind_rounded, color: ColorsManager.primaryColor, size: 24.sp),
-          SizedBox(width: SizeApp.s12),
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12.r),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.primary.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.assignment_ind_rounded,
+              color: colorScheme.primary,
+              size: 24.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('تعيين المهارة للأعضاء',
-                    style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: ColorsManager.defaultText)),
-                SizedBox(height: SizeApp.s4),
-                Text(widget.skill.skillName,
-                    style: TextStyle(fontSize: 14.sp, color: ColorsManager.defaultTextSecondary)),
+                Text(
+                  l10n.assignedSkills,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  widget.skill.skillName,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14.sp,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -148,127 +289,173 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
+      padding: EdgeInsets.all(16.w),
       child: TextField(
         controller: _searchController,
         onChanged: (v) => setState(() => _searchQuery = v),
         decoration: InputDecoration(
-          hintText: 'البحث عن عضو...',
-          prefixIcon: Icon(Icons.search_rounded, color: ColorsManager.defaultTextSecondary),
+          hintText: l10n.searchForMember,
+          prefixIcon:
+              Icon(Icons.search_rounded, color: colorScheme.onSurfaceVariant),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-            icon: Icon(Icons.clear_rounded, color: ColorsManager.defaultTextSecondary),
-            onPressed: () => setState(() {
-              _searchController.clear();
-              _searchQuery = '';
-            }),
-          )
+                  icon: Icon(Icons.clear_rounded,
+                      color: colorScheme.onSurfaceVariant),
+                  onPressed: () => setState(() {
+                    _searchController.clear();
+                    _searchQuery = '';
+                  }),
+                )
               : null,
           filled: true,
-          fillColor: ColorsManager.backgroundCard,
+          fillColor: colorScheme.surfaceContainerHighest,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+            borderRadius: BorderRadius.circular(12.r),
             borderSide: BorderSide.none,
           ),
-          contentPadding: EdgeInsets.symmetric(horizontal: SizeApp.s16, vertical: SizeApp.s12),
+          contentPadding:
+              EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         ),
+        style: TextStyle(fontSize: 14.sp, color: colorScheme.onSurface),
+        textInputAction: TextInputAction.search,
+        keyboardType: TextInputType.text,
       ),
     );
   }
 
-  Widget _buildContent() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_assignedMembers.isNotEmpty) ...[
-            _buildSectionTitle('الأعضاء المعينين مسبقاً', Icons.check_circle_rounded),
-            SizedBox(height: SizeApp.s8),
-            ..._assignedMembers.map(_buildAssignedMemberCard),
-            SizedBox(height: SizeApp.s20),
-          ],
-          if (_filteredMembers.isNotEmpty) ...[
-            _buildSectionTitle('الأعضاء المتاحين', Icons.people_rounded),
-            SizedBox(height: SizeApp.s8),
-            ..._filteredMembers.map(_buildMemberSelectionCard),
-          ] else
-            _buildEmptyState(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSectionTitle(
+      String title, IconData icon, ThemeData theme, ColorScheme colorScheme,
+      {Widget? action}) {
     return Row(
       children: [
-        Icon(icon, size: 20.sp, color: ColorsManager.primaryColor),
-        SizedBox(width: SizeApp.s8),
-        Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: ColorsManager.defaultText)),
-        if (title.contains('المتاحين') && _selectedMemberIds.isNotEmpty) ...[
-          const Spacer(),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: SizeApp.s12, vertical: SizeApp.s4),
-            decoration: BoxDecoration(color: ColorsManager.primaryColor, borderRadius: BorderRadius.circular(SizeApp.radiusSmall)),
-            child: Text(
-              '${_selectedMemberIds.length} محدد',
-              style: TextStyle(fontSize: 12.sp, color: Colors.white, fontWeight: FontWeight.w600),
-            ),
+        Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8.r),
           ),
+          child: Icon(
+            icon,
+            color: colorScheme.primary,
+            size: 18.sp,
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (action != null) ...[
+          SizedBox(width: 8.w),
+          action,
         ],
       ],
     );
   }
 
-  Widget _buildAssignedMemberCard(Member member) {
+  Widget _buildAssignedMemberCard(Member member, ThemeData theme,
+      ColorScheme colorScheme, AppLocalizations l10n) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s8),
-      padding: EdgeInsets.all(SizeApp.s12),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: ColorsManager.successFill.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        border: Border.all(color: ColorsManager.successFill.withOpacity(0.3)),
+        color: colorScheme.secondaryContainer.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: colorScheme.secondary.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.secondary.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 40.w,
-            height: 40.w,
-            decoration: BoxDecoration(color: ColorsManager.successFill.withOpacity(0.2), shape: BoxShape.circle),
-            child: Center(
-              child: Text(member.name.substring(0, 1),
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: ColorsManager.successFill)),
+          CircleAvatar(
+            radius: 20.r,
+            backgroundColor: colorScheme.secondary.withOpacity(0.2),
+            child: Text(
+              member.name.substring(0, 1).toUpperCase(),
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.secondary,
+              ),
             ),
           ),
-          SizedBox(width: SizeApp.s12),
+          SizedBox(width: 12.w),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(member.name, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: ColorsManager.defaultText)),
-              Text('${member.age} سنة • ${member.level}',
-                  style: TextStyle(fontSize: 12.sp, color: ColorsManager.defaultTextSecondary)),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                 l10n.yearsOld(member.age),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 12.sp,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: SizeApp.s8, vertical: SizeApp.s4),
-            decoration: BoxDecoration(color: ColorsManager.successFill, borderRadius: BorderRadius.circular(SizeApp.radiusSmall)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.check_rounded, size: 14.sp, color: Colors.white),
-              SizedBox(width: SizeApp.s4),
-              Text('معين', style: TextStyle(fontSize: 12.sp, color: Colors.white, fontWeight: FontWeight.w600)),
-            ]),
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: colorScheme.secondary,
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_rounded,
+                    size: 14.sp, color: colorScheme.onSecondary),
+                SizedBox(width: 4.w),
+                Text(
+                  l10n.assigned,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: colorScheme.onSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          SizedBox(width: SizeApp.s8),
-          // Unassign button
+          SizedBox(width: 8.w),
           IconButton(
             icon: Icon(
               Icons.close_rounded,
-              color: ColorsManager.errorFill,
+              color: colorScheme.error,
               size: 20.sp,
             ),
-            onPressed: () => _showUnassignConfirmation(member),
-            padding: EdgeInsets.all(SizeApp.s4),
+            onPressed: () => _showUnassignConfirmation(member, l10n),
+            padding: EdgeInsets.all(4.w),
             constraints: const BoxConstraints(),
             visualDensity: VisualDensity.compact,
           ),
@@ -277,21 +464,35 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
     );
   }
 
-  Widget _buildMemberSelectionCard(Member member) {
+  Widget _buildMemberSelectionCard(Member member, ThemeData theme,
+      ColorScheme colorScheme, AppLocalizations l10n) {
     final isSelected = _selectedMemberIds.contains(member.id);
     return GestureDetector(
       onTap: () => setState(() {
-        isSelected ? _selectedMemberIds.remove(member.id) : _selectedMemberIds.add(member.id);
+        isSelected
+            ? _selectedMemberIds.remove(member.id)
+            : _selectedMemberIds.add(member.id);
       }),
       child: Container(
-        margin: EdgeInsets.only(bottom: SizeApp.s8),
-        padding: EdgeInsets.all(SizeApp.s12),
+        margin: EdgeInsets.only(bottom: 8.h),
+        padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: isSelected ? ColorsManager.primaryColor.withOpacity(0.1) : ColorsManager.backgroundCard,
-          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+          color: isSelected
+              ? colorScheme.primaryContainer.withOpacity(0.1)
+              : colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
-            color: isSelected ? ColorsManager.primaryColor : ColorsManager.inputBorder.withOpacity(0.3),
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outline.withOpacity(0.3),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withOpacity(isSelected ? 0.1 : 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -299,65 +500,108 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
               width: 24.w,
               height: 24.w,
               decoration: BoxDecoration(
-                color: isSelected ? ColorsManager.primaryColor : Colors.transparent,
+                color: isSelected ? colorScheme.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(4.r),
                 border: Border.all(
-                  color: isSelected ? ColorsManager.primaryColor : ColorsManager.defaultTextSecondary,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.outlineVariant,
                   width: 2,
                 ),
               ),
-              child: isSelected ? Icon(Icons.check_rounded, size: 16.sp, color: Colors.white) : null,
+              child: isSelected
+                  ? Icon(Icons.check_rounded,
+                      size: 16.sp, color: colorScheme.onPrimary)
+                  : null,
             ),
-            SizedBox(width: SizeApp.s12),
-            Container(
-              width: 40.w,
-              height: 40.w,
-              decoration: BoxDecoration(color: ColorsManager.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-              child: Center(
-                child: Text(
-                  member.name.substring(0, 1),
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: ColorsManager.primaryColor),
+            SizedBox(width: 12.w),
+            CircleAvatar(
+              radius: 20.r,
+              backgroundColor: colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                member.name.substring(0, 1).toUpperCase(),
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.primary,
                 ),
               ),
             ),
-            SizedBox(width: SizeApp.s12),
+            SizedBox(width: 12.w),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(member.name, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: ColorsManager.defaultText)),
-                Row(children: [
-                  Text('${member.age} سنة', style: TextStyle(fontSize: 12.sp, color: ColorsManager.defaultTextSecondary)),
-                  SizedBox(width: SizeApp.s8),
-                  if ((member.level).isNotEmpty)
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: SizeApp.s6, vertical: SizeApp.s2),
-                      decoration: BoxDecoration(
-                        color: ColorsManager.primaryColor.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        member.level,
-                        style: TextStyle(fontSize: 10.sp, color: ColorsManager.primaryColor, fontWeight: FontWeight.w600),
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member.name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
                     ),
-                ]),
-              ]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        l10n.yearsOld(member.age),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 12.sp,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if ((member.level ?? '').isNotEmpty) ...[
+                        SizedBox(width: 8.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 6.w, vertical: 2.h),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: Text(
+                            member.level!,
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
             if ((member.overallProgress ?? 0) > 0)
               SizedBox(
                 width: 50.w,
                 height: 50.w,
-                child: Stack(alignment: Alignment.center, children: [
-                  CircularProgressIndicator(
-                    value: (member.overallProgress ?? 0) / 100,
-                    backgroundColor: ColorsManager.inputBorder.withOpacity(0.2),
-                    valueColor: AlwaysStoppedAnimation(ColorsManager.primaryColor),
-                    strokeWidth: 3,
-                  ),
-                  Text(
-                    '${(member.overallProgress ?? 0).toInt()}%',
-                    style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: ColorsManager.primaryColor),
-                  ),
-                ]),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: (member.overallProgress ?? 0) / 100,
+                      backgroundColor: colorScheme.outline.withOpacity(0.2),
+                      valueColor: AlwaysStoppedAnimation(colorScheme.primary),
+                      strokeWidth: 3,
+                    ),
+                    Text(
+                      '${(member.overallProgress ?? 0).toInt()}%',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
@@ -365,18 +609,31 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Container(
-      padding: EdgeInsets.all(SizeApp.s32),
+      padding: EdgeInsets.all(32.w),
       child: Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.people_outline_rounded, size: 64.sp, color: ColorsManager.defaultTextSecondary.withOpacity(0.5)),
-            SizedBox(height: SizeApp.s16),
+            Icon(
+              Icons.people_outline_rounded,
+              size: 64.sp,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            SizedBox(height: 16.h),
             Text(
-              _searchQuery.isNotEmpty ? 'لا يوجد أعضاء متطابقين مع البحث' : 'جميع الأعضاء معينين لهذه المهارة',
-              style: TextStyle(fontSize: 16.sp, color: ColorsManager.defaultTextSecondary),
+              _searchQuery.isNotEmpty
+                  ? l10n.notFound
+                  : l10n.notFound,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 16.sp,
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -384,12 +641,15 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
     );
   }
 
-  Widget _buildBottomActions() {
+  Widget _buildBottomActions(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: ColorsManager.inputBorder.withOpacity(0.3))),
+        color: colorScheme.surface,
+        border: Border(
+            top:
+                BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
       ),
       child: SafeArea(
         top: false,
@@ -399,27 +659,40 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.onSurfaceVariant,
                   padding: EdgeInsets.symmetric(vertical: 14.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SizeApp.radiusSmall)),
-                  side: BorderSide(color: ColorsManager.inputBorder),
-                ),
-                child: Text('إلغاء',
-                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: ColorsManager.defaultTextSecondary)),
-              ),
-            ),
-            SizedBox(width: SizeApp.s12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _selectedMemberIds.isEmpty ? null : _assignSkill,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ColorsManager.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(SizeApp.radiusSmall)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r)),
+                  side: BorderSide(color: colorScheme.outline),
                 ),
                 child: Text(
-                  _selectedMemberIds.isEmpty ? 'حدد الأعضاء' : 'تعيين (${_selectedMemberIds.length})',
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+                  l10n.cancel,
+                  style:
+                      TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: FilledButton(
+                onPressed: _selectedMemberIds.isEmpty ? null : _assignSkill,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r)),
+                ),
+                child: Text(
+                  _selectedMemberIds.isEmpty
+                      ? l10n.members
+                      : l10n.memberCount(_selectedMemberIds.length),
+                  style:
+                      TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
@@ -429,28 +702,43 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
     );
   }
 
-  Future<void> _showUnassignConfirmation(Member member) async {
+  Future<void> _showUnassignConfirmation(
+      Member member, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('إلغاء التعيين'),
-        content: Text('هل تريد إلغاء تعيين هذه المهارة من ${member.name}؟'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        title: Text(
+          l10n.delete,
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          l10n.confirm,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('إلغاء'),
+            child: Text(l10n.cancel),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsManager.errorFill,
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
-            child: Text('نعم، إلغاء التعيين'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),
     );
-
     if (confirmed == true) {
       await _unassignSkill(member);
     }
@@ -458,18 +746,24 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
 
   Future<void> _unassignSkill(Member member) async {
     try {
-      final provider = Provider.of<ExerciseAssignmentProvider>(context, listen: false);
-
+      final provider =
+          Provider.of<ExerciseAssignmentProvider>(context, listen: false);
       await provider.unassignSkillFromMember(member.id, widget.skill.id);
-
-      // Reload members to update the UI
       await _loadMembers();
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم إلغاء تعيين المهارة من ${member.name}'),
-            backgroundColor: ColorsManager.successFill,
+            content: const Text(
+              'done',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -477,8 +771,16 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ في إلغاء التعيين: ${e.toString()}'),
-            backgroundColor: ColorsManager.errorFill,
+            content: const Text(
+              'Error',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
           ),
         );
       }
@@ -487,22 +789,43 @@ class _AssignSkillToMembersSheetState extends State<AssignSkillToMembersSheet> {
 
   Future<void> _assignSkill() async {
     try {
-      final provider = Provider.of<ExerciseAssignmentProvider>(context, listen: false);
-      await provider.assignSkillToMembers(widget.skill.id, _selectedMemberIds.toList());
-
+      final provider =
+          Provider.of<ExerciseAssignmentProvider>(context, listen: false);
+      await provider.assignSkillToMembers(
+          widget.skill.id, _selectedMemberIds.toList());
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم تعيين المهارة لـ ${_selectedMemberIds.length} عضو بنجاح'),
-            backgroundColor: ColorsManager.successFill,
+            content: Text(
+              '${_selectedMemberIds.length}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ في تعيين المهارة: $e'), backgroundColor: ColorsManager.errorFill),
+          SnackBar(
+            content: const Text(
+              'Error',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
+          ),
         );
       }
     }

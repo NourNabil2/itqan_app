@@ -1,7 +1,7 @@
-// ============= Library Widgets - Refactored =============
+// lib/screens/library/widgets/library_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/utils/extension.dart';
@@ -26,40 +26,47 @@ class LibraryTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return TabBar(
+      controller: controller,
+      isScrollable: false,
+      tabAlignment: TabAlignment.fill,
+      labelPadding: EdgeInsets.symmetric(horizontal: SizeApp.padding / 2),
+      labelColor: theme.primaryColor,
+      unselectedLabelColor: colorScheme.onSurfaceVariant,
+      indicatorColor: theme.primaryColor,
+      indicatorWeight: 3,
+      indicatorSize: TabBarIndicatorSize.label,
+      labelStyle: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w700,
       ),
-      child: TabBar(
-        controller: controller,
-        labelColor: ColorsManager.primaryColor,
-        unselectedLabelColor: ColorsManager.defaultTextSecondary,
-        indicatorColor: ColorsManager.primaryColor,
-        indicatorWeight: 3,
-        labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500),
-        tabs: tabs
-            .map((tab) => Tab(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(tab.icon, size: 18.sp),
-              SizedBox(width: SizeApp.s6),
-              Text(tab.title),
-            ],
-          ),
-        ))
-            .toList(),
-        onTap: onTap,
+      unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w500,
       ),
+      tabs: tabs.map((t) => Tab(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(t.icon, size: SizeApp.iconSizeSmall),
+            SizedBox(width: SizeApp.padding / 2),
+            Flexible(
+              child: Text(
+                t.title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+              ),
+            ),
+          ],
+        ),
+      )).toList(),
+      onTap: onTap,
     );
+
   }
 }
 
@@ -67,25 +74,28 @@ class LibraryTabBar extends StatelessWidget {
 class LibrarySearchHeader extends StatelessWidget {
   final TextEditingController controller;
   final Function(String) onChanged;
-  final String hintText;
+  final String? hintText;
 
   const LibrarySearchHeader({
     super.key,
     required this.controller,
     required this.onChanged,
-    this.hintText = 'البحث...',
+    this.hintText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.fromLTRB(SizeApp.s16, SizeApp.s20, SizeApp.s16, SizeApp.s16),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    return Padding(
+      padding: EdgeInsets.all(SizeApp.padding),
       child: AppTextFieldFactory.search(
         controller: controller,
-        hintText: hintText,
-        fillColor: ColorsManager.backgroundCard,
-        focusedFillColor: ColorsManager.backgroundCard,
+        hintText: hintText ?? l10n.search,
+        fillColor: colorScheme.surfaceContainerHighest,
+        focusedFillColor: colorScheme.surfaceContainerHighest,
         onChanged: onChanged,
       ),
     );
@@ -102,26 +112,32 @@ class LibraryAddButton extends StatelessWidget {
   const LibraryAddButton({
     super.key,
     required this.onPressed,
-    this.text = 'إضافة جديد',
+    required this.text,
     this.icon = Icons.add_rounded,
     this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = color ?? ColorsManager.primaryColor;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final buttonColor = color ?? colorScheme.primary;
 
     return Container(
       margin: EdgeInsets.only(bottom: SizeApp.s16),
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: SizeApp.iconSize),
-        label: Text(text),
+        icon: Icon(icon, size: 20.sp),
+        label: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         style: OutlinedButton.styleFrom(
           foregroundColor: buttonColor,
           side: BorderSide(color: buttonColor, width: 2),
-          padding: EdgeInsets.symmetric(vertical: 16.h),
+          padding: EdgeInsets.symmetric(vertical: 14.h),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SizeApp.radiusMed),
           ),
@@ -150,54 +166,78 @@ class LibraryEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(SizeApp.s32),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final emptyIconColor = iconColor ?? colorScheme.onSurfaceVariant;
+
+    return SafeArea(
+      minimum: const EdgeInsets.all(0),
+      child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // أيقونة داخل دائرة خفيفة
             Container(
               padding: EdgeInsets.all(SizeApp.s24),
               decoration: BoxDecoration(
-                color: (iconColor ?? ColorsManager.defaultTextSecondary).withOpacity(0.1),
+                color: emptyIconColor.withOpacity(0.10),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon ?? Icons.folder_open_rounded,
-                size: 64.sp,
-                color: iconColor ?? ColorsManager.defaultTextSecondary.withOpacity(0.5),
+                size: 56, // خليه ثابت عشان مايقفزش مع الشاشات الصغيرة
+                color: emptyIconColor.withOpacity(0.55),
               ),
             ),
-            SizedBox(height: SizeApp.s24),
+
+            SizedBox(height: SizeApp.s20),
+
+            // العنوان — بدون قصّ، ويلف أسطر طبيعي
             Text(
-              'لا توجد عناصر في $category',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultText,
+              l10n.noItemsIn(category),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
+              softWrap: true,
             ),
+
             SizedBox(height: SizeApp.s8),
+
+            // الوصف — بدون قصّ
             Text(
-              'ابدأ بإضافة العناصر لتظهر هنا',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: ColorsManager.defaultTextSecondary,
+              l10n.startAddingItems,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.35,
               ),
               textAlign: TextAlign.center,
+              softWrap: true,
             ),
+
             if (onAddPressed != null) ...[
-              SizedBox(height: SizeApp.s32),
+              SizedBox(height: SizeApp.s24),
+
+              // زر الإضافة — ياخد العرض بالكامل، والنص ما يتقصش
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
                   onPressed: onAddPressed,
-                  icon: Icon(Icons.add_rounded, size: SizeApp.iconSize),
-                  label: Text(addButtonText ?? 'إضافة الآن'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: iconColor ?? ColorsManager.primaryColor,
-                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: SizeApp.s8),
+                    child: Text(
+                      addButtonText ?? l10n.addNow,
+                      softWrap: false,
+                      overflow: TextOverflow.fade, // أشيك من ellipsis في الأزرار
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: emptyIconColor,
+                    foregroundColor: colorScheme.onInverseSurface,
+                    padding: EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(SizeApp.radiusMed),
                     ),
@@ -208,25 +248,6 @@ class LibraryEmptyState extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Library List Container
-class LibraryListContainer extends StatelessWidget {
-  final Widget child;
-
-  const LibraryListContainer({
-    super.key,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: ColorsManager.backgroundSurface,
-      padding: EdgeInsets.all(SizeApp.s16),
-      child: child,
     );
   }
 }
@@ -244,91 +265,140 @@ class LibraryStatsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-      ),
-      title: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8.sp),
-            decoration: BoxDecoration(
-              color: ColorsManager.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(
-              Icons.analytics_rounded,
-              color: ColorsManager.primaryColor,
-              size: 20.sp,
-            ),
-          ),
-          SizedBox(width: SizeApp.s12),
-          Text(
-            'إحصائيات المكتبة',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      content: Consumer2<ExerciseLibraryProvider, SkillLibraryProvider>(
-        builder: (context, exerciseProvider, skillProvider, _) {
-          return SizedBox(
-            width: double.maxFinite,
-            child: GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 2,
-              childAspectRatio: 1.2,
-              mainAxisSpacing: SizeApp.s12,
-              crossAxisSpacing: SizeApp.s12,
-              children: [
-                _StatCard(
-                  title: 'الإحماء',
-                  count: exerciseProvider.getExercisesByType(ExerciseType.warmup).length,
-                  icon: ExerciseType.warmup.icon,
-                  color: ExerciseType.warmup.color,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    return Dialog(
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 560.w,        // شكل أحلى على الشاشات الواسعة
+          maxHeight: 0.85.sh,     // مايزيدش عن 85% من الارتفاع
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(Icons.analytics_rounded,
+                        color: colorScheme.primary, size: 20.sp),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Text(
+                      l10n.libraryStatistics,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close_rounded,
+                        color: colorScheme.onSurfaceVariant),
+                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 12.h),
+
+              // Content (scrollable)
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    // قواعد بسيطة لعدد الأعمدة حسب العرض
+                    int crossAxisCount = 2;
+                    if (width < 360) crossAxisCount = 1;
+                    if (width > 720) crossAxisCount = 3;
+
+                    return SingleChildScrollView(
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: 4,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 12.w,
+                          mainAxisSpacing: 12.h,
+                          childAspectRatio: 2,
+                        ),
+                        itemBuilder: (context, i) {
+                          final exProv = context.read<ExerciseLibraryProvider>();
+                          final skProv = context.read<SkillLibraryProvider>();
+
+                          switch (i) {
+                            case 0:
+                              return _StatCard(
+                                title: ExerciseType.warmup.getLocalizedName(context),
+                                count: exProv.getExercisesByType(ExerciseType.warmup).length,
+                                icon: ExerciseType.warmup.icon,
+                                color: ExerciseType.warmup.color,
+                              );
+                            case 1:
+                              return _StatCard(
+                                title: ExerciseType.stretching.getLocalizedName(context),
+                                count: exProv.getExercisesByType(ExerciseType.stretching).length,
+                                icon: ExerciseType.stretching.icon,
+                                color: ExerciseType.stretching.color,
+                              );
+                            case 2:
+                              return _StatCard(
+                                title: ExerciseType.conditioning.getLocalizedName(context),
+                                count: exProv.getExercisesByType(ExerciseType.conditioning).length,
+                                icon: ExerciseType.conditioning.icon,
+                                color: ExerciseType.conditioning.color,
+                              );
+                            default:
+                              return _StatCard(
+                                title: l10n.skills,
+                                count: skProv.skills.length,
+                                icon: Icons.star_rounded,
+                                color: colorScheme.secondary,
+                              );
+                          }
+                        },
+                      ),
+                    );
+                  },
                 ),
-                _StatCard(
-                  title: 'الإطالة',
-                  count: exerciseProvider.getExercisesByType(ExerciseType.stretching).length,
-                  icon: ExerciseType.stretching.icon,
-                  color: ExerciseType.stretching.color,
+              ),
+
+              SizedBox(height: 8.h),
+
+              // Actions
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.close),
                 ),
-                _StatCard(
-                  title: 'اللياقة',
-                  count: exerciseProvider.getExercisesByType(ExerciseType.conditioning).length,
-                  icon: ExerciseType.conditioning.icon,
-                  color: ExerciseType.conditioning.color,
-                ),
-                _StatCard(
-                  title: 'المهارات',
-                  count: skillProvider.skills.length,
-                  icon: Icons.star_rounded,
-                  color: ColorsManager.secondaryColor,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'إغلاق',
-            style: TextStyle(
-              color: ColorsManager.primaryColor,
-              fontWeight: FontWeight.w600,
-            ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
-/// Stats Card (Private)
+/// Stats Card — Enhanced UI/UX version
 class _StatCard extends StatelessWidget {
   final String title;
   final int count;
@@ -344,48 +414,67 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: color.withOpacity(0.22), width: 1.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: EdgeInsets.all(8.sp),
+                padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Icon(icon, color: color, size: 20.sp),
               ),
+              // عدّاد واضح بدون FittedBox لتفادي تصغير مفرط
               Text(
                 '$count',
-                style: TextStyle(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w700,
+                textAlign: TextAlign.end,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
                   color: color,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+                softWrap: false,
               ),
             ],
           ),
-          const Spacer(),
+
+          SizedBox(height: 8.h),
+
+          // Title (يسمح بسطرين بدون قص فج)
           Text(
             title,
-            style: TextStyle(
-              fontSize: 14.sp,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
+              color: colorScheme.onSurface,
+              height: 1.2,
             ),
+            softWrap: true,
+            maxLines: 2,
+            overflow: TextOverflow.fade,
           ),
         ],
       ),
     );
+
+
+
   }
 }
+
+

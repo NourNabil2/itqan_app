@@ -61,13 +61,10 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: CustomAppBar(
+       appBar: CustomAppBar(
         title: l10n.editMemberData,
       ),
       body: Column(

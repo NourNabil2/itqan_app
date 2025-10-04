@@ -1,9 +1,9 @@
+// lib/core/constants/image_picker_helper.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
-import '../theme/colors.dart';
-import '../utils/app_size.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 
 class MediaPickerHelper {
   static final ImagePicker _picker = ImagePicker();
@@ -13,50 +13,55 @@ class MediaPickerHelper {
     required BuildContext context,
     required Function(String?) onImageSelected,
   }) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(SizeApp.radiusMed),
-            topRight: Radius.circular(SizeApp.radiusMed),
+            topLeft: Radius.circular(20.r),
+            topRight: Radius.circular(20.r),
           ),
         ),
-        padding: EdgeInsets.all(SizeApp.s20),
+        padding: EdgeInsets.all(20.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Handle
             Container(
               width: 40.w,
               height: 4.h,
               decoration: BoxDecoration(
-                color: ColorsManager.inputBorder.withOpacity(0.3),
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(2.r),
               ),
             ),
 
-            SizedBox(height: SizeApp.s20),
+            SizedBox(height: 20.h),
 
+            // Title
             Text(
-              'اختر مصدر الصورة',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultText,
+              l10n.selectImageSource,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
 
-            SizedBox(height: SizeApp.s20),
+            SizedBox(height: 20.h),
 
+            // Options
             Row(
               children: [
                 Expanded(
                   child: _buildSourceOption(
                     context: context,
                     icon: Icons.photo_library_rounded,
-                    title: 'المعرض',
+                    title: l10n.gallery,
+                    color: theme.primaryColor,
                     onTap: () async {
                       Navigator.pop(context);
                       final imagePath = await _pickImageFromGallery();
@@ -65,13 +70,14 @@ class MediaPickerHelper {
                   ),
                 ),
 
-                SizedBox(width: SizeApp.s16),
+                SizedBox(width: 12.w),
 
                 Expanded(
                   child: _buildSourceOption(
                     context: context,
                     icon: Icons.camera_alt_rounded,
-                    title: 'الكاميرا',
+                    title: l10n.camera,
+                    color: theme.primaryColor,
                     onTap: () async {
                       Navigator.pop(context);
                       final imagePath = await _pickImageFromCamera();
@@ -81,6 +87,8 @@ class MediaPickerHelper {
                 ),
               ],
             ),
+
+            SizedBox(height: 12.h),
           ],
         ),
       ),
@@ -92,51 +100,55 @@ class MediaPickerHelper {
     required BuildContext context,
     required Function(String?) onVideoSelected,
   }) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(SizeApp.radiusMed),
-            topRight: Radius.circular(SizeApp.radiusMed),
+            topLeft: Radius.circular(20.r),
+            topRight: Radius.circular(20.r),
           ),
         ),
-        padding: EdgeInsets.all(SizeApp.s20),
+        padding: EdgeInsets.all(20.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Handle
             Container(
               width: 40.w,
               height: 4.h,
               decoration: BoxDecoration(
-                color: ColorsManager.inputBorder.withOpacity(0.3),
+                color: theme.primaryColor.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(2.r),
               ),
             ),
 
-            SizedBox(height: SizeApp.s20),
+            SizedBox(height: 20.h),
 
+            // Title
             Text(
-              'اختر مصدر الفيديو',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultText,
+              l10n.selectVideoSource,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
 
-            SizedBox(height: SizeApp.s20),
+            SizedBox(height: 20.h),
 
+            // Options
             Row(
               children: [
                 Expanded(
                   child: _buildSourceOption(
                     context: context,
                     icon: Icons.video_library_rounded,
-                    title: 'اختر فيديو',
-                    color: ColorsManager.secondaryColor,
+                    title: l10n.selectVideo,
+                    color: theme.primaryColor,
                     onTap: () async {
                       Navigator.pop(context);
                       final videoPath = await _pickVideoFromGallery();
@@ -145,14 +157,14 @@ class MediaPickerHelper {
                   ),
                 ),
 
-                SizedBox(width: SizeApp.s16),
+                SizedBox(width: 12.w),
 
                 Expanded(
                   child: _buildSourceOption(
                     context: context,
                     icon: Icons.videocam_rounded,
-                    title: 'تسجيل فيديو',
-                    color: ColorsManager.secondaryColor,
+                    title: l10n.recordVideo,
+                    color: theme.primaryColor,
                     onTap: () async {
                       Navigator.pop(context);
                       final videoPath = await _recordVideo();
@@ -162,6 +174,8 @@ class MediaPickerHelper {
                 ),
               ],
             ),
+
+            SizedBox(height: 12.h),
           ],
         ),
       ),
@@ -192,40 +206,50 @@ class MediaPickerHelper {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
-    Color? color,
+    required Color color,
   }) {
-    final optionColor = color ?? ColorsManager.primaryColor;
+    final theme = Theme.of(context);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+      borderRadius: BorderRadius.circular(16.r),
       child: Container(
-        padding: EdgeInsets.all(SizeApp.s20),
+        padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 12.w),
         decoration: BoxDecoration(
-          color: optionColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: optionColor.withOpacity(0.2),
-            width: 1,
+            color: color.withOpacity(0.3),
+            width: 1.5,
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 32.sp,
-              color: optionColor,
+            Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 28.sp,
+                color: color,
+              ),
             ),
 
-            SizedBox(height: SizeApp.s8),
+            SizedBox(height: 12.h),
 
             Text(
               title,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: optionColor,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: color,
               ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -238,13 +262,13 @@ class MediaPickerHelper {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 80,
+        imageQuality: 85,
         maxWidth: 1920,
         maxHeight: 1080,
       );
       return image?.path;
     } catch (e) {
-      debugPrint('Error picking image from camera: $e');
+      debugPrint('❌ Error picking image from camera: $e');
       return null;
     }
   }
@@ -253,13 +277,13 @@ class MediaPickerHelper {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 80,
+        imageQuality: 85,
         maxWidth: 1920,
         maxHeight: 1080,
       );
       return image?.path;
     } catch (e) {
-      debugPrint('Error picking image from gallery: $e');
+      debugPrint('❌ Error picking image from gallery: $e');
       return null;
     }
   }
@@ -269,11 +293,11 @@ class MediaPickerHelper {
     try {
       final XFile? video = await _picker.pickVideo(
         source: ImageSource.camera,
-        maxDuration: Duration(minutes: 5), // حد أقصى 5 دقائق
+        maxDuration: const Duration(minutes: 5),
       );
       return video?.path;
     } catch (e) {
-      debugPrint('Error recording video: $e');
+      debugPrint('❌ Error recording video: $e');
       return null;
     }
   }
@@ -282,11 +306,11 @@ class MediaPickerHelper {
     try {
       final XFile? video = await _picker.pickVideo(
         source: ImageSource.gallery,
-        maxDuration: Duration(minutes: 10), // حد أقصى 10 دقائق من المعرض
+        maxDuration: const Duration(minutes: 10),
       );
       return video?.path;
     } catch (e) {
-      debugPrint('Error picking video from gallery: $e');
+      debugPrint('❌ Error picking video from gallery: $e');
       return null;
     }
   }
@@ -294,9 +318,9 @@ class MediaPickerHelper {
   // Legacy method for backward compatibility
   static Future<String?> pickImage({
     ImageSource source = ImageSource.gallery,
-    int imageQuality = 80,
-    double maxWidth = 800,
-    double maxHeight = 800,
+    int imageQuality = 85,
+    double maxWidth = 1920,
+    double maxHeight = 1080,
   }) async {
     try {
       final image = await _picker.pickImage(
@@ -307,25 +331,28 @@ class MediaPickerHelper {
       );
       return image?.path;
     } catch (e) {
-      throw Exception('حدث خطأ في اختيار الصورة: $e');
+      debugPrint('❌ Error picking image: $e');
+      return null;
     }
   }
 
   // Utility methods
   static bool isImageFile(String path) {
     final ext = path.toLowerCase().split('.').last;
-    return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext);
+    return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic'].contains(ext);
   }
 
   static bool isVideoFile(String path) {
     final ext = path.toLowerCase().split('.').last;
-    return ['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', '3gp', 'webm'].contains(ext);
+    return ['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', '3gp', 'webm', 'm4v']
+        .contains(ext);
   }
 
   static String getFileSize(String path) {
     try {
       final file = File(path);
       final bytes = file.lengthSync();
+
       if (bytes < 1024) {
         return '$bytes B';
       } else if (bytes < 1024 * 1024) {
@@ -336,11 +363,24 @@ class MediaPickerHelper {
         return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
       }
     } catch (e) {
-      return 'غير معروف';
+      debugPrint('❌ Error getting file size: $e');
+      return '--';
     }
   }
 
   static String getFileName(String path) {
     return path.split('/').last;
+  }
+
+  static String getFileExtension(String path) {
+    return path.split('.').last.toLowerCase();
+  }
+
+  static bool fileExists(String path) {
+    try {
+      return File(path).existsSync();
+    } catch (e) {
+      return false;
+    }
   }
 }

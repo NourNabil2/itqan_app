@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
+import 'package:itqan_gym/core/widgets/loading_widget.dart';
 import 'package:itqan_gym/data/database/db_helper.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/member/member.dart';
 import '../../../data/models/team.dart';
@@ -20,11 +21,26 @@ class TeamMembersManager extends StatefulWidget {
   State<TeamMembersManager> createState() => _TeamMembersManagerState();
 }
 
-class _TeamMembersManagerState extends State<TeamMembersManager> {
+class _TeamMembersManagerState extends State<TeamMembersManager> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
     _loadTeamMembers();
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   void _loadTeamMembers() {
@@ -33,93 +49,116 @@ class _TeamMembersManagerState extends State<TeamMembersManager> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TeamProvider>(
-      builder: (context, teamProvider, child) {
-        if (teamProvider.isLoading) {
-          return _buildLoadingState();
-        }
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
-        if (teamProvider.teamMembers.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return _buildMembersList(teamProvider.teamMembers);
-      },
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Consumer<TeamProvider>(
+        builder: (context, teamProvider, child) {
+          if (teamProvider.isLoading) {
+            return _buildLoadingState(theme, colorScheme, l10n);
+          }
+          if (teamProvider.teamMembers.isEmpty) {
+            return _buildEmptyState(theme, colorScheme, l10n);
+          }
+          return _buildMembersList(teamProvider.teamMembers, theme, colorScheme, l10n);
+        },
+      ),
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(ColorsManager.primaryColor),
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+            strokeWidth: 3,
           ),
-          SizedBox(height: SizeApp.s16),
+          SizedBox(height: 16.h),
           Text(
-            'جاري تحميل الأعضاء...',
-            style: TextStyle(
+            l10n.loadingMembers,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 16.sp,
-              color: ColorsManager.defaultTextSecondary,
+              color: colorScheme.onSurfaceVariant,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(SizeApp.s24),
+        padding: EdgeInsets.all(24.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: EdgeInsets.all(SizeApp.s20),
+              padding: EdgeInsets.all(20.w),
               decoration: BoxDecoration(
-                color: ColorsManager.primaryColor.withOpacity(0.1),
+                color: colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.group_add_rounded,
                 size: 64.sp,
-                color: ColorsManager.primaryColor,
+                color: colorScheme.primary,
               ),
             ),
-            SizedBox(height: SizeApp.s20),
+            SizedBox(height: 20.h),
             Text(
-              'لا يوجد أعضاء',
-              style: TextStyle(
+              l10n.noMembersInLibrary,
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontSize: 20.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.defaultText,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: SizeApp.s8),
+            SizedBox(height: 8.h),
             Text(
-              'ابدأ بإضافة أعضاء لهذا الفريق من المكتبة',
+              l10n.addMember,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 14.sp,
-                color: ColorsManager.defaultTextSecondary,
+                color: colorScheme.onSurfaceVariant,
                 height: 1.4,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: SizeApp.s32),
+            SizedBox(height: 32.h),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 onPressed: _showAddMembersDialog,
-                icon: Icon(Icons.library_add_rounded, size: SizeApp.iconSize),
-                label: const Text('إضافة أعضاء من المكتبة'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ColorsManager.primaryColor,
-                  foregroundColor: Colors.white,
+                icon: Icon(Icons.library_add_rounded, size: 24.sp),
+                label: Text(
+                  l10n.addMemberToLibrary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 16.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
               ),
@@ -130,26 +169,30 @@ class _TeamMembersManagerState extends State<TeamMembersManager> {
     );
   }
 
-  Widget _buildMembersList(List<Member> members) {
+  Widget _buildMembersList(List<Member> members, ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Column(
       children: [
         // Add Members Button
         Container(
-          color: Colors.white,
-          padding: EdgeInsets.all(SizeApp.s16),
+          color: colorScheme.surface,
+          padding: EdgeInsets.all(16.w),
           child: Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _showAddMembersDialog,
-                  icon: Icon(Icons.library_add_rounded, size: SizeApp.iconSize),
-                  label: const Text('إضافة أعضاء جدد'),
+                  icon: Icon(Icons.library_add_rounded, size: 24.sp),
+                  label: Text(
+                    l10n.addMemberToLibrary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: ColorsManager.primaryColor,
-                    side: BorderSide(color: ColorsManager.primaryColor),
+                    foregroundColor: colorScheme.primary,
+                    side: BorderSide(color: colorScheme.primary),
                     padding: EdgeInsets.symmetric(vertical: 14.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                 ),
@@ -157,109 +200,108 @@ class _TeamMembersManagerState extends State<TeamMembersManager> {
             ],
           ),
         ),
-
         // Members Count
         Container(
-          color: ColorsManager.primaryColor.withOpacity(0.1),
-          padding: EdgeInsets.symmetric(
-            horizontal: SizeApp.s16,
-            vertical: SizeApp.s12,
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.primary.withOpacity(0.1),
+                colorScheme.primary.withOpacity(0.05),
+              ],
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'أعضاء الفريق',
-                style: TextStyle(
+                l10n.teamMembers,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
-                  color: ColorsManager.primaryColor,
+                  color: colorScheme.primary,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: SizeApp.s12,
-                  vertical: SizeApp.s4,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: ColorsManager.primaryColor,
+                  color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Text(
                   '${members.length}',
                   style: TextStyle(
                     fontSize: 14.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onPrimary,
                   ),
                 ),
               ),
             ],
           ),
         ),
-
         // Members List
         Expanded(
           child: ListView.builder(
-            padding: EdgeInsets.all(SizeApp.s16),
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.all(16.w),
             itemCount: members.length,
             itemBuilder: (context, index) {
               final member = members[index];
               return Container(
-                margin: EdgeInsets.only(bottom: SizeApp.s12),
+                margin: EdgeInsets.only(bottom: 12.h),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12.r),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: colorScheme.onSurface.withOpacity(0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: ListTile(
-                  contentPadding: EdgeInsets.all(SizeApp.s12),
+                  contentPadding: EdgeInsets.all(12.w),
                   leading: CircleAvatar(
                     radius: 24.r,
-                    backgroundColor: ColorsManager.primaryColor.withOpacity(0.1),
+                    backgroundColor: colorScheme.primary.withOpacity(0.1),
                     backgroundImage: member.photoPath != null
                         ? FileImage(File(member.photoPath!))
                         : null,
                     child: member.photoPath == null
                         ? Text(
-                      member.name[0].toUpperCase(),
+                      member.name.isNotEmpty ? member.name[0].toUpperCase() : '',
                       style: TextStyle(
                         fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorsManager.primaryColor,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.primary,
                       ),
                     )
                         : null,
                   ),
                   title: Text(
                     member.name,
-                    style: TextStyle(
+                    style: theme.textTheme.bodyLarge?.copyWith(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
-                      color: ColorsManager.defaultText,
+                      color: colorScheme.onSurface,
                     ),
-                  ),
-                  subtitle: Text(
-                    'العمر: ${member.age} • ${member.level}',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: ColorsManager.defaultTextSecondary,
-                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   trailing: IconButton(
-                    onPressed: () => _showRemoveMemberDialog(member),
+                    onPressed: () => _showRemoveMemberDialog(member, l10n),
                     icon: Icon(
                       Icons.remove_circle_outline_rounded,
-                      color: ColorsManager.errorFill,
-                      size: SizeApp.iconSize,
+                      color: colorScheme.error,
+                      size: 24.sp,
                     ),
-                    tooltip: 'إزالة من الفريق',
+                    tooltip: l10n.removeFromTeam,
                   ),
                 ),
               );
@@ -283,61 +325,68 @@ class _TeamMembersManagerState extends State<TeamMembersManager> {
     });
   }
 
-  void _showRemoveMemberDialog(Member member) {
+  void _showRemoveMemberDialog(Member member, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         title: Row(
           children: [
             Icon(
               Icons.warning_rounded,
-              color: ColorsManager.errorFill,
+              color: Theme.of(context).colorScheme.error,
               size: 24.sp,
             ),
-            SizedBox(width: SizeApp.s8),
+            SizedBox(width: 8.w),
             Text(
-              'إزالة العضو',
-              style: TextStyle(
+              l10n.delete,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-                color: ColorsManager.errorFill,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.error,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
         content: Text(
-          'هل أنت متأكد من إزالة "${member.name}" من الفريق؟',
-          style: TextStyle(
+          l10n.deleteMemberConfirmation(member.name),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontSize: 14.sp,
             height: 1.4,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'إلغاء',
+              l10n.cancel,
               style: TextStyle(
-                color: ColorsManager.defaultTextSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () => _removeMember(member),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsManager.errorFill,
+          FilledButton(
+            onPressed: () => _removeMember(member,l10n),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                borderRadius: BorderRadius.circular(12.r),
               ),
             ),
             child: Text(
-              'إزالة',
+              l10n.remove,
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onError,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -347,28 +396,38 @@ class _TeamMembersManagerState extends State<TeamMembersManager> {
     );
   }
 
-  Future<void> _removeMember(Member member) async {
+  Future<void> _removeMember(Member member,l10n) async {
     Navigator.pop(context); // Close dialog
-
     final teamProvider = context.read<TeamProvider>();
-    final success = await teamProvider.removeMemberFromTeam(
-      widget.team.id,
-      member.id,
-    );
-
+    final success = await teamProvider.removeMemberFromTeam(widget.team.id, member.id);
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم إزالة ${member.name} من الفريق'),
-            backgroundColor: ColorsManager.successFill,
+            content: Text(
+              l10n.deleteMemberConfirmation(member.name),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
+            duration: const Duration(seconds: 3),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(teamProvider.errorMessage ?? 'خطأ في إزالة العضو'),
-            backgroundColor: ColorsManager.errorFill,
+            content: Text(
+              teamProvider.errorMessage ?? l10n.errorRemovingMember,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
           ),
         );
       }
@@ -385,29 +444,41 @@ class _AddMembersSheet extends StatefulWidget {
   State<_AddMembersSheet> createState() => _AddMembersSheetState();
 }
 
-class _AddMembersSheetState extends State<_AddMembersSheet> {
+class _AddMembersSheetState extends State<_AddMembersSheet> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final Set<String> _selectedIds = {};
   List<Member> _allMembers = [];
   List<Member> _filteredMembers = [];
   List<Member> _currentTeamMembers = [];
   bool _isLoading = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
     _loadMembers();
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMembers() async {
     final db = DatabaseHelper.instance;
     final allMembers = await db.getAllMembers();
     final teamMembers = await db.getTeamMembers(widget.team.id);
-
-    // Filter out members already in team
     final teamMemberIds = teamMembers.map((m) => m.id).toSet();
     final availableMembers = allMembers.where((m) => !teamMemberIds.contains(m.id)).toList();
-
     setState(() {
       _allMembers = availableMembers;
       _filteredMembers = availableMembers;
@@ -421,122 +492,135 @@ class _AddMembersSheetState extends State<_AddMembersSheet> {
     setState(() {
       _filteredMembers = q.isEmpty
           ? _allMembers
-          : _allMembers.where((m) =>
-      m.name.toLowerCase().contains(q) ||
-          m.level.toLowerCase().contains(q)
-      ).toList();
+          : _allMembers.where((m) => m.name.toLowerCase().contains(q) || (m.level ?? '').toLowerCase().contains(q)).toList();
     });
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(SizeApp.radiusMed),
-          topRight: Radius.circular(SizeApp.radiusMed),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            margin: EdgeInsets.only(top: SizeApp.s12),
-            width: 40.w,
-            height: 4.h,
-            decoration: BoxDecoration(
-              color: ColorsManager.inputBorder.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2.r),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
-          ),
-
-          SizedBox(height: SizeApp.s12),
-
-          // Header
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.library_add_rounded,
-                  color: ColorsManager.primaryColor,
-                  size: SizeApp.iconSize,
-                ),
-                SizedBox(width: SizeApp.s8),
-                Expanded(
-                  child: Text(
-                    'إضافة أعضاء للفريق',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w600,
-                      color: ColorsManager.defaultText,
+          ],
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              margin: EdgeInsets.only(top: 12.h),
+              width: 40.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: colorScheme.outlineVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            SizedBox(height: 12.h),
+            // Header
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Icon(
+                      Icons.library_add_rounded,
+                      color: colorScheme.primary,
+                      size: 24.sp,
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      l10n.addMemberToLibrary,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-
-          SizedBox(height: SizeApp.s16),
-
-          // Search Field
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
-            child: AppTextFieldFactory.search(
-              controller: _searchController,
-              hintText: 'ابحث بالاسم أو المستوى...',
-              onChanged: _applyFilter,
+            SizedBox(height: 16.h),
+            // Search Field
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: AppTextFieldFactory.search(
+                controller: _searchController,
+                hintText: l10n.searchForMember,
+                onChanged: _applyFilter,
+                prefixIcon: Icon(Icons.search_rounded, color: colorScheme.onSurfaceVariant),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(Icons.clear_rounded, color: colorScheme.onSurfaceVariant),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _applyFilter('');
+                    });
+                  },
+                )
+                    : null,
+                fillColor: colorScheme.surfaceContainerHighest,
+                borderRadius: 12.r,
+              ),
             ),
-          ),
-
-          SizedBox(height: SizeApp.s12),
-
-          // Content
-          Expanded(
-            child: _isLoading ? _buildLoadingState() : _buildContent(),
-          ),
-
-          // Bottom Action Buttons
-          _buildBottomButtons(),
-        ],
+            SizedBox(height: 12.h),
+            // Content
+            Expanded(
+              child: _isLoading ? _buildLoadingState(theme, colorScheme, l10n) : _buildContent(theme, colorScheme, l10n),
+            ),
+            // Bottom Action Buttons
+            _buildBottomButtons(theme, colorScheme, l10n),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Center(
       child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(ColorsManager.primaryColor),
+        valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+        strokeWidth: 3,
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     if (_filteredMembers.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(theme, colorScheme, l10n);
     }
 
     return ListView.separated(
-      padding: EdgeInsets.symmetric(horizontal: SizeApp.s16),
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       itemCount: _filteredMembers.length,
       separatorBuilder: (_, __) => Divider(
         height: 1,
-        color: ColorsManager.inputBorder.withOpacity(0.3),
+        color: colorScheme.outlineVariant.withOpacity(0.3),
       ),
       itemBuilder: (context, index) {
         final member = _filteredMembers[index];
@@ -555,72 +639,67 @@ class _AddMembersSheetState extends State<_AddMembersSheet> {
           },
           title: Text(
             member.name,
-            style: TextStyle(
+            style: theme.textTheme.bodyLarge?.copyWith(
               fontSize: 16.sp,
               fontWeight: FontWeight.w500,
-              color: ColorsManager.defaultText,
+              color: colorScheme.onSurface,
             ),
-          ),
-          subtitle: Text(
-            'العمر: ${member.age} • ${member.level}',
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           secondary: CircleAvatar(
-            backgroundColor: ColorsManager.primaryColor.withOpacity(0.1),
-            backgroundImage: member.photoPath != null
-                ? FileImage(File(member.photoPath!))
-                : null,
+            backgroundColor: colorScheme.primary.withOpacity(0.1),
+            backgroundImage: member.photoPath != null ? FileImage(File(member.photoPath!)) : null,
             child: member.photoPath == null
                 ? Text(
-              member.name[0].toUpperCase(),
+              member.name.isNotEmpty ? member.name[0].toUpperCase() : '',
               style: TextStyle(
                 fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-                color: ColorsManager.primaryColor,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.primary,
               ),
             )
                 : null,
           ),
-          activeColor: ColorsManager.primaryColor,
-          checkColor: Colors.white,
+          activeColor: colorScheme.primary,
+          checkColor: colorScheme.onPrimary,
         );
       },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            _allMembers.isEmpty ? Icons.group_add : Icons.search_off,
+            _allMembers.isEmpty ? Icons.group_add_rounded : Icons.search_off_rounded,
             size: 64.sp,
-            color: ColorsManager.defaultTextSecondary.withOpacity(0.5),
+            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
           ),
-          SizedBox(height: SizeApp.s16),
+          SizedBox(height: 16.h),
           Text(
-            _allMembers.isEmpty
-                ? 'جميع الأعضاء مضافون للفريق'
-                : 'لا توجد نتائج للبحث',
-            style: TextStyle(
+            _allMembers.isEmpty ? l10n.noMembersInLibrary : l10n.notFound,
+            style: theme.textTheme.bodyLarge?.copyWith(
               fontSize: 16.sp,
-              color: ColorsManager.defaultTextSecondary,
               fontWeight: FontWeight.w500,
+              color: colorScheme.onSurfaceVariant,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           if (_allMembers.isEmpty) ...[
-            SizedBox(height: SizeApp.s8),
+            SizedBox(height: 8.h),
             Text(
-              'جميع الأعضاء المتاحين مضافون بالفعل لهذا الفريق',
+              l10n.noMembersInLibrary,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 14.sp,
-                color: ColorsManager.defaultTextSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],
@@ -628,14 +707,14 @@ class _AddMembersSheetState extends State<_AddMembersSheet> {
     );
   }
 
-  Widget _buildBottomButtons() {
+  Widget _buildBottomButtons(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: ColorsManager.inputBorder.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withOpacity(0.3),
           ),
         ),
       ),
@@ -647,32 +726,42 @@ class _AddMembersSheetState extends State<_AddMembersSheet> {
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: ColorsManager.defaultTextSecondary,
+                  foregroundColor: colorScheme.onSurfaceVariant,
                   side: BorderSide(
-                    color: ColorsManager.inputBorder.withOpacity(0.5),
+                    color: colorScheme.outline.withOpacity(0.5),
                   ),
                   padding: EdgeInsets.symmetric(vertical: 14.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
-                child: const Text('إلغاء'),
+                child: Text(
+                  l10n.cancel,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
-
-            SizedBox(width: SizeApp.s12),
-
+            SizedBox(width: 12.w),
             Expanded(
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 onPressed: _selectedIds.isEmpty ? null : _addSelectedMembers,
-                icon: Icon(Icons.check, size: SizeApp.iconSize),
-                label: Text('إضافة (${_selectedIds.length})'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ColorsManager.primaryColor,
-                  foregroundColor: Colors.white,
+                icon: Icon(Icons.check_rounded, size: 24.sp),
+                label: Text(
+                  l10n.memberCount(_selectedIds.length),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 14.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
               ),
@@ -685,27 +774,35 @@ class _AddMembersSheetState extends State<_AddMembersSheet> {
 
   Future<void> _addSelectedMembers() async {
     if (_selectedIds.isEmpty) return;
-
     final teamProvider = context.read<TeamProvider>();
-    final success = await teamProvider.addMembersToTeam(
-      widget.team.id,
-      _selectedIds.toList(),
-    );
-
+    final success = await teamProvider.addMembersToTeam(widget.team.id, _selectedIds.toList());
     if (mounted) {
       if (success) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم إضافة ${_selectedIds.length} عضو للفريق'),
-            backgroundColor: ColorsManager.successFill,
+            content: Text(
+              'added ${_selectedIds.length} members',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
+            duration: const Duration(seconds: 3),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(teamProvider.errorMessage ?? 'خطأ في إضافة الأعضاء'),
-            backgroundColor: ColorsManager.errorFill,
+            content: Text(
+              teamProvider.errorMessage ?? 'error',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+            margin: EdgeInsets.all(16.w),
           ),
         );
       }

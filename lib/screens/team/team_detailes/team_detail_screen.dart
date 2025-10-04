@@ -8,7 +8,8 @@ import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:itqan_gym/screens/team/manage_assignments_screen.dart';
-import 'package:itqan_gym/screens/team/widgets/exercise_detail_sheet.dart';
+import 'package:itqan_gym/screens/team/widgets/exercise_detail_sheet.dart'
+    hide getApparatusColor, getApparatusIcon;
 import 'package:itqan_gym/screens/team/widgets/skill_detail_sheet.dart';
 import 'package:itqan_gym/screens/team/widgets/team_members_manager.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +32,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _loadTeamData();
   }
 
@@ -60,28 +61,52 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
       body: Column(
         children: [
           _buildTeamInfoHeader(),
-
           // Tab Bar
           Container(
             color: theme.cardColor,
             child: TabBar(
               controller: _tabController,
+
+              // توزيع متساوي وراحة في العرض
+              isScrollable: false,
+              tabAlignment: TabAlignment.fill,
+              labelPadding: EdgeInsets.symmetric(horizontal: 12.0),
+
+              // ألوان/ستايلات
               labelColor: theme.primaryColor,
               unselectedLabelColor: theme.textTheme.bodySmall?.color,
               indicatorColor: theme.primaryColor,
               indicatorWeight: 3,
-              labelStyle: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-              ),
+              indicatorSize: TabBarIndicatorSize.label,
+              labelStyle:
+                  TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
+              unselectedLabelStyle:
+                  TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500),
+
+              // تابات نصية بدون قص + سطرين عند الحاجة
               tabs: [
-                Tab(text: l10n.members),
-                Tab(text: l10n.content),
-                Tab(text: l10n.progress),
+                Tab(
+                  child: Center(
+                    child: Text(
+                      l10n.members,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: Center(
+                    child: Text(
+                      l10n.content,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -93,7 +118,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
               children: [
                 _buildMembersTab(),
                 _buildContentTab(),
-                _buildProgressTab(),
               ],
             ),
           ),
@@ -105,57 +129,134 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   Widget _buildTeamInfoHeader() {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Consumer<TeamProvider>(
-      builder: (context, teamProvider, child) {
-        return Container(
-          color: theme.cardColor,
-          child: SectionHeader(
-            title: widget.team.name,
-            subtitle: '${widget.team.ageCategory.getLocalizedName(context)} • ${l10n.memberCount(teamProvider.totalMembers)}',
-            leading: Container(
-              padding: EdgeInsets.all(SizeApp.s10),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(SizeApp.s10),
-              ),
-              child: Icon(
-                Icons.groups_rounded,
-                color: theme.primaryColor,
-                size: SizeApp.iconSize,
-              ),
-            ),
-            trailing: _buildQuickStatsChips(),
-            padding: EdgeInsets.all(SizeApp.s16),
-            showDivider: true,
+    final leading = Container(
+      padding: EdgeInsets.all(SizeApp.s10),
+      decoration: BoxDecoration(
+        color: theme.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(SizeApp.s10),
+      ),
+      child: Icon(
+        Icons.groups_rounded,
+        color: theme.primaryColor,
+        size: SizeApp.iconSize,
+      ),
+    );
+
+    return Material(
+      color: theme.cardColor,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: SizeApp.s16,
+            vertical: SizeApp.s12,
           ),
-        );
-      },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Leading
+                  leading,
+
+                  SizedBox(width: SizeApp.s12),
+
+                  // Title + Subtitle (expandable)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title with tooltip to avoid truncation confusion
+                        Tooltip(
+                          message: widget.team.name,
+                          waitDuration: const Duration(milliseconds: 500),
+                          child: Semantics(
+                            header: true,
+                            child: Text(
+                              widget.team.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: 6),
+
+                        // Subtitle: Age • Members (members only rebuild)
+                        Selector<TeamProvider, int>(
+                          selector: (_, p) => p.totalMembers,
+                          builder: (context, totalMembers, _) {
+                            final subtitle =
+                                '${widget.team.ageCategory.getLocalizedName(context)} • ${l10n.memberCount(totalMembers)}';
+                            return Tooltip(
+                              message: subtitle,
+                              waitDuration: const Duration(milliseconds: 500),
+                              child: Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        SizedBox(height: SizeApp.s10),
+
+                        _buildQuickStatsChips(),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildQuickStatsChips() {
     final l10n = AppLocalizations.of(context);
-
-    return Consumer<TeamProvider>(
-      builder: (context, teamProvider, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
+    return ClipRect(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
           children: [
-            _buildStatChip(
-              '${teamProvider.totalExercises}',
-              l10n.exercisesAndSkillsLibrary,
-              ColorsManager.secondaryColor,
+            Consumer<TeamProvider>(
+              builder: (context, teamProvider, child) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildStatChip(
+                      '${teamProvider.totalExercises}',
+                      l10n.exercisesAndSkillsLibrary,
+                      ColorsManager.secondaryColor,
+                    ),
+                    SizedBox(width: SizeApp.s4),
+                    _buildStatChip(
+                      '${teamProvider.totalSkills}',
+                      l10n.skills,
+                      ColorsManager.primaryColor,
+                    ),
+                  ],
+                );
+              },
             ),
-            SizedBox(width: SizeApp.s4),
-            _buildStatChip(
-              '${teamProvider.totalSkills}',
-              l10n.skills,
-              ColorsManager.primaryColor,
-            ),
+            SizedBox(width: 8.w), // تنفّس بسيط في آخر الشريط
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -220,7 +321,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
             children: [
               _buildManageAssignmentsButton(),
               SizedBox(height: SizeApp.s20),
-
               if (exercises.isNotEmpty) ...[
                 _buildContentSection(
                   title: l10n.assignedExercises,
@@ -230,7 +330,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
                 ),
                 SizedBox(height: SizeApp.s20),
               ],
-
               if (skills.isNotEmpty) ...[
                 _buildContentSection(
                   title: l10n.assignedSkills,
@@ -525,45 +624,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
         ),
       );
     }).toList();
-  }
-
-  Widget _buildProgressTab() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(SizeApp.s20),
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.timeline_rounded,
-              size: 64.sp,
-              color: theme.primaryColor,
-            ),
-          ),
-          SizedBox(height: SizeApp.s20),
-          Text(
-            l10n.comingSoonProgressTracking,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: SizeApp.s8),
-          Text(
-            l10n.featureComingSoon,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   IconData _getExerciseIcon(ExerciseType type) {

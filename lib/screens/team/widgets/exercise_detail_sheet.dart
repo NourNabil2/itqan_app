@@ -1,11 +1,10 @@
-import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
+import 'package:itqan_gym/core/utils/extension.dart';
 import 'package:itqan_gym/core/widgets/full_screen_media_viewer.dart';
 import 'package:itqan_gym/core/widgets/video_player_widget.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
@@ -28,7 +27,8 @@ class ExerciseDetailSheet extends StatefulWidget {
   @override
   State<ExerciseDetailSheet> createState() => _ExerciseDetailSheetState();
 
-  static void show(BuildContext context, ExerciseTemplate exercise, {required String teamId}) {
+  static void show(BuildContext context, ExerciseTemplate exercise,
+      {required String teamId}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -41,214 +41,265 @@ class ExerciseDetailSheet extends StatefulWidget {
   }
 }
 
-class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
+class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
+    with SingleTickerProviderStateMixin {
   late Future<List<Member>> _membersFuture;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _membersFuture = Provider.of<ExerciseAssignmentProvider>(context, listen: false)
-        .loadExerciseMembers(widget.exercise.id);
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation =
+        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
+    _membersFuture = Provider.of<ExerciseAssignmentProvider>(
+      context,
+      listen: false,
+    ).loadExerciseMembers(widget.exercise.id);
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _refreshMembers() async {
     setState(() {
-      _membersFuture = Provider.of<ExerciseAssignmentProvider>(context, listen: false)
-          .loadExerciseMembers(widget.exercise.id);
+      _membersFuture = Provider.of<ExerciseAssignmentProvider>(
+        context,
+        listen: false,
+      ).loadExerciseMembers(widget.exercise.id);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final exerciseColor = widget.exercise.type.color;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: theme.dialogBackgroundColor,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(SizeApp.radiusMed),
-          topRight: Radius.circular(SizeApp.radiusMed),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            margin: EdgeInsets.only(top: SizeApp.s12),
-            width: 40.w,
-            height: 4.h,
-            decoration: BoxDecoration(
-              color: theme.dividerColor.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2.r),
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.92,
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
-          ),
-
-          _buildHeaderWithActions(context),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(SizeApp.s16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.teamId != null) _buildAssignedMembersSection(context),
-                  if (widget.exercise.hasMedia) _buildMediaSection(),
-                  if (widget.exercise.description != null) _buildDescriptionSection(),
-                  _buildTypeInfoSection(),
-                  _buildStatsSection(),
-                ],
+          ],
+        ),
+        child: Column(
+          children: [
+// Handle
+            Container(
+              margin: EdgeInsets.only(top: 12.h),
+              width: 40.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: colorScheme.outlineVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(2.r),
               ),
             ),
-          ),
-
-          _buildBottomActions(context),
-        ],
+// Header
+            _buildHeader(theme, colorScheme, l10n, exerciseColor),
+// Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.all(16.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.teamId != null)
+                      _buildAssignedMembersSection(
+                          theme, colorScheme, l10n, exerciseColor),
+                    if (widget.exercise.hasMedia)
+                      _buildMediaSection(
+                          theme, colorScheme, l10n, exerciseColor),
+                    if (widget.exercise.description != null)
+                      _buildDescriptionSection(
+                          theme, colorScheme, l10n, exerciseColor),
+                    _buildTypeInfoSection(
+                        theme, colorScheme, l10n, exerciseColor),
+                    _buildStatsSection(theme, colorScheme, l10n, exerciseColor),
+                    SizedBox(height: 80.h),
+                  ],
+                ),
+              ),
+            ),
+// Bottom Actions
+            _buildBottomActions(theme, colorScheme, l10n, exerciseColor),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeaderWithActions(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final exerciseColor = _getExerciseColor();
-
+  Widget _buildHeader(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
     return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
       decoration: BoxDecoration(
-        color: exerciseColor.withOpacity(0.1),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(SizeApp.radiusMed),
-          topRight: Radius.circular(SizeApp.radiusMed),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            exerciseColor.withOpacity(0.2),
+            exerciseColor.withOpacity(0.05),
+          ],
         ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
       ),
+      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(SizeApp.s12),
+            padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
-              color: exerciseColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(SizeApp.s10),
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(14.r),
+              boxShadow: [
+                BoxShadow(
+                  color: exerciseColor.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Icon(
-              _getExerciseIcon(),
+              widget.exercise.type.icon,
               color: exerciseColor,
-              size: 24.sp,
+              size: 26.sp,
             ),
           ),
-          SizedBox(width: SizeApp.s12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   widget.exercise.title,
-                  style: TextStyle(
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
                     fontSize: 20.sp,
-                    fontWeight: FontWeight.bold,
-                    color: exerciseColor,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: SizeApp.s4),
+                SizedBox(height: 6.h),
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: SizeApp.s8,
-                    vertical: SizeApp.s4,
-                  ),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: exerciseColor,
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    borderRadius: BorderRadius.circular(16.r),
                   ),
-                  child: Text(
-                    widget.exercise.type.getLocalizedName(context),
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        widget.exercise.type.icon,
+                        color: Colors.white,
+                        size: 14.sp,
+                      ),
+                      SizedBox(width: 6.w),
+                      Flexible(
+                        child: Text(
+                          widget.exercise.type.getLocalizedName(context),
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          if (widget.teamId != null) ...[
+          if (widget.teamId != null)
             IconButton(
+              tooltip: l10n.assignToMembers,
               onPressed: () => _showAssignmentSheet(context),
               icon: Container(
-                padding: EdgeInsets.all(SizeApp.s8),
+                padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  color: exerciseColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Icon(
                   Icons.person_add_rounded,
-                  color: theme.primaryColor,
-                  size: 20.sp,
+                  color: exerciseColor,
+                  size: 22.sp,
                 ),
               ),
             ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildAssignedMembersSection(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
+  Widget _buildAssignedMembersSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
     return FutureBuilder<List<Member>>(
       future: _membersFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingSection();
+          return _buildLoadingSection(colorScheme, exerciseColor);
         }
         final members = snapshot.data ?? const <Member>[];
         if (members.isEmpty) {
-          return _buildEmptyMembersSection(context);
+          return _buildEmptyMembersSection(
+              theme, colorScheme, l10n, exerciseColor);
         }
         return Container(
-          margin: EdgeInsets.only(bottom: SizeApp.s20),
+          margin: EdgeInsets.only(bottom: 20.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.groups_rounded,
-                    color: theme.primaryColor,
-                    size: 20.sp,
+              _buildSectionHeader(
+                l10n.assignedMembers(members.length),
+                Icons.groups_rounded,
+                exerciseColor,
+                theme,
+                colorScheme,
+                action: TextButton.icon(
+                  onPressed: () => _showAssignmentSheet(context),
+                  icon: Icon(Icons.add_circle_outline_rounded,
+                      size: 16.sp, color: exerciseColor),
+                  label: Text(
+                    l10n.add,
+                    style: TextStyle(fontSize: 14.sp, color: exerciseColor),
                   ),
-                  SizedBox(width: SizeApp.s8),
-                  Text(
-                    l10n.assignedMembers(members.length),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => _showAssignmentSheet(context),
-                    child: Row(
-                      children: [
-                        Icon(Icons.add_circle_outline_rounded, size: 16.sp),
-                        SizedBox(width: SizeApp.s4),
-                        Text(
-                          l10n.add,
-                          style: TextStyle(fontSize: 14.sp),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-              SizedBox(height: SizeApp.s12),
+              SizedBox(height: 12.h),
               SizedBox(
-                height: 90.h,
+                height: 120.h,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   itemCount: members.length,
-                  itemBuilder: (context, index) => _buildMemberCard(members[index]),
+                  itemBuilder: (context, index) => _buildMemberCard(
+                      members[index], theme, colorScheme, l10n, exerciseColor),
                 ),
               ),
             ],
@@ -258,57 +309,57 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
   }
 
-  Widget _buildMemberCard(Member member) {
-    final theme = Theme.of(context);
-
+  Widget _buildMemberCard(Member member, ThemeData theme,
+      ColorScheme colorScheme, AppLocalizations l10n, Color exerciseColor) {
     return Container(
       width: 140.w,
-      margin: EdgeInsets.only(left: SizeApp.s8),
-      padding: EdgeInsets.all(SizeApp.s12),
+      margin: EdgeInsets.only(right: 12.w),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        border: Border.all(
-          color: theme.dividerColor.withOpacity(0.2),
-        ),
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: exerciseColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: exerciseColor.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 36.w,
-            height: 36.w,
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                member.name.substring(0, 1),
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                ),
+          CircleAvatar(
+            radius: 24.r,
+            backgroundColor: exerciseColor.withOpacity(0.15),
+            child: Text(
+              member.name.substring(0, 1).toUpperCase(),
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
+                color: exerciseColor,
               ),
             ),
           ),
-          SizedBox(height: SizeApp.s8),
+          SizedBox(height: 8.h),
           Text(
             member.name,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
+              fontSize: 14.sp,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
           if ((member.overallProgress ?? 0) > 0) ...[
-            SizedBox(height: SizeApp.s4),
+            SizedBox(height: 4.h),
             LinearProgressIndicator(
-              value: member.overallProgress ?? 0 / 100,
-              backgroundColor: theme.dividerColor.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation(theme.primaryColor),
+              value: (member.overallProgress ?? 0) / 100,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation(exerciseColor),
               minHeight: 3,
             ),
           ],
@@ -317,48 +368,194 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
   }
 
-  Widget _buildEmptyMembersSection(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
+  Widget _buildEmptyMembersSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
-      padding: EdgeInsets.all(SizeApp.s16),
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        border: Border.all(
-          color: theme.dividerColor.withOpacity(0.2),
-        ),
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.group_add_rounded,
             size: 48.sp,
-            color: theme.iconTheme.color?.withOpacity(0.5),
+            color: colorScheme.onSurfaceVariant,
           ),
-          SizedBox(height: SizeApp.s12),
+          SizedBox(height: 12.h),
           Text(
             l10n.noMembersAssigned,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-            ),
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: SizeApp.s12),
-          ElevatedButton.icon(
+          SizedBox(height: 12.h),
+          FilledButton.icon(
             onPressed: () => _showAssignmentSheet(context),
             icon: Icon(Icons.person_add_rounded, size: 18.sp),
-            label: Text(l10n.assignMembers),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                horizontal: SizeApp.s16,
-                vertical: SizeApp.s8,
-              ),
+            label: Text(l10n.assignMembers, style: TextStyle(fontSize: 14.sp)),
+            style: FilledButton.styleFrom(
+              backgroundColor: exerciseColor,
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                  borderRadius: BorderRadius.circular(12.r)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingSection(ColorScheme colorScheme, Color exerciseColor) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: exerciseColor,
+          strokeWidth: 2.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.exercise.thumbnailPath != null)
+            _buildThumbnailSection(theme, colorScheme, l10n, exerciseColor),
+          if (widget.exercise.mediaGallery.isNotEmpty)
+            _buildMediaGallerySection(theme, colorScheme, l10n, exerciseColor),
+          if (widget.exercise.mediaPath != null &&
+              widget.exercise.thumbnailPath == null &&
+              widget.exercise.mediaGallery.isEmpty)
+            _buildLegacyMediaSection(theme, colorScheme, l10n, exerciseColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThumbnailSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSectionHeader(
+            l10n.thumbnail,
+            Icons.image_rounded,
+            exerciseColor,
+            theme,
+            colorScheme,
+          ),
+          SizedBox(height: 12.h),
+          GestureDetector(
+            onTap: () => FullScreenMediaViewer.show(
+              context,
+              filePath: widget.exercise.thumbnailPath!,
+              isVideo: false,
+              accentColor: exerciseColor,
+            ),
+            child: Container(
+              height: 200.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14.r),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(
+                      File(widget.exercise.thumbnailPath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.broken_image_rounded,
+                                  size: 48.sp,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  l10n.cannotDisplayImage,
+                                  style: theme.textTheme.bodyMedium
+                                      ?.copyWith(fontSize: 14.sp),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 50.h,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.5),
+                            ],
+                          ),
+                        ),
+                        padding: EdgeInsets.all(10.w),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.zoom_in_rounded,
+                              color: Colors.white,
+                              size: 18.sp,
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              l10n.tapToZoom,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -367,33 +564,571 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
   }
 
-  Widget _buildLoadingSection() {
-    final theme = Theme.of(context);
-
+  Widget _buildMediaGallerySection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
-      padding: EdgeInsets.all(SizeApp.s16),
-      child: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(theme.primaryColor),
+      margin: EdgeInsets.only(bottom: 16.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSectionHeader(
+            l10n.mediaGallery(widget.exercise.mediaGallery.length),
+            Icons.perm_media_rounded,
+            exerciseColor,
+            theme,
+            colorScheme,
+            action: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: exerciseColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Text(
+                '${widget.exercise.mediaGallery.length}',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                  color: exerciseColor,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          SizedBox(
+            height: 160.h,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: widget.exercise.mediaGallery.length,
+              itemBuilder: (context, index) {
+                final media = widget.exercise.mediaGallery[index];
+                return _buildMediaPreview(
+                    media, theme, colorScheme, l10n, exerciseColor);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaPreview(MediaItem media, ThemeData theme,
+      ColorScheme colorScheme, AppLocalizations l10n, Color exerciseColor) {
+    final isVideo = media.type == MediaType.video;
+
+    return GestureDetector(
+      onTap: () => FullScreenMediaViewer.show(
+        context,
+        filePath: media.path,
+        isVideo: isVideo,
+        accentColor: exerciseColor,
+      ),
+      child: Container(
+        width: 150.w,
+        height: 160.h,
+        margin: EdgeInsets.only(right: 12.w),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14.r),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              isVideo
+                  ? VideoThumbnailWidget(
+                videoPath: media.path,
+                accentColor: exerciseColor,
+                height: 160.h,
+                width: 150.w,
+              )
+                  : Image.file(
+                File(media.path),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: colorScheme.surfaceContainerHighest,
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_rounded,
+                        size: 32.sp,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (isVideo)
+                Center(
+                  child: Container(
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 32.sp,
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 6.h,
+                right: 6.w,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isVideo ? Icons.play_circle_rounded : Icons.image_rounded,
+                        color: Colors.white,
+                        size: 12.sp,
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        isVideo ? l10n.video : l10n.image,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 40.h,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.5),
+                      ],
+                    ),
+                  ),
+                  padding: EdgeInsets.all(8.w),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.zoom_in_rounded,
+                        color: Colors.white,
+                        size: 16.sp,
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        l10n.tapToZoom,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBottomActions(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+  Widget _buildLegacyMediaSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
+    final isVideo = widget.exercise.mediaType == MediaType.video;
 
-    return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        border: Border(
-          top: BorderSide(
-            color: theme.dividerColor.withOpacity(0.3),
+    return GestureDetector(
+      onTap: () => FullScreenMediaViewer.show(
+        context,
+        filePath: widget.exercise.mediaPath!,
+        isVideo: isVideo,
+        accentColor: exerciseColor,
+      ),
+      child: Container(
+        height: 200.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14.r),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              isVideo
+                  ? VideoPlayerWidget(
+                      videoPath: widget.exercise.mediaPath!,
+                      accentColor: exerciseColor,
+                      height: 200.h,
+                    )
+                  : Image.file(
+                      File(widget.exercise.mediaPath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.broken_image_rounded,
+                                  size: 48.sp,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  l10n.cannotDisplayImage,
+                                  style: theme.textTheme.bodyMedium
+                                      ?.copyWith(fontSize: 14.sp),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 50.h,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.5),
+                      ],
+                    ),
+                  ),
+                  padding: EdgeInsets.all(10.w),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.zoom_in_rounded,
+                        color: Colors.white,
+                        size: 18.sp,
+                      ),
+                      SizedBox(width: 6.w),
+                      Text(
+                        l10n.tapToZoom,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: exerciseColor.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSectionHeader(
+            l10n.exerciseDescription,
+            Icons.description_outlined,
+            exerciseColor,
+            theme,
+            colorScheme,
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            widget.exercise.description!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontSize: 14.sp,
+              height: 1.6,
+            ),
+            maxLines: 10,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeInfoSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: exerciseColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: exerciseColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSectionHeader(
+            l10n.exerciseInfo,
+            Icons.info_outline_rounded,
+            exerciseColor,
+            theme,
+            colorScheme,
+          ),
+          SizedBox(height: 12.h),
+          _buildInfoRow(
+            theme,
+            l10n.type,
+            widget.exercise.type.getLocalizedName(context),
+            widget.exercise.type.icon,
+            exerciseColor,
+          ),
+          SizedBox(height: 8.h),
+          _buildInfoRow(
+            theme,
+            l10n.dateAdded,
+            _formatDate(widget.exercise.createdAt),
+            Icons.calendar_today_rounded,
+            exerciseColor,
+          ),
+          SizedBox(height: 8.h),
+          _buildInfoRow(
+            theme,
+            l10n.lastUpdate,
+            _formatDate(widget.exercise.updatedAt),
+            Icons.update_rounded,
+            exerciseColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, String label, String value,
+      IconData icon, Color exerciseColor) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16.sp,
+          color: exerciseColor.withOpacity(0.7),
+        ),
+        SizedBox(width: 8.w),
+        Text(
+          '$label: ',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 14.sp,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsSection(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSectionHeader(
+            l10n.usageStatistics,
+            Icons.analytics_outlined,
+            exerciseColor,
+            theme,
+            colorScheme,
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  theme,
+                  colorScheme,
+                  l10n.assignedTeams,
+                  '${widget.exercise.assignedTeamsCount ?? 0}',
+                  Icons.groups_rounded,
+                  exerciseColor,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: _buildStatCard(
+                  theme,
+                  colorScheme,
+                  l10n.addition,
+                  _formatShortDate(widget.exercise.createdAt),
+                  Icons.add_circle_outline_rounded,
+                  exerciseColor.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(ThemeData theme, ColorScheme colorScheme, String title,
+      String value, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 24.sp),
+          SizedBox(height: 8.h),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            title,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 12.sp,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon, Color accentColor,
+      ThemeData theme, ColorScheme colorScheme,
+      {Widget? action}) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(
+            icon,
+            color: accentColor,
+            size: 18.sp,
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 16.sp,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (action != null) ...[
+          SizedBox(width: 8.w),
+          action,
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBottomActions(ThemeData theme, ColorScheme colorScheme,
+      AppLocalizations l10n, Color exerciseColor) {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+            top:
+                BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
       ),
       child: SafeArea(
         top: false,
@@ -401,40 +1136,50 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           children: [
             Expanded(
               flex: 2,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _getExerciseColor(),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                style: FilledButton.styleFrom(
+                  backgroundColor: exerciseColor,
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
-                child: Text(
-                  l10n.close,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle_rounded, size: 20.sp),
+                    SizedBox(width: 8.w),
+                    Text(
+                      l10n.close,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
             if (widget.teamId != null) ...[
-              SizedBox(width: SizeApp.s12),
+              SizedBox(width: 12.w),
               Expanded(
                 flex: 3,
                 child: OutlinedButton.icon(
                   onPressed: () => _showAssignmentSheet(context),
-                  icon: Icon(Icons.person_add_rounded),
-                  label: Text(l10n.assignToMembers),
+                  icon: Icon(Icons.person_add_rounded, size: 20.sp),
+                  label: Text(
+                    l10n.assignToMembers,
+                    style: TextStyle(fontSize: 14.sp),
+                  ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.primaryColor,
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    foregroundColor: exerciseColor,
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    side: BorderSide(color: theme.primaryColor),
+                    side: BorderSide(color: exerciseColor, width: 1.5),
                   ),
                 ),
               ),
@@ -455,504 +1200,25 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     );
 
     if (result == true && context.mounted) {
-      final provider = Provider.of<ExerciseAssignmentProvider>(
-        context,
-        listen: false,
+      await _refreshMembers();
+      final l10n = AppLocalizations.of(context);
+      final colorScheme = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.assignmentsSavedSuccessfully,
+            style: TextStyle(fontSize: 14.sp),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          backgroundColor: widget.exercise.type.color,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+          margin: EdgeInsets.all(16.w),
+          duration: const Duration(seconds: 3),
+        ),
       );
-      provider.loadExerciseMembers(widget.exercise.id);
-    }
-  }
-
-  Widget _buildMediaSection() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.educationalMedia,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: SizeApp.s12),
-
-          if (widget.exercise.thumbnailPath != null) _buildThumbnailSection(),
-          if (widget.exercise.mediaGallery.isNotEmpty) _buildMediaGallerySection(),
-          if (widget.exercise.mediaPath != null &&
-              widget.exercise.thumbnailPath == null &&
-              widget.exercise.mediaGallery.isEmpty)
-            _buildLegacyMediaSection(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThumbnailSection() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.thumbnail,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: SizeApp.s8),
-          Container(
-            height: 180.h,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              color: theme.cardColor,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              child: Image.file(
-                File(widget.exercise.thumbnailPath!),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                      color: theme.iconTheme.color?.withOpacity(0.1),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image_rounded,
-                            size: 48.sp,
-                            color: theme.iconTheme.color?.withOpacity(0.6),
-                          ),
-                          SizedBox(height: SizeApp.s8),
-                          Text(
-                            l10n.cannotDisplayImage,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodySmall?.color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMediaGallerySection() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.mediaGallery(widget.exercise.mediaGallery.length),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: SizeApp.s12),
-          SizedBox(
-            height: 120.h,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: widget.exercise.mediaGallery.length,
-              itemBuilder: (context, index) {
-                final media = widget.exercise.mediaGallery[index];
-                return _buildMediaPreview(media);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMediaPreview(MediaItem media) {
-    final theme = Theme.of(context);
-    final isVideo = media.type == MediaType.video;
-
-    return GestureDetector(
-      onTap: () => FullScreenMediaViewer.show(
-        context,
-        filePath: media.path,
-        isVideo: isVideo,
-        accentColor: _getExerciseColor(),
-      ),
-      child: Container(
-        width: 140.w,
-        margin: EdgeInsets.only(right: SizeApp.s8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-          color: theme.cardColor,
-        ),
-        child: isVideo
-            ? VideoPlayerWidget(
-          videoPath: media.path,
-          accentColor: _getExerciseColor(),
-          height: 120.h,
-          width: 140.w,
-        )
-            : ClipRRect(
-          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-          child: Image.file(
-            File(media.path),
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  color: theme.iconTheme.color?.withOpacity(0.1),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.broken_image_rounded,
-                    size: 32.sp,
-                    color: theme.iconTheme.color?.withOpacity(0.6),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegacyMediaSection() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final isVideo = widget.exercise.mediaType == MediaType.video;
-
-    return GestureDetector(
-      onTap: () => FullScreenMediaViewer.show(
-        context,
-        filePath: widget.exercise.mediaPath!,
-        isVideo: isVideo,
-        accentColor: _getExerciseColor(),
-      ),
-      child: Container(
-        height: 200.h,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-          color: theme.cardColor,
-        ),
-        child: isVideo
-            ? VideoPlayerWidget(
-          videoPath: widget.exercise.mediaPath!,
-          accentColor: _getExerciseColor(),
-          height: 200.h,
-        )
-            : ClipRRect(
-          borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-          child: Image.file(
-            File(widget.exercise.mediaPath!),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-                  color: theme.iconTheme.color?.withOpacity(0.1),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.broken_image_rounded,
-                        size: 48.sp,
-                        color: theme.iconTheme.color?.withOpacity(0.6),
-                      ),
-                      SizedBox(height: SizeApp.s8),
-                      Text(
-                        l10n.cannotDisplayImage,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.textTheme.bodySmall?.color,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionSection() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        border: Border.all(
-          color: theme.dividerColor.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.description_outlined,
-                color: _getExerciseColor(),
-                size: 20.sp,
-              ),
-              SizedBox(width: SizeApp.s8),
-              Text(
-                l10n.exerciseDescription,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: SizeApp.s12),
-          Text(
-            widget.exercise.description!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeInfoSection() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: _getExerciseColor().withOpacity(0.05),
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        border: Border.all(
-          color: _getExerciseColor().withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                color: _getExerciseColor(),
-                size: 20.sp,
-              ),
-              SizedBox(width: SizeApp.s8),
-              Text(
-                l10n.exerciseInfo,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: _getExerciseColor(),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: SizeApp.s12),
-          _buildInfoRow(
-            l10n.type,
-            widget.exercise.type.getLocalizedName(context),
-            _getExerciseIcon(),
-          ),
-          SizedBox(height: SizeApp.s8),
-          _buildInfoRow(
-            l10n.dateAdded,
-            _formatDate(widget.exercise.createdAt),
-            Icons.calendar_today_rounded,
-          ),
-          SizedBox(height: SizeApp.s8),
-          _buildInfoRow(
-            l10n.lastUpdate,
-            _formatDate(widget.exercise.updatedAt),
-            Icons.update_rounded,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, IconData icon) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16.sp,
-          color: _getExerciseColor().withOpacity(0.7),
-        ),
-        SizedBox(width: SizeApp.s8),
-        Text(
-          '$label: ',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsSection() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-        border: Border.all(
-          color: theme.dividerColor.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.analytics_outlined,
-                color: theme.primaryColor,
-                size: 20.sp,
-              ),
-              SizedBox(width: SizeApp.s8),
-              Text(
-                l10n.usageStatistics,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: SizeApp.s12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  l10n.assignedTeams,
-                  '${widget.exercise.assignedTeamsCount ?? 0}',
-                  Icons.groups_rounded,
-                  ColorsManager.primaryColor,
-                ),
-              ),
-              SizedBox(width: SizeApp.s12),
-              Expanded(
-                child: _buildStatCard(
-                  l10n.addition,
-                  _formatShortDate(widget.exercise.createdAt),
-                  Icons.add_circle_outline_rounded,
-                  ColorsManager.secondaryColor,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: EdgeInsets.all(SizeApp.s12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24.sp,
-          ),
-          SizedBox(height: SizeApp.s8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          SizedBox(height: SizeApp.s4),
-          Text(
-            title,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getExerciseColor() {
-    switch (widget.exercise.type) {
-      case ExerciseType.warmup:
-        return const Color(0xFFFF5722);
-      case ExerciseType.stretching:
-        return const Color(0xFF4CAF50);
-      case ExerciseType.conditioning:
-        return const Color(0xFF2196F3);
-    }
-  }
-
-  IconData _getExerciseIcon() {
-    switch (widget.exercise.type) {
-      case ExerciseType.warmup:
-        return Icons.whatshot_rounded;
-      case ExerciseType.stretching:
-        return Icons.accessibility_new_rounded;
-      case ExerciseType.conditioning:
-        return Icons.fitness_center_rounded;
     }
   }
 

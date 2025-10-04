@@ -859,6 +859,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cannotDisplayImage => 'لا يمكن عرض الصورة';
 
   @override
+  String get image => 'صورة';
+
+  @override
+  String get assigned => 'تعيين';
+
+  @override
   String mediaGallery(int count) => 'معرض الوسائط ($count)';
 
   @override
@@ -963,6 +969,176 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get manageTeamsTrackSkills => 'إدارة الفرق وتتبع المهارات';
+
+  @override
+  String noItemsIn(String category) => 'لا توجد عناصر في $category';
+
+  @override
+  String get startAddingItems => 'ابدأ بإضافة العناصر لتظهر هنا';
+
+  @override
+  String get addNow => 'إضافة الآن';
+
+  @override
+  String get libraryStatistics => 'إحصائيات المكتبة';
+
+  @override
+  String editExerciseType(String type) => 'تعديل $type';
+
+  @override
+  String addExerciseType(String type) => 'إضافة $type';
+
+  @override
+  String get editExercise => 'تعديل التمرين';
+
+  @override
+  String get addNewExercise => 'إضافة تمرين جديد';
+
+  @override
+  String get enterExerciseDetails => 'أدخل تفاصيل التمرين والوسائط';
+
+  @override
+  String get exerciseTitleHint => 'مثال: تمرين القفز بالحبل';
+
+  @override
+  String get exerciseTitle => 'عنوان التمرين';
+
+  @override
+  String get exerciseDescriptionHint => 'اشرح كيفية أداء التمرين...';
+
+  @override
+  String get instructionalMedia => 'الوسائط التوضيحية';
+
+  @override
+  String get changesWillBeSaved => 'سيتم حفظ التعديلات في المكتبة';
+
+  @override
+  String exerciseWillBeAddedToLibrary(String type) => 'سيتم إضافة التمرين إلى مكتبة $type';
+  @override
+  String get editSkill => 'تعديل المهارة';
+
+  @override
+  String get enterSkillDetails => 'أدخل تفاصيل المهارة والوسائط التعليمية';
+
+  @override
+  String get skillNameHint => 'مثال: الدورة الخلفية الممدودة';
+
+  @override
+  String get skillName => 'اسم المهارة';
+
+  @override
+  String get apparatus => 'الجهاز';
+
+  @override
+  String get technicalAnalysis => 'التحليل الفني';
+
+  @override
+  String get preRequisites => 'المتطلبات المسبقة';
+
+  @override
+  String get skillProgression => 'تدرج المهارة';
+
+  @override
+  String get skillDrills => 'التمرينات المهارية';
+
+  @override
+  String get physicalPreparation => 'الإعداد البدني';
+
+  @override
+  String get selectImageSource => 'اختر مصدر الصورة';
+
+  @override
+  String get gallery => 'المعرض';
+
+  @override
+  String get playbackSpeed => 'سرعة التشغيل';
+
+  @override
+  String get normal => 'عادي';
+
+  @override
+  String get video => 'فيديو';
+
+  @override
+  String get loadingVideo => 'جاري تحميل الفيديو...';
+
+  @override
+  String get cannotPlayVideo => 'لا يمكن تشغيل الفيديو';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get tapToZoom => 'تكبير';
+
+  @override
+  String get camera => 'الكاميرا';
+
+  @override
+  String get selectVideoSource => 'اختر مصدر الفيديو';
+
+  @override
+  String get selectVideo => 'اختر فيديو';
+
+  @override
+  String get recordVideo => 'تسجيل فيديو';
+
+  @override
+  String enter(String field) => 'أدخل $field...';
+
+  @override
+  String skillWillBeAddedToLibrary(String apparatus) =>
+      'سيتم إضافة المهارة إلى مكتبة $apparatus';
+
+  @override
+  String get skillNameRequired => 'اسم المهارة مطلوب';
+
+  @override
+  String get nameMinLength => 'الاسم يجب أن يحتوي على 3 أحرف على الأقل';
+
+  @override
+  String get skillNameExists => 'يوجد مهارة أخرى بنفس الاسم';
+
+  @override
+  String get skillUpdatedSuccessfully => 'تم تحديث المهارة بنجاح';
+
+  @override
+  String get skillAddedSuccessfully => 'تم إضافة المهارة بنجاح';
+
+  @override
+  String get deleteSkill => 'حذف المهارة';
+
+  @override
+  String deleteSkillConfirmation(String name) =>
+      'هل أنت متأكد من حذف "$name" نهائياً؟\n\nلا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get skillDeletedPermanently => 'تم حذف المهارة نهائياً';
+  @override
+  String get exerciseTitleRequired => 'عنوان التمرين مطلوب';
+
+  @override
+  String get titleMinLength => 'العنوان يجب أن يحتوي على 3 أحرف على الأقل';
+
+  @override
+  String get exerciseTitleExists => 'يوجد تمرين آخر بنفس العنوان';
+
+  @override
+  String get exerciseUpdatedSuccessfully => 'تم تحديث التمرين بنجاح';
+
+  @override
+  String get exerciseAddedSuccessfully => 'تم إضافة التمرين بنجاح';
+
+  @override
+  String get deleteExercise => 'حذف التمرين';
+
+  @override
+  String deleteExerciseConfirmation(String title) =>
+      'هل أنت متأكد من حذف "$title" نهائياً؟\n\nلا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get exerciseDeletedPermanently => 'تم حذف التمرين نهائياً';
+
 
 // Age Categories
   @override

@@ -1,10 +1,11 @@
-// ============= Add Exercise Screen - Refactored =============
+// lib/screens/library/add_exercise_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/constants/image_picker_helper.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
+import 'package:itqan_gym/core/utils/extension.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
@@ -67,135 +68,293 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getTypeColor();
-
+    final l10n = AppLocalizations.of(context);
+    final typeColor = widget.type.color;
     return Scaffold(
-      backgroundColor: ColorsManager.backgroundSurface,
       appBar: CustomAppBar(
-        title: _isEditing ? 'تعديل ${widget.type.getLocalizedName(context)}' : 'إضافة ${widget.type.getLocalizedName(context)}',
+        title: _isEditing
+            ? l10n.editExerciseType(widget.type.getLocalizedName(context))
+            : l10n.addExerciseType(widget.type.getLocalizedName(context)),
         action: _isEditing ? _buildDeleteButton() : null,
       ),
       body: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
+              padding: EdgeInsets.all(SizeApp.s16),
               child: Form(
                 key: _formKey,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SectionHeader(
-                      title: _isEditing ? 'تعديل التمرين' : 'إضافة تمرين جديد',
-                      subtitle: 'أدخل تفاصيل التمرين والوسائط',
-                      leading: Container(
-                        padding: EdgeInsets.all(SizeApp.s10),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(SizeApp.s10),
-                        ),
-                        child: Icon(_getTypeIcon(), color: color, size: SizeApp.iconSize),
+                    // Header Section
+                    _buildHeaderSection(context, typeColor),
+
+                    SizedBox(height: SizeApp.s20),
+
+                    // Error Display
+                    if (_error != null) ...[
+                      _buildErrorContainer(),
+                      SizedBox(height: SizeApp.s16),
+                    ],
+
+                    // Type Badge
+                    _buildTypeBadge(context, typeColor),
+
+                    SizedBox(height: SizeApp.s24),
+
+                    // Title Field
+                    AppTextField(
+                      controller: _titleController,
+                      hintText: l10n.exerciseTitleHint,
+                      title: l10n.exerciseTitle,
+                      prefixIcon: Icon(
+                        widget.type.icon,
+                        color: typeColor,
+                        size: 20.sp,
                       ),
-                      showDivider: true,
+                      validator: _validateTitle,
                     ),
-                    Padding(
-                      padding: EdgeInsets.all(SizeApp.s16),
-                      child: Column(
-                        children: [
-                          if (_error != null) FormErrorContainer(error: _error!),
 
-                          TypeBadge(
-                            label: widget.type.getLocalizedName(context),
-                            icon: _getTypeIcon(),
-                            color: color,
-                          ),
+                    SizedBox(height: SizeApp.s16),
 
-                          SizedBox(height: SizeApp.s24),
+                    // Description Field
+                    AppTextFieldFactory.textArea(
+                      controller: _descriptionController,
+                      hintText: l10n.exerciseDescriptionHint,
+                      title: l10n.exerciseDescriptionHint,
+                      maxLines: 6,
+                    ),
 
-                          AppTextField(
-                            controller: _titleController,
-                            hintText: 'مثال: تمرين القفز بالحبل',
-                            title: 'عنوان التمرين',
-                            prefixIcon: Icon(_getTypeIcon(), color: color, size: SizeApp.iconSize),
-                            validator: (value) => _validateTitle(value),
-                          ),
+                    SizedBox(height: SizeApp.s24),
 
-                          SizedBox(height: SizeApp.s16),
+                    // Media Section Header
+                    _buildSectionHeader(context, l10n.instructionalMedia),
 
-                          AppTextFieldFactory.textArea(
-                            controller: _descriptionController,
-                            hintText: 'اشرح كيفية أداء التمرين...',
-                            title: 'الوصف',
-                            maxLines: 6,
-                          ),
+                    SizedBox(height: SizeApp.s16),
 
-                          SizedBox(height: SizeApp.s24),
+                    // Thumbnail Picker
+                    ThumbnailPicker(
+                      thumbnailPath: _thumbnailPath,
+                      onPick: _pickThumbnail,
+                      onRemove: () => setState(() => _thumbnailPath = null),
+                      accentColor: typeColor,
+                    ),
 
-                          const FormSectionHeader(
-                            title: 'الوسائط التوضيحية',
-                            icon: Icons.perm_media_rounded,
-                          ),
+                    SizedBox(height: SizeApp.s16),
 
-                          SizedBox(height: SizeApp.s16),
+                    // Media Gallery
+                    MediaGalleryPicker(
+                      mediaGallery: _mediaGallery,
+                      onAddMedia: _addMedia,
+                      onRemoveMedia: (media) {
+                        setState(() => _mediaGallery.remove(media));
+                      },
+                    ),
 
-                          ThumbnailPicker(
-                            thumbnailPath: _thumbnailPath,
-                            onPick: _pickThumbnail,
-                            onRemove: () => setState(() => _thumbnailPath = null),
-                            accentColor: color,
-                          ),
+                    SizedBox(height: SizeApp.s24),
 
-                          SizedBox(height: SizeApp.s16),
-
-                          MediaGalleryPicker(
-                            mediaGallery: _mediaGallery,
-                            onAddMedia: _addMedia,
-                            onRemoveMedia: (media) => setState(() => _mediaGallery.remove(media)),
-                          ),
-
-                          SizedBox(height: SizeApp.s24),
-
-                          EditInfoNotice(
-                            message: _isEditing
-                                ? 'سيتم حفظ التعديلات في المكتبة'
-                                : 'سيتم إضافة التمرين إلى مكتبة ${widget.type.getLocalizedName(context)}',
-                            icon: Icons.info_outline_rounded,
-                            backgroundColor: color.withOpacity(0.1),
-                            textColor: color,
-                            iconColor: color,
-                          ),
-                        ],
-                      ),
+                    // Info Notice
+                    EditInfoNotice(
+                      message: _isEditing
+                          ? l10n.changesWillBeSaved
+                          : l10n.exerciseWillBeAddedToLibrary(
+                          widget.type.getLocalizedName(context)),
+                      icon: Icons.info_outline_rounded,
+                      backgroundColor: typeColor.withOpacity(0.1),
+                      textColor: typeColor,
+                      iconColor: typeColor,
                     ),
                   ],
                 ),
               ),
             ),
           ),
+
+          // Action Buttons
           FormActionButtons(
             onSave: _save,
             onCancel: () => Navigator.pop(context),
             isLoading: _isLoading,
-            saveText: _isEditing ? 'حفظ التعديلات' : 'إضافة التمرين',
+            saveText: _isEditing ? l10n.saveChanges : l10n.addExercise,
           ),
         ],
       ),
     );
   }
 
+  Widget _buildHeaderSection(BuildContext context, Color typeColor) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: typeColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(
+              widget.type.icon,
+              color: typeColor,
+              size: 24.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _isEditing ? l10n.editExercise : l10n.addNewExercise,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  l10n.enterExerciseDetails,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorContainer() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: colorScheme.error.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: colorScheme.error,
+            size: 20.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              _error!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onErrorContainer,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeBadge(BuildContext context, Color typeColor) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: typeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: typeColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(widget.type.icon, color: typeColor, size: 16.sp),
+          SizedBox(width: 8.w),
+          Text(
+            widget.type.getLocalizedName(context),
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: typeColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        Icon(
+          Icons.perm_media_rounded,
+          size: 20.sp,
+          color: colorScheme.primary,
+        ),
+        SizedBox(width: 8.w),
+        Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget? _buildDeleteButton() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+
     return IconButton(
       onPressed: _showDeleteDialog,
-      icon: Icon(Icons.delete_rounded, color: ColorsManager.errorFill, size: SizeApp.iconSize),
-      tooltip: 'حذف',
+      icon: Icon(Icons.delete_rounded, size: 22.sp),
+      style: IconButton.styleFrom(
+        foregroundColor: colorScheme.error,
+      ),
+      tooltip: l10n.delete,
     );
   }
 
   String? _validateTitle(String? value) {
-    if (value == null || value.trim().isEmpty) return 'عنوان التمرين مطلوب';
-    if (value.trim().length < 3) return 'العنوان يجب أن يحتوي على 3 أحرف على الأقل';
+    final l10n = AppLocalizations.of(context);
+
+    if (value == null || value.trim().isEmpty) {
+      return l10n.exerciseTitleRequired;
+    }
+    if (value.trim().length < 3) {
+      return l10n.titleMinLength;
+    }
 
     final provider = context.read<ExerciseLibraryProvider>();
-    if (provider.isExerciseTitleExists(value.trim(), excludeId: widget.exerciseToEdit?.id)) {
-      return 'يوجد تمرين آخر بنفس العنوان';
+    if (provider.isExerciseTitleExists(
+      value.trim(),
+      excludeId: widget.exerciseToEdit?.id,
+    )) {
+      return l10n.exerciseTitleExists;
     }
     return null;
   }
@@ -215,7 +374,9 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       isVideo: type == MediaType.video,
       onMediaSelected: (path) {
         if (path != null) {
-          setState(() => _mediaGallery.add(MediaItem(path: path, type: type)));
+          setState(() {
+            _mediaGallery.add(MediaItem(path: path, type: type));
+          });
         }
       },
     );
@@ -261,26 +422,79 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isEditing ? 'تم تحديث التمرين بنجاح' : 'تم إضافة التمرين بنجاح'),
-            backgroundColor: ColorsManager.successFill,
-          ),
+        _showSuccessSnackBar(
+          _isEditing
+              ? AppLocalizations.of(context).exerciseUpdatedSuccessfully
+              : AppLocalizations.of(context).exerciseAddedSuccessfully,
         );
       }
     } catch (e) {
-      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+      });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showDeleteDialog() {
-    DeleteConfirmationDialog.show(
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    showDialog(
       context: context,
-      title: 'حذف التمرين',
-      itemName: widget.exerciseToEdit!.title,
-      onConfirm: _delete,
+      builder: (context) => AlertDialog(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        icon: Container(
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: colorScheme.errorContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.delete_outline_rounded,
+            size: 32.sp,
+            color: colorScheme.error,
+          ),
+        ),
+        title: Text(
+          l10n.deleteExercise,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: colorScheme.error,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          l10n.deleteExerciseConfirmation(widget.exerciseToEdit!.title),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _delete();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
+            ),
+            child: Text(l10n.deletePermanently),
+          ),
+        ],
+      ),
     );
   }
 
@@ -297,39 +511,33 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم حذف التمرين نهائياً'),
-            backgroundColor: ColorsManager.errorFill,
-          ),
+        _showSuccessSnackBar(
+          AppLocalizations.of(context).exerciseDeletedPermanently,
         );
       }
     } catch (e) {
-      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+      });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  IconData _getTypeIcon() {
-    switch (widget.type) {
-      case ExerciseType.warmup:
-        return Icons.whatshot_rounded;
-      case ExerciseType.stretching:
-        return Icons.accessibility_new_rounded;
-      case ExerciseType.conditioning:
-        return Icons.fitness_center_rounded;
-    }
-  }
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
 
-  Color _getTypeColor() {
-    switch (widget.type) {
-      case ExerciseType.warmup:
-        return const Color(0xFFFF5722);
-      case ExerciseType.stretching:
-        return const Color(0xFF4CAF50);
-      case ExerciseType.conditioning:
-        return const Color(0xFF2196F3);
-    }
+    final colorScheme = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: colorScheme.tertiary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+      ),
+    );
   }
 }

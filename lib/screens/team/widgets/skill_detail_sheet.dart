@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/full_screen_media_viewer.dart';
 import 'package:itqan_gym/core/widgets/video_player_widget.dart';
-import 'package:itqan_gym/core/widgets/Loading_widget.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/screens/team/widgets/AssignSkillToMembersSheet.dart';
@@ -36,207 +35,228 @@ class SkillDetailSheet extends StatefulWidget {
   }
 }
 
-class _SkillDetailSheetState extends State<SkillDetailSheet> {
+class _SkillDetailSheetState extends State<SkillDetailSheet> with SingleTickerProviderStateMixin {
   late Future<List<Member>> _membersFuture;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
     _loadAssignedMembers();
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   void _loadAssignedMembers() {
     if (widget.teamId != null) {
       setState(() {
-        _membersFuture = Provider.of<ExerciseAssignmentProvider>(context, listen: false)
-            .loadSkillMembers(widget.skill.id);
+        _membersFuture = Provider.of<ExerciseAssignmentProvider>(
+          context,
+          listen: false,
+        ).loadSkillMembers(widget.skill.id);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: BoxDecoration(
-        color: ColorsManager.backgroundSurface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24.r),
-          topRight: Radius.circular(24.r),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Modern Handle
-          Container(
-            margin: EdgeInsets.only(top: 12.h),
-            width: 36.w,
-            height: 4.h,
-            decoration: BoxDecoration(
-              color: ColorsManager.inputBorder.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(2.r),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final apparatusColor = getApparatusColor(widget.skill.apparatus);
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.92,
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
-          ),
-
-          // Header with Gradient
-          _buildModernHeader(context),
-
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.all(SizeApp.s16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Assigned Members Section (NEW)
-                  if (widget.teamId != null) _buildAssignedMembersSection(context),
-
-                  // Thumbnail Section
-                  if (widget.skill.thumbnailPath != null) _buildThumbnailSection(context),
-
-                  // Media Gallery
-                  if (widget.skill.mediaGallery.isNotEmpty) _buildMediaGallerySection(context),
-
-                  // Info Cards Grid
-                  _buildInfoCardsGrid(),
-
-                  SizedBox(height: SizeApp.s16),
-
-                  // Technical Analysis
-                  if (widget.skill.technicalAnalysis != null) _buildModernDetailSection(
-                    'التحليل الفني',
-                    widget.skill.technicalAnalysis!,
-                    Icons.psychology_rounded,
-                    getApparatusColor(widget.skill.apparatus),
-                  ),
-
-                  // Pre-requisites
-                  if (widget.skill.preRequisites != null) _buildModernDetailSection(
-                    'المتطلبات المسبقة',
-                    widget.skill.preRequisites!,
-                    Icons.checklist_rounded,
-                    const Color(0xFF9C27B0),
-                  ),
-
-                  // Skill Progression
-                  if (widget.skill.skillProgression != null) _buildModernDetailSection(
-                    'تدرج المهارة',
-                    widget.skill.skillProgression!,
-                    Icons.trending_up_rounded,
-                    const Color(0xFF4CAF50),
-                  ),
-
-                  // Drills
-                  if (widget.skill.drills != null) _buildModernDetailSection(
-                    'التمرينات المهارية',
-                    widget.skill.drills!,
-                    Icons.sports_gymnastics_rounded,
-                    const Color(0xFF2196F3),
-                  ),
-
-                  // Physical Preparation
-                  if (widget.skill.physicalPreparation != null) _buildModernDetailSection(
-                    'الإعداد البدني',
-                    widget.skill.physicalPreparation!,
-                    Icons.fitness_center_rounded,
-                    const Color(0xFFFF5722),
-                  ),
-
-                  SizedBox(height: SizeApp.s70),
-                ],
+          ],
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              margin: EdgeInsets.only(top: 12.h),
+              width: 40.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: colorScheme.outlineVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(2.r),
               ),
             ),
-          ),
-
-          // Floating Close Button
-          _buildFloatingCloseButton(context),
-        ],
+            // Header
+            _buildHeader(theme, colorScheme, l10n, apparatusColor),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.all(16.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.teamId != null)
+                      _buildAssignedMembersSection(theme, colorScheme, l10n, apparatusColor),
+                    if (widget.skill.thumbnailPath != null)
+                      _buildThumbnailSection(theme, colorScheme, l10n, apparatusColor),
+                    if (widget.skill.mediaGallery.isNotEmpty)
+                      _buildMediaGallerySection(theme, colorScheme, l10n, apparatusColor),
+                    _buildInfoCardsGrid(theme, colorScheme, l10n, apparatusColor),
+                    SizedBox(height: 20.h),
+                    if (widget.skill.technicalAnalysis != null)
+                      _buildDetailSection(
+                        theme,
+                        colorScheme,
+                        l10n.technicalAnalysis,
+                        widget.skill.technicalAnalysis!,
+                        Icons.psychology_rounded,
+                        apparatusColor,
+                      ),
+                    if (widget.skill.preRequisites != null)
+                      _buildDetailSection(
+                        theme,
+                        colorScheme,
+                        l10n.preRequisites,
+                        widget.skill.preRequisites!,
+                        Icons.checklist_rounded,
+                        colorScheme.tertiary,
+                      ),
+                    if (widget.skill.skillProgression != null)
+                      _buildDetailSection(
+                        theme,
+                        colorScheme,
+                        l10n.skillProgression,
+                        widget.skill.skillProgression!,
+                        Icons.trending_up_rounded,
+                        colorScheme.secondary,
+                      ),
+                    if (widget.skill.drills != null)
+                      _buildDetailSection(
+                        theme,
+                        colorScheme,
+                        l10n.skillDrills,
+                        widget.skill.drills!,
+                        Icons.sports_gymnastics_rounded,
+                        colorScheme.primary,
+                      ),
+                    if (widget.skill.physicalPreparation != null)
+                      _buildDetailSection(
+                        theme,
+                        colorScheme,
+                        l10n.physicalPreparation,
+                        widget.skill.physicalPreparation!,
+                        Icons.fitness_center_rounded,
+                        colorScheme.error,
+                      ),
+                    SizedBox(height: 80.h),
+                  ],
+                ),
+              ),
+            ),
+            // Bottom Actions
+            _buildBottomActions(theme, colorScheme, l10n, apparatusColor),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildModernHeader(BuildContext context) {
-    final apparatusColor = getApparatusColor(widget.skill.apparatus);
-
+  Widget _buildHeader(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            apparatusColor.withOpacity(0.15),
+            apparatusColor.withOpacity(0.2),
             apparatusColor.withOpacity(0.05),
           ],
         ),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24.r),
-          topRight: Radius.circular(24.r),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
       ),
-      padding: EdgeInsets.all(SizeApp.s20),
+      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
       child: Row(
         children: [
-          // Icon
           Container(
-            padding: EdgeInsets.all(14.sp),
+            padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16.r),
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(14.r),
               boxShadow: [
                 BoxShadow(
-                  color: apparatusColor.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: apparatusColor.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Icon(
               getApparatusIcon(widget.skill.apparatus),
               color: apparatusColor,
-              size: 28.sp,
+              size: 26.sp,
             ),
           ),
-          SizedBox(width: SizeApp.s16),
-
-          // Title + Badge
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   widget.skill.skillName,
-                  style: TextStyle(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.w700,
-                    color: ColorsManager.defaultText,
-                    height: 1.2,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                    fontSize: 20.sp,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: SizeApp.s8),
+                SizedBox(height: 6.h),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [apparatusColor, apparatusColor.withOpacity(0.8)],
-                    ),
-                    borderRadius: BorderRadius.circular(20.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: apparatusColor.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: apparatusColor,
+                    borderRadius: BorderRadius.circular(16.r),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(getApparatusIcon(widget.skill.apparatus), color: Colors.white, size: 14.sp),
+                      Icon(
+                        getApparatusIcon(widget.skill.apparatus),
+                        color: Colors.white,
+                        size: 14.sp,
+                      ),
                       SizedBox(width: 6.w),
-                      Text(
-                        widget.skill.apparatus.getLocalizedName(context),
-                        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: Colors.white),
+                      Flexible(
+                        child: Text(
+                          widget.skill.apparatus.getLocalizedName(context),
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -244,85 +264,73 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
               ],
             ),
           ),
-
-          // Assignment Button (if teamId is available)
-          if (widget.teamId != null) ...[
-            SizedBox(width: SizeApp.s8),
+          if (widget.teamId != null)
             IconButton(
-              tooltip: 'تعيين للأعضاء',
+              tooltip: l10n.assignToMembers,
               onPressed: () => _showAssignmentSheet(context),
               icon: Container(
-                padding: EdgeInsets.all(10.sp),
+                padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: ColorsManager.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12.r),
+                  color: apparatusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
-                child: Icon(Icons.person_add_rounded, color: ColorsManager.primaryColor, size: 20.sp),
+                child: Icon(
+                  Icons.person_add_rounded,
+                  color: apparatusColor,
+                  size: 22.sp,
+                ),
               ),
             ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildAssignedMembersSection(BuildContext context) {
+  Widget _buildAssignedMembersSection(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     return FutureBuilder<List<Member>>(
       future: _membersFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingSection();
+          return _buildLoadingSection(colorScheme, apparatusColor);
         }
 
         final members = snapshot.data ?? [];
 
         if (members.isEmpty) {
-          return _buildEmptyMembersSection(context);
+          return _buildEmptyMembersSection(theme, colorScheme, l10n, apparatusColor);
         }
 
         return Container(
-          margin: EdgeInsets.only(bottom: SizeApp.s20),
+          margin: EdgeInsets.only(bottom: 20.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8.sp),
-                    decoration: BoxDecoration(
-                      color: ColorsManager.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Icon(
-                      Icons.groups_rounded,
-                      color: ColorsManager.primaryColor,
-                      size: 18.sp,
-                    ),
+              _buildSectionHeader(
+                l10n.assignedMembers(members.length),
+                Icons.groups_rounded,
+                apparatusColor,
+                theme,
+                colorScheme,
+                action: TextButton.icon(
+                  onPressed: () => _showAssignmentSheet(context),
+                  icon: Icon(Icons.add_circle_outline_rounded, size: 16.sp, color: apparatusColor),
+                  label: Text(
+                    l10n.add,
+                    style: TextStyle(fontSize: 14.sp, color: apparatusColor),
                   ),
-                  SizedBox(width: SizeApp.s8),
-                  Text(
-                    'الأعضاء المعينون (${members.length})',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w700,
-                      color: ColorsManager.defaultText,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () => _showAssignmentSheet(context),
-                    icon: Icon(Icons.add_circle_outline_rounded, size: 16.sp),
-                    label: Text('إضافة', style: TextStyle(fontSize: 14.sp)),
-                  ),
-                ],
+                ),
               ),
-              SizedBox(height: SizeApp.s12),
-              Container(
-                height: 100.h,
+              SizedBox(height: 12.h),
+              SizedBox(
+                height: 120.h,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   itemCount: members.length,
-                  itemBuilder: (context, index) => _buildMemberCard(members[index]),
+                  itemBuilder: (context, index) =>
+                      _buildMemberCard(members[index], theme, colorScheme, l10n, apparatusColor),
                 ),
               ),
             ],
@@ -332,23 +340,19 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
     );
   }
 
-  Widget _buildMemberCard(Member member) {
-    final apparatusColor = getApparatusColor(widget.skill.apparatus);
-
+  Widget _buildMemberCard(
+      Member member, ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     return Container(
-      width: 150.w,
-      margin: EdgeInsets.only(left: SizeApp.s12),
-      padding: EdgeInsets.all(SizeApp.s12),
+      width: 140.w,
+      margin: EdgeInsets.only(right: 12.w),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: apparatusColor.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: apparatusColor.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: apparatusColor.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -356,96 +360,71 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Avatar
-          Container(
-            width: 40.w,
-            height: 40.w,
-            decoration: BoxDecoration(
-              color: apparatusColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                member.name.substring(0, 1),
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: apparatusColor,
-                ),
+          CircleAvatar(
+            radius: 24.r,
+            backgroundColor: apparatusColor.withOpacity(0.15),
+            child: Text(
+              member.name.substring(0, 1).toUpperCase(),
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
+                color: apparatusColor,
               ),
             ),
           ),
-          SizedBox(height: SizeApp.s8),
-          // Name
+          SizedBox(height: 8.h),
           Text(
             member.name,
-            style: TextStyle(
-              fontSize: 13.sp,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: ColorsManager.defaultText,
+              fontSize: 14.sp,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: SizeApp.s4),
-          // Age & Level
-          Text(
-            '${member.age} سنة • ${member.level}',
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: ColorsManager.defaultTextSecondary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyMembersSection(BuildContext context) {
+  Widget _buildEmptyMembersSection(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
-      padding: EdgeInsets.all(SizeApp.s16),
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: ColorsManager.backgroundCard,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: ColorsManager.inputBorder.withOpacity(0.2),
-        ),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.group_add_rounded,
             size: 48.sp,
-            color: ColorsManager.defaultTextSecondary.withOpacity(0.5),
+            color: colorScheme.onSurfaceVariant,
           ),
-          SizedBox(height: SizeApp.s12),
+          SizedBox(height: 12.h),
           Text(
-            'لم يتم تعيين أي عضو لهذه المهارة',
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
-            ),
+            l10n.noMembersAssigned,
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: SizeApp.s12),
-          ElevatedButton.icon(
+          SizedBox(height: 12.h),
+          FilledButton.icon(
             onPressed: () => _showAssignmentSheet(context),
             icon: Icon(Icons.person_add_rounded, size: 18.sp),
-            label: Text('تعيين أعضاء'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: getApparatusColor(widget.skill.apparatus),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                horizontal: SizeApp.s16,
-                vertical: SizeApp.s8,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
-              ),
+            label: Text(l10n.assignMembers, style: TextStyle(fontSize: 14.sp)),
+            style: FilledButton.styleFrom(
+              backgroundColor: apparatusColor,
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
           ),
         ],
@@ -453,13 +432,14 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
     );
   }
 
-  Widget _buildLoadingSection() {
+  Widget _buildLoadingSection(ColorScheme colorScheme, Color apparatusColor) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
-      padding: EdgeInsets.all(SizeApp.s16),
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
       child: Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(getApparatusColor(widget.skill.apparatus)),
+          color: apparatusColor,
+          strokeWidth: 2.5,
         ),
       ),
     );
@@ -474,148 +454,137 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
       widget.teamId!,
     );
 
-    if (result == true) {
-      // Reload assigned members
+    if (result == true && context.mounted) {
       _loadAssignedMembers();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم تعيين المهارة للأعضاء بنجاح'),
-            backgroundColor: ColorsManager.successFill,
+      final l10n = AppLocalizations.of(context);
+      final colorScheme = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.assignmentsSavedSuccessfully,
+            style: TextStyle(fontSize: 14.sp),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-        );
-      }
+          backgroundColor: getApparatusColor(widget.skill.apparatus),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+          margin: EdgeInsets.all(16.w),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
-  Widget _buildThumbnailSection(BuildContext context) {
+  Widget _buildThumbnailSection(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
+      margin: EdgeInsets.only(bottom: 20.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8.sp),
-                decoration: BoxDecoration(
-                  color: getApparatusColor(widget.skill.apparatus).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Icon(
-                  Icons.image_rounded,
-                  color: getApparatusColor(widget.skill.apparatus),
-                  size: 18.sp,
-                ),
-              ),
-              SizedBox(width: SizeApp.s8),
-              Text(
-                'الصورة المصغرة',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                  color: ColorsManager.defaultText,
-                ),
-              ),
-            ],
+          _buildSectionHeader(
+            l10n.thumbnail,
+            Icons.image_rounded,
+            apparatusColor,
+            theme,
+            colorScheme,
           ),
-          SizedBox(height: SizeApp.s12),
+          SizedBox(height: 12.h),
           GestureDetector(
             onTap: () => FullScreenMediaViewer.show(
               context,
               filePath: widget.skill.thumbnailPath!,
               isVideo: false,
-              accentColor: getApparatusColor(widget.skill.apparatus),
+              accentColor: apparatusColor,
             ),
-            child: Hero(
-              tag: 'skill_thumbnail_${widget.skill.id}',
-              child: Container(
-                height: 220.h,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16.r),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.file(
-                        File(widget.skill.thumbnailPath!),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: ColorsManager.backgroundCard,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.broken_image_rounded,
-                                    size: 56.sp,
-                                    color: ColorsManager.defaultTextSecondary.withOpacity(0.3),
-                                  ),
-                                  SizedBox(height: SizeApp.s12),
-                                  Text(
-                                    'لا يمكن عرض الصورة',
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      color: ColorsManager.defaultTextSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      // Overlay gradient
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 60.h,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.5),
+            child: Container(
+              height: 200.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(
+                      File(widget.skill.thumbnailPath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.broken_image_rounded,
+                                  size: 48.sp,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  l10n.cannotDisplayImage,
+                                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ],
                             ),
                           ),
-                          padding: EdgeInsets.all(12.sp),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.zoom_in_rounded,
-                                color: Colors.white,
-                                size: 20.sp,
-                              ),
-                              SizedBox(width: 6.w),
-                              Text(
-                                'اضغط للتكبير',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                        );
+                      },
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 50.h,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.5),
                             ],
                           ),
                         ),
+                        padding: EdgeInsets.all(10.w),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.zoom_in_rounded,
+                              color: Colors.white,
+                              size: 18.sp,
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              l10n.tapToZoom,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -625,63 +594,46 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
     );
   }
 
-  Widget _buildMediaGallerySection(BuildContext context) {
+  Widget _buildMediaGallerySection(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s20),
+      margin: EdgeInsets.only(bottom: 20.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8.sp),
-                decoration: BoxDecoration(
-                  color: getApparatusColor(widget.skill.apparatus).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Icon(
-                  Icons.perm_media_rounded,
-                  color: getApparatusColor(widget.skill.apparatus),
-                  size: 18.sp,
-                ),
+          _buildSectionHeader(
+            l10n.mediaGallery(widget.skill.mediaGallery.length),
+            Icons.perm_media_rounded,
+            apparatusColor,
+            theme,
+            colorScheme,
+            action: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: apparatusColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              SizedBox(width: SizeApp.s8),
-              Text(
-                'معرض الوسائط',
+              child: Text(
+                '${widget.skill.mediaGallery.length}',
                 style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                  color: ColorsManager.defaultText,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                  color: apparatusColor,
                 ),
               ),
-              const Spacer(),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: getApparatusColor(widget.skill.apparatus).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Text(
-                  '${widget.skill.mediaGallery.length}',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
-                    color: getApparatusColor(widget.skill.apparatus),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          SizedBox(height: SizeApp.s12),
+          SizedBox(height: 12.h),
           SizedBox(
-            height: 140.h,
+            height: 160.h,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: widget.skill.mediaGallery.length,
               itemBuilder: (context, index) {
                 final media = widget.skill.mediaGallery[index];
-                return _buildModernMediaPreview(media, context, index);
+                return _buildMediaPreview(media, context, index, colorScheme, l10n, apparatusColor);
               },
             ),
           ),
@@ -690,7 +642,8 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
     );
   }
 
-  Widget _buildModernMediaPreview(MediaItem media, BuildContext context, int index) {
+  Widget _buildMediaPreview(MediaItem media, BuildContext context, int index,
+      ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     final isVideo = media.type == MediaType.video;
 
     return GestureDetector(
@@ -698,48 +651,49 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
         context,
         filePath: media.path,
         isVideo: isVideo,
-        accentColor: getApparatusColor(widget.skill.apparatus),
+        accentColor: apparatusColor,
       ),
       child: Container(
-        width: 160.w,
-        margin: EdgeInsets.only(right: SizeApp.s12),
+        width: 150.w,
+        margin: EdgeInsets.only(right: 12.w),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(14.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(14.r),
           child: Stack(
             fit: StackFit.expand,
             children: [
               isVideo
                   ? VideoPlayerWidget(
                 videoPath: media.path,
-                accentColor: getApparatusColor(widget.skill.apparatus),
-                height: 140.h,
-                width: 160.w,
+                accentColor: apparatusColor,
+                height: 160.h,
+                width: 150.w,
               )
                   : Image.file(
                 File(media.path),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: ColorsManager.backgroundCard,
-                    child: Icon(
-                      Icons.broken_image_rounded,
-                      size: 40.sp,
-                      color: ColorsManager.defaultTextSecondary.withOpacity(0.3),
+                    color: colorScheme.surfaceContainerHighest,
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_rounded,
+                        size: 40.sp,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   );
                 },
               ),
-              // Type Badge
               Positioned(
                 top: 8.h,
                 right: 8.w,
@@ -753,18 +707,20 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isVideo ? Icons.play_circle_filled : Icons.image,
+                        isVideo ? Icons.play_circle_filled_rounded : Icons.image_rounded,
                         color: Colors.white,
-                        size: 12.sp,
+                        size: 14.sp,
                       ),
                       SizedBox(width: 4.w),
                       Text(
-                        isVideo ? 'فيديو' : 'صورة',
+                        isVideo ? l10n.video : l10n.image,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -777,61 +733,102 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
     );
   }
 
-  Widget _buildInfoCardsGrid() {
-    return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+  Widget _buildSectionHeader(
+      String title, IconData icon, Color accentColor, ThemeData theme, ColorScheme colorScheme,
+      {Widget? action}) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8.r),
           ),
+          child: Icon(
+            icon,
+            color: accentColor,
+            size: 18.sp,
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 16.sp,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (action != null) ...[
+          SizedBox(width: 8.w),
+          action,
         ],
+      ],
+    );
+  }
+
+  Widget _buildInfoCardsGrid(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Expanded(
-                child: _buildModernInfoCard(
-                  'الجهاز',
+                child: _buildInfoCard(
+                  theme,
+                  colorScheme,
+                  l10n.apparatus,
                   widget.skill.apparatus.getLocalizedName(context),
                   getApparatusIcon(widget.skill.apparatus),
-                  getApparatusColor(widget.skill.apparatus),
+                  apparatusColor,
                 ),
               ),
-              SizedBox(width: SizeApp.s12),
+              SizedBox(width: 12.w),
               Expanded(
-                child: _buildModernInfoCard(
-                  'الفرق',
+                child: _buildInfoCard(
+                  theme,
+                  colorScheme,
+                  l10n.teams,
                   '${widget.skill.assignedTeamsCount ?? 0}',
                   Icons.groups_rounded,
-                  ColorsManager.primaryColor,
+                  colorScheme.primary,
                 ),
               ),
             ],
           ),
-          SizedBox(height: SizeApp.s12),
+          SizedBox(height: 12.h),
           Row(
             children: [
               Expanded(
-                child: _buildModernInfoCard(
-                  'الإضافة',
+                child: _buildInfoCard(
+                  theme,
+                  colorScheme,
+                  l10n.addition,
                   _formatShortDate(widget.skill.createdAt),
                   Icons.calendar_today_rounded,
-                  ColorsManager.secondaryColor,
+                  colorScheme.secondary,
                 ),
               ),
-              SizedBox(width: SizeApp.s12),
+              SizedBox(width: 12.w),
               Expanded(
-                child: _buildModernInfoCard(
-                  'التحديث',
+                child: _buildInfoCard(
+                  theme,
+                  colorScheme,
+                  l10n.update,
                   _formatShortDate(widget.skill.updatedAt),
                   Icons.update_rounded,
-                  const Color(0xFF9C27B0),
+                  colorScheme.tertiary,
                 ),
               ),
             ],
@@ -841,32 +838,28 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
     );
   }
 
-  Widget _buildModernInfoCard(String title, String value, IconData icon, Color color) {
+  Widget _buildInfoCard(ThemeData theme, ColorScheme colorScheme, String title,
+      String value, IconData icon, Color color) {
     return Container(
-      padding: EdgeInsets.all(12.sp),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.1),
-            color.withOpacity(0.05),
-          ],
+          colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
         ),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 22.sp),
+          Icon(icon, color: color, size: 24.sp),
           SizedBox(height: 8.h),
           Text(
             value,
             style: TextStyle(
-              fontSize: 15.sp,
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -877,125 +870,104 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
           SizedBox(height: 4.h),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: ColorsManager.defaultTextSecondary,
-              fontWeight: FontWeight.w500,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 12.sp,
             ),
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildModernDetailSection(String title, String content, IconData icon, Color color) {
+  Widget _buildDetailSection(ThemeData theme, ColorScheme colorScheme,
+      String title, String content, IconData icon, Color color) {
     return Container(
-      margin: EdgeInsets.only(bottom: SizeApp.s16),
-      padding: EdgeInsets.all(SizeApp.s16),
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Container(
-                padding: EdgeInsets.all(8.sp),
+                padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color, color.withOpacity(0.8)],
-                  ),
+                  color: color,
                   borderRadius: BorderRadius.circular(10.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 18.sp),
+                child: Icon(icon, color: Colors.white, size: 20.sp),
               ),
-              SizedBox(width: SizeApp.s12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 16.sp,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: color,
+                    fontSize: 16.sp,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          SizedBox(height: SizeApp.s16),
+          SizedBox(height: 12.h),
           Text(
             content,
-            style: TextStyle(
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 14.sp,
-              color: ColorsManager.defaultTextSecondary,
               height: 1.6,
             ),
+            maxLines: 10,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFloatingCloseButton(BuildContext context) {
+  Widget _buildBottomActions(
+      ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n, Color apparatusColor) {
     return Container(
-      padding: EdgeInsets.all(SizeApp.s16),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        color: colorScheme.surface,
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
       ),
       child: SafeArea(
         top: false,
         child: Row(
           children: [
-            // Close Button
             Expanded(
               flex: 2,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: getApparatusColor(widget.skill.apparatus),
-                  foregroundColor: Colors.white,
+                style: FilledButton.styleFrom(
+                  backgroundColor: apparatusColor,
                   padding: EdgeInsets.symmetric(vertical: 16.h),
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14.r),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.check_circle_rounded, size: 20.sp),
                     SizedBox(width: 8.w),
                     Text(
-                      'إغلاق',
+                      l10n.close,
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
@@ -1005,22 +977,24 @@ class _SkillDetailSheetState extends State<SkillDetailSheet> {
                 ),
               ),
             ),
-            // Assign Members Button (if teamId available)
             if (widget.teamId != null) ...[
-              SizedBox(width: SizeApp.s12),
+              SizedBox(width: 12.w),
               Expanded(
                 flex: 3,
                 child: OutlinedButton.icon(
                   onPressed: () => _showAssignmentSheet(context),
-                  icon: Icon(Icons.person_add_rounded),
-                  label: Text('تعيين للأعضاء'),
+                  icon: Icon(Icons.person_add_rounded, size: 20.sp),
+                  label: Text(
+                    l10n.assignToMembers,
+                    style: TextStyle(fontSize: 14.sp),
+                  ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: ColorsManager.primaryColor,
+                    foregroundColor: apparatusColor,
                     padding: EdgeInsets.symmetric(vertical: 16.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    side: BorderSide(color: ColorsManager.primaryColor),
+                    side: BorderSide(color: apparatusColor, width: 1.5),
                   ),
                 ),
               ),

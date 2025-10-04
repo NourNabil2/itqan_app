@@ -1,4 +1,4 @@
-// lib/core/widgets/banner_ad_widget.dart
+// lib/core/widgets/ads_widgets/banner_ad_widget.dart
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:itqan_gym/core/services/ad_service.dart';
@@ -19,11 +19,12 @@ class _BannerAdWidgetState extends State<BannerAdWidget>
   void initState() {
     super.initState();
     _ads.addListener(_onAdsChange);
-    // حمّل مرة واحدة بعد أول frame (ما تعيدش التحميل مع كل build)
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_requested) {
+      if (!mounted) return;
+      if (!_requested) {
         _requested = true;
-        _ads.loadBannerAd(context); // لا تستخدم force/ignoreBackoff هنا
+        _ads.loadBannerAd(context);
       }
     });
   }
@@ -46,8 +47,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget>
     super.build(context);
 
     final ad = _ads.bannerAd;
+    final ready = _ads.isBannerAdReady && ad != null;
 
-    if (_ads.isBannerAdLoaded && ad != null) {
+    if (ready) {
+      // ملاحظة: نفس الـ BannerAd ماينفعش يتعرض في أكتر من مكان في نفس الوقت
       return SizedBox(
         width: ad.size.width.toDouble(),
         height: ad.size.height.toDouble(),
@@ -55,6 +58,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget>
       );
     }
 
+    // Placeholder ثابت لمنع “قفزة” الواجهة
     return SizedBox(height: AdSize.banner.height.toDouble());
   }
 }
