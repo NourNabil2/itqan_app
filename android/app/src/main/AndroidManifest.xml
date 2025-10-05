@@ -20,7 +20,7 @@
 
 
     <application
-        android:label="itqan_app"
+        android:label="Itqan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <meta-data
