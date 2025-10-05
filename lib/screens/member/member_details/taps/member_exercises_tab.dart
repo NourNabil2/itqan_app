@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
@@ -75,10 +76,12 @@ class _MemberSkillsTabState extends State<MemberSkillsTab>
     }
 
     if (_assignedSkills.isEmpty) {
-      return EmptyStateWidget(
-        title: 'لا توجد مهارات معينة',
-        subtitle: 'لم يتم تعيين أي مهارات لهذا العضو بعد',
-        buttonText: 'إضافة مهارة',
+      return  EmptyStateWidget(
+        iconData: Icons.star_border_rounded,
+        title: AppLocalizations.of(context).noSkillsAvailable,
+        subtitle: AppLocalizations.of(context).noContentAssigned,
+        buttonText: AppLocalizations.of(context).addSkill,
+        showButton: false,
       );
     }
 

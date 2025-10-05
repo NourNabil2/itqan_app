@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' show AdSize;
 import 'package:itqan_gym/core/language/app_localizations.dart';
@@ -298,30 +299,50 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
+
   Future<void> _navigateToAdd({
     ExerciseType? type,
     ExerciseTemplate? item,
     SkillTemplate? skill,
   }) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          if (type != null) {
-            return AddExerciseScreen(type: type, exerciseToEdit: item);
-          } else {
-            return AddSkillScreen(skillToEdit: skill);
-          }
-        },
-      ),
-    );
+    HapticFeedback.lightImpact();
 
-    if (result == true && mounted) {
-      if (type != null) {
-        context.read<ExerciseLibraryProvider>().refresh();
-      } else {
-        context.read<SkillLibraryProvider>().refresh();
+    Future<void> go() async {
+      if (!context.mounted) return;
+
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            if (type != null) {
+              return AddExerciseScreen(type: type, exerciseToEdit: item);
+            } else {
+              return AddSkillScreen(skillToEdit: skill);
+            }
+          },
+        ),
+      );
+
+      if (!context.mounted) return;
+
+      if (result == true) {
+        if (type != null) {
+          context.read<ExerciseLibraryProvider>().refresh();
+        } else {
+          context.read<SkillLibraryProvider>().refresh();
+        }
       }
     }
+
+    // حاول تعرض الإعلان البيني (العام) أولًا
+    final shown = await AdsService.instance.showInterstitial(
+      onDismissed: go,
+    );
+
+    // لو الإعلان مش جاهز/فشل → كمل مباشرة
+    if (!shown) {
+      await go();
+    }
   }
+
 }

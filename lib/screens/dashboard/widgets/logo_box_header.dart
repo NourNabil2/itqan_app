@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 
 class LogoBoxHeader extends StatelessWidget {
@@ -37,7 +38,7 @@ class LogoBoxHeader extends StatelessWidget {
              Text(
                title,
                style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                 color: const Color(0xFF2C3E50),
+                 color: ColorsManager.primaryColor,
                  fontWeight: FontWeight.bold
                ),
                textAlign: TextAlign.center,

@@ -47,11 +47,11 @@ class StepHeader extends StatelessWidget {
               children: [
                 icon!,
                 SizedBox(width: SizeApp.s8),
-                Expanded(child: _buildTitle()),
+                Expanded(child: _buildTitle(context)),
               ],
             )
           else
-            _buildTitle(),
+            _buildTitle(context),
 
           // Subtitle if provided
           if (subtitle != null) ...[
@@ -71,15 +71,10 @@ class StepHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(context) {
     return Text(
       title,
-      style: TextStyle(
-        fontSize: titleSize ?? 24.sp,
-        fontWeight: titleWeight ?? FontWeight.bold,
-        color: titleColor ?? ColorsManager.defaultText,
-        height: 1.2,
-      ),
+      style: Theme.of(context).textTheme.titleLarge
     );
   }
 }

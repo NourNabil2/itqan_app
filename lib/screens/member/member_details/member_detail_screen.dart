@@ -238,9 +238,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
         // Skills/Exercises Tab
         MemberSkillsTab(
           member: _currentMember,
-          onAddSkill: () {
-            // Handle add skill
-          },
         ),
 
         // Notes Tab - محدث

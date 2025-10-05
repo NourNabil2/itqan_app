@@ -91,9 +91,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscribeNow => 'Subscribe Now';
 
   @override
-  String get cancelAnytime => 'Cancel anytime';
-
-  @override
   String get removeAds => 'Remove All Ads';
 
   @override
@@ -325,6 +322,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get restore => 'Restore';
+
+  @override
+  String get next => 'next';
+
+  @override
+  String get finish => 'finish';
+
+  @override
+  String get back => 'back';
 
   @override
   String get restoreFailed => 'Restore failed';
@@ -1286,6 +1292,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addSkill => 'Add Skill';
+
+  @override
+  String get createNewTeam => 'Create New Team';
 
   @override
   String get skillNameRequired => 'Skill name is required';

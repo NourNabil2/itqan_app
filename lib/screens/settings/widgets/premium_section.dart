@@ -232,16 +232,6 @@ class PremiumSection extends StatelessWidget {
                 ),
 
                 SizedBox(height: SizeApp.s12),
-
-                // Disclaimer
-                Text(
-                  l10n.cancelAnytime,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
               ],
             ),
           ),

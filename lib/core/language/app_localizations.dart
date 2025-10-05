@@ -91,7 +91,6 @@ abstract class AppLocalizations {
   String get premiumSubtitle;
   String get premiumBadge;
   String get subscribeNow;
-  String get cancelAnytime;
 
   String get removeAds;
   String get cloudBackup;
@@ -296,6 +295,10 @@ abstract class AppLocalizations {
   String get video;
   String get loadingVideo;
   String get cannotPlayVideo;
+  String get back;
+  String get next;
+  String get finish;
+  String get createNewTeam;
   String get retry;
   String get tapToZoom;
   String get image;

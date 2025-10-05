@@ -67,7 +67,7 @@ class _AddMembersStepState extends State<AddMembersStep> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header Section
-        StepHeader(
+        const StepHeader(
           title: 'أعضاء الفريق',
           subtitle: 'اختر أعضاء الفريق من المكتبة (عضو واحد على الأقل)',
         ),

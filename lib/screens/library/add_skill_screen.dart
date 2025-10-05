@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/constants/image_picker_helper.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
@@ -474,20 +475,40 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
         }
       }
 
-      if (mounted) {
-        Navigator.pop(context, true);
+      if (!mounted) return;
+
+      // الإجراء النهائي بعد النجاح (بعد الإعلان أو بدونه)
+      void finalize() {
+        if (!mounted) return;
+
         _showSuccessSnackBar(
           _isEditing
               ? AppLocalizations.of(context).skillUpdatedSuccessfully
               : AppLocalizations.of(context).skillAddedSuccessfully,
         );
+
+        Navigator.pop(context, true);
+      }
+
+      // جرّب تعرض الإعلان البيني أولًا
+      final shown = await AdsService.instance.showInterstitial(
+        onDismissed: finalize,
+      );
+
+      // لو الإعلان مش جاهز/فشل → كمل الإجراء فورًا
+      if (!shown) {
+        finalize();
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+        });
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/widgets/CustomIcon.dart';
 
@@ -9,12 +8,16 @@ class EmptyStateWidget extends StatelessWidget {
   final String subtitle;
   final String? buttonText;
   final VoidCallback? onPressed;
-  final IconData? iconData;
-  final String? assetSvgPath;
+
+  /// استخدم واحدة فقط:
+  final IconData? iconData;      // أيقونة مادية عادية
+  final String? assetSvgPath;    // مسار SVG (يُعرض عبر CustomIcon)
+
   final IconData buttonIcon;
   final double circleSize;
   final double iconSize;
   final bool showButton; // للتحكم في إظهار الزر
+  final Color? iconColor; // لون الأيقونة (اختياري)
 
   const EmptyStateWidget({
     super.key,
@@ -28,6 +31,7 @@ class EmptyStateWidget extends StatelessWidget {
     this.circleSize = 120,
     this.iconSize = 60,
     this.showButton = true,
+    this.iconColor,
   }) : assert(iconData != null || assetSvgPath != null,
   'Provide either iconData or assetSvgPath'),
         assert(!showButton || (buttonText != null && onPressed != null),
@@ -39,6 +43,19 @@ class EmptyStateWidget extends StatelessWidget {
     final primary = theme.colorScheme.primary;
     final onPrimary = theme.colorScheme.onPrimary;
     final onSurface = theme.colorScheme.onSurface.withOpacity(0.8);
+
+    // اختَر الودجت المناسبة: Icon أو CustomIcon (SVG)
+    final Widget iconWidget = assetSvgPath != null
+        ? CustomIcon(
+      assetPath: assetSvgPath!,
+      size: iconSize.sp,
+      color: iconColor ?? primary,
+    )
+        : Icon(
+      iconData,
+      color: iconColor ?? primary,
+      size: iconSize.sp,
+    );
 
     return Center(
       child: Padding(
@@ -81,11 +98,7 @@ class EmptyStateWidget extends StatelessWidget {
                   ],
                 ),
                 alignment: Alignment.center,
-                child: Icon(
-                  iconData,
-                  color: primary,
-                  size: iconSize.sp,
-                ),
+                child: iconWidget, // ← هنا بقى SVG عبر CustomIcon لو assetSvgPath موجود
               ),
               SizedBox(height: 20.h),
 
@@ -143,4 +156,3 @@ class EmptyStateWidget extends StatelessWidget {
     );
   }
 }
-

@@ -202,9 +202,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subscribeNow => 'الاشتراك الآن';
 
   @override
-  String get cancelAnytime => 'يمكنك الإلغاء في أي وقت';
-
-  @override
   String get removeAds => 'إزالة جميع الإعلانات';
 
   @override
@@ -841,6 +838,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noMembersAssigned => 'لم يتم تعيين أي عضو لهذا التمرين';
+
+  @override
+  String get createNewTeam => 'إنشاء فريق جديد';
+  @override
+  String get back => 'رجوع';
+
+  @override
+  String get next => 'التالي';
 
   @override
   String get noMembersAssignedDescription => 'قم بتعيين أعضاء لهذا التمرين';
@@ -1513,6 +1518,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteMember => 'حذف العضو';
+  @override
+  String get finish => 'انهاء';
 
   @override
   String get errorDeletingMember => 'حدث خطأ في حذف العضو';

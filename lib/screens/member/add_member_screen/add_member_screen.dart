@@ -71,7 +71,6 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: CustomAppBar(
         title: _isEditing ? l10n.editMember : l10n.addMemberToLibrary,
         action: _isEditing

@@ -3,6 +3,9 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/language/app_localizations_ar.dart';
+import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/enums.dart';
@@ -146,30 +149,93 @@ class _CreateTeamFlowState extends State<CreateTeamFlow> {
     ];
 
     return Scaffold(
-      appBar: const CustomAppBar(title: 'إنشاء فريق جديد'),
+      appBar: CustomAppBar(title: AppLocalizations.of(context).createNewTeam),
       body: steps[_currentStep],
-      bottomNavigationBar: Container(
-        color: Colors.white,
-        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _back,
-                child: Text(_currentStep == 0 ? 'إلغاء' : 'رجوع'),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.6),
+                width: 0.5,
               ),
             ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _saving ? null : _next,
-                child: _saving
-                    ? const SizedBox(
-                    width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(_currentStep < 2 ? 'التالي' : 'إنهاء'),
+          ),
+          child: Row(
+            children: [
+              // Cancel / Back
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _back,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outline,
+                      width: 1,
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 12.h,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    ),
+                  ),
+                  child: Text(
+                    _currentStep == 0
+                        ? AppLocalizations.of(context).cancel // "Cancel"
+                        : AppLocalizations.of(context).back,   // "Back"
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+              SizedBox(width: 12.w),
+
+              // Next / Finish
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _next,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 12.h,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
+                    ),
+                    elevation: 1.5,
+                  ),
+                  child: _saving
+                      ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                  )
+                      : Text(
+                    _currentStep < 2
+                        ? AppLocalizations.of(context).next   // "Next"
+                        : AppLocalizations.of(context).finish, // "Finish"
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
