@@ -173,15 +173,14 @@ class _TeamMembersManagerState extends State<TeamMembersManager> with SingleTick
     return Column(
       children: [
         // Add Members Button
-        Container(
-          color: colorScheme.surface,
-          padding: EdgeInsets.all(16.w),
+        Padding(
+          padding: EdgeInsets.all(SizeApp.padding),
           child: Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _showAddMembersDialog,
-                  icon: Icon(Icons.library_add_rounded, size: 24.sp),
+                  icon: Icon(Icons.add, size: 24.sp),
                   label: Text(
                     l10n.addMemberToLibrary,
                     maxLines: 1,

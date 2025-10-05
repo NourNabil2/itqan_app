@@ -52,7 +52,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _agreedToTerms = false;
 
   @override
   void dispose() {
@@ -64,16 +63,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
-
-    if (!_agreedToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).mustAgreeToTerms),
-          backgroundColor: ColorsManager.errorFill,
-        ),
-      );
-      return;
-    }
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.signUp(
@@ -363,44 +352,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
 
                     SizedBox(height: SizeApp.s16),
-
-                    // Terms & Conditions
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _agreedToTerms,
-                          onChanged: (value) {
-                            setState(() {
-                              _agreedToTerms = value ?? false;
-                            });
-                          },
-                        ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _agreedToTerms = !_agreedToTerms;
-                              });
-                            },
-                            child: Text.rich(
-                              TextSpan(
-                                text: l10n.iAgreeToThe,
-                                style: theme.textTheme.bodySmall,
-                                children: [
-                                  TextSpan(
-                                    text: l10n.termsAndConditions,
-                                    style: TextStyle(
-                                      color: theme.primaryColor,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
 
                     // Error Message
                     if (authProvider.error != null) ...[
