@@ -102,6 +102,30 @@ class AuthService {
     }
   }
 
+
+  /// Delete user account and all associated data
+  Future<void> deleteAccount() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) {
+        throw Exception('No user logged in');
+      }
+
+      // Call Supabase RPC function to delete all user data
+      await _supabase.rpc('delete_user_account', params: {
+        'user_id_param': userId,
+      });
+
+      // Sign out after successful deletion
+      await signOut();
+
+      debugPrint('✅ Account deleted successfully');
+    } catch (e) {
+      debugPrint('❌ Delete account error: $e');
+      rethrow;
+    }
+  }
+
   // Get user subscription from Supabase
   Future<Subscription?> getSubscription(String userId) async {
     try {

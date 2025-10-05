@@ -126,7 +126,8 @@ class _PremiumDialogState extends State<PremiumDialog> {
                     Expanded(
                       child: _PlanCard(
                         title: l10n.monthlyPlan,
-                        price: 99.97,
+                        price:  59.99,
+                        oldPrice:99.97,
                         period: l10n.perMonth,
                         value: 'monthly',
                         isSelected: _selectedPlan == 'monthly',
@@ -138,7 +139,8 @@ class _PremiumDialogState extends State<PremiumDialog> {
                     Expanded(
                       child: _PlanCard(
                         title: l10n.lifetimePlan,
-                        price: 599.97,
+                        price: 249.99 ,
+                        oldPrice: 599.97,
                         period: l10n.oneTime,
                         value: 'lifetime',
                         isSelected: _selectedPlan == 'lifetime',
@@ -152,7 +154,8 @@ class _PremiumDialogState extends State<PremiumDialog> {
               else ...[
                 _PlanCard(
                   title: l10n.monthlyPlan,
-                  price: 99.97,
+                  price: 59.99,
+                  oldPrice: 99.97,
                   period: l10n.perMonth,
                   value: 'monthly',
                   isSelected: _selectedPlan == 'monthly',
@@ -162,7 +165,8 @@ class _PremiumDialogState extends State<PremiumDialog> {
                 SizedBox(height: 12.h),
                 _PlanCard(
                   title: l10n.lifetimePlan,
-                  price: 599.97,
+                  price: 249.99,
+                  oldPrice:  599.97,
                   period: l10n.oneTime,
                   value: 'lifetime',
                   isSelected: _selectedPlan == 'lifetime',
@@ -295,7 +299,7 @@ class _PremiumDialogState extends State<PremiumDialog> {
         MaterialPageRoute(
           builder: (_) => ExternalSubscribePage(
             selectedPlan: _selectedPlan,
-            amount: _selectedPlan == 'monthly' ? 99.97 : 599.97,
+            amount: _selectedPlan == 'monthly' ? 59.99 : 249.99,
           ),
         ),
       );
@@ -337,6 +341,7 @@ class _FeatureRow extends StatelessWidget {
 class _PlanCard extends StatelessWidget {
   final String title;
   final double price;
+  final double? oldPrice;
   final String period;
   final String value;
   final bool isSelected;
@@ -353,6 +358,7 @@ class _PlanCard extends StatelessWidget {
     required this.accent,
     required this.onTap,
     this.badgeText,
+    this.oldPrice,
   });
 
   @override
@@ -362,63 +368,74 @@ class _PlanCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12.r),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
         onTap: onTap,
+        splashColor: accent.withOpacity(0.08),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
           padding: EdgeInsets.all(14.w),
           decoration: BoxDecoration(
-            color: isSelected ? accent.withOpacity(0.08) : theme.cardColor,
+            color: isSelected
+                ? accent.withOpacity(0.08)
+                : theme.cardColor,
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
-              color: isSelected ? accent : theme.dividerColor.withOpacity(0.2),
+              color: isSelected
+                  ? accent
+                  : theme.dividerColor.withOpacity(0.2),
               width: isSelected ? 2 : 1,
             ),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: accent.withOpacity(0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+            ],
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Radio
-              Padding(
-                padding: EdgeInsets.only(top: 4.h),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 20.w,
-                  height: 20.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected ? accent : theme.dividerColor,
-                      width: 2,
-                    ),
-                    color: isSelected ? accent : Colors.transparent,
+              // Radio indicator
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 20.w,
+                height: 20.w,
+                margin: EdgeInsets.only(right: 10.w),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? accent : theme.dividerColor,
+                    width: 2,
                   ),
-                  child: isSelected
-                      ? Center(
-                    child: Container(
-                      width: 6.w,
-                      height: 6.w,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                    ),
-                  )
-                      : null,
+                  color: isSelected ? accent : Colors.transparent,
                 ),
+                child: isSelected
+                    ? Center(
+                  child: Container(
+                    width: 6.w,
+                    height: 6.w,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+                    : null,
               ),
 
-              SizedBox(width: 10.w),
-
-              // Info
+              // Info + price
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Wrap(
                       spacing: 6.w,
-                      runSpacing: 6.h,
+                      runSpacing: 4.h,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
@@ -431,9 +448,7 @@ class _PlanCard extends StatelessWidget {
                         if (badgeText != null)
                           Container(
                             padding: EdgeInsets.symmetric(
-                              horizontal: 6.w,
-                              vertical: 2.h,
-                            ),
+                                horizontal: 6.w, vertical: 2.h),
                             decoration: BoxDecoration(
                               color: Colors.green,
                               borderRadius: BorderRadius.circular(4.r),
@@ -452,7 +467,10 @@ class _PlanCard extends StatelessWidget {
                     SizedBox(height: 6.h),
                     Text(
                       period,
-                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 11.sp),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11.sp,
+                        color: theme.hintColor,
+                      ),
                     ),
                   ],
                 ),
@@ -460,22 +478,28 @@ class _PlanCard extends StatelessWidget {
 
               SizedBox(width: 10.w),
 
-              // Price
-              ConstrainedBox(
-                constraints: BoxConstraints(minWidth: 72.w, maxWidth: 110.w),
-                child: FittedBox(
-                  alignment: Alignment.centerRight,
-                  fit: BoxFit.scaleDown,
-                  child: Text(
+              // Price area with discount
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (oldPrice != null && oldPrice! > price)
+                    Text(
+                      '${l10n.egp} ${oldPrice!.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: theme.disabledColor,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                  Text(
                     '${l10n.egp} ${price.toStringAsFixed(2)}',
-                    textAlign: TextAlign.end,
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w700,
                       color: accent,
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

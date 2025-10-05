@@ -1562,4 +1562,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override String get requestSubmittedMessage => 'تم إرسال طلبك بنجاح. سنتواصل معك قريباً لإكمال عملية الاشتراك.';
   @override String get understood => 'فهمت';
   @override String get viewSubscriptionInstructions => 'عرض تعليمات الاشتراك';
+
+  @override String get support => 'Support';
+  @override String get contactSupportForHelp => 'Contact us for help or account deletion';
+  @override String get supportRequestSubject => 'Support Request - Itqan Gym';
+  @override String get supportRequestBody => '''Hello Support Team,
+
+I need help with:
+[ Write your request here ]
+
+If you want to delete your account, please write "I want to delete my account" in the message.
+
+Thank you.''';
 }

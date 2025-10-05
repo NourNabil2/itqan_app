@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart' show AdSize;
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/utils/extension.dart';
+import 'package:itqan_gym/core/widgets/ads_widgets/banner_ad_widget.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:itqan_gym/core/widgets/skill_card.dart';
 import 'package:itqan_gym/data/models/exercise_template.dart';
@@ -96,6 +99,23 @@ class _LibraryScreenState extends State<LibraryScreen>
             controller: _searchController,
             onChanged: _onSearchChanged,
             hintText: _getSearchHint(),
+          ),
+          ListenableBuilder(
+            listenable: AdsService.instance,
+            builder: (context, _) {
+              // Wait for initialization
+              if (!AdsService.instance.isInitialized) {
+                return SizedBox(height: AdSize.banner.height.toDouble());
+              }
+
+              // Premium user - no ads
+              if (AdsService.instance.isPremium) {
+                return const SizedBox.shrink();
+              }
+
+              // Non-premium - show banner
+              return const BannerAdWidget();
+            },
           ),
           Expanded(
             child: TabBarView(

@@ -338,6 +338,50 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Delete user account permanently
+  Future<bool> deleteAccount() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      await _authService.deleteAccount();
+
+      // Clear all local data
+      await _timeValidation.clearValidationData();
+      await _clearCache();
+
+      _currentUser = null;
+      AdsService.instance.setPremiumStatus(false);
+      AdsService.instance.disposeAllAds();
+
+      debugPrint('✅ Account deletion completed');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Account deletion error: $e');
+      _setError(_parseDeleteError(e));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  String _parseDeleteError(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+
+    if (errorString.contains('network')) {
+      return 'خطأ في الاتصال بالإنترنت';
+    }
+
+    if (errorString.contains('timeout')) {
+      return 'انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى';
+    }
+
+    if (errorString.contains('permission')) {
+      return 'لا يمكن حذف الحساب. يرجى التواصل مع الدعم الفني';
+    }
+
+    return 'حدث خطأ أثناء حذف الحساب';
+  }
   // ==================== Subscription ====================
 
   Future<void> syncSubscription({bool silent = false}) async {

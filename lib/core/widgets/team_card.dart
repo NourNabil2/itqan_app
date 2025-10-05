@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/CustomIcon.dart';
@@ -338,28 +339,61 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: GestureDetector(
-            onTap: () {
+            onTap: () async {
               HapticFeedback.lightImpact();
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      TeamDetailScreen(team: widget.team),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(1.0, 0.0),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      )),
-                      child: child,
-                    );
-                  },
-                  transitionDuration: const Duration(milliseconds: 350),
-                ),
+
+              // حاول عرض إعلان interstitial الخاص بـ TeamCard
+              final shown = await AdsService.instance.showTeamCardInterstitial(
+                onDismissed: () {
+                  // بعد ما الإعلان يتقفل، انتقل لشاشة التفاصيل
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          TeamDetailScreen(team: widget.team),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(1.0, 0.0),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 350),
+                    ),
+                  );
+                },
               );
+
+              // لو الإعلان مش جاهز أو فشل في العرض
+              if (!shown) {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        TeamDetailScreen(team: widget.team),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(1.0, 0.0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        )),
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 350),
+                  ),
+                );
+              }
             },
             onTapDown: _handleTapDown,
             onTapUp: _handleTapUp,

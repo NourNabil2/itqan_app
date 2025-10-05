@@ -300,6 +300,10 @@ abstract class AppLocalizations {
   String get tapToZoom;
   String get image;
   String get assigned;
+  String get support;
+  String get contactSupportForHelp;
+  String get supportRequestSubject;
+  String get supportRequestBody;
   String get editSkill;
   String get enterSkillDetails;
   String get skillNameHint;

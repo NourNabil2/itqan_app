@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/constants/image_picker_helper.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
@@ -203,13 +204,30 @@ class _AddGlobalMemberScreenState extends State<AddGlobalMemberScreen> {
         await provider.createMember(member);
       }
 
-      if (mounted) {
-        Navigator.pop(context, true);
+      if (!mounted) return;
+
+      // الإجراء النهائي بعد النجاح (بعد الإعلان أو بدونه)
+      void finalize() {
+        if (!mounted) return;
+
         _showSuccessSnackBar(
           _isEditing
               ? AppLocalizations.of(context).memberUpdatedSuccessfully
               : AppLocalizations.of(context).memberAddedSuccessfully,
         );
+
+        // رجّع true علشان الشاشة السابقة تقدر تعمل refresh لو حابّة
+        Navigator.pop(context, true);
+      }
+
+      // جرّب تعرض إعلان interstitial أولًا
+      final shown = await AdsService.instance.showInterstitial(
+        onDismissed: finalize,
+      );
+
+      // لو الإعلان مش جاهز/فشل → كمل الإجراء فورًا
+      if (!shown) {
+        finalize();
       }
     } catch (e) {
       if (mounted) {

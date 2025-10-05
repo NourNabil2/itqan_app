@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/core/widgets/ads_widgets/banner_ad_widget.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
 import 'package:itqan_gym/core/widgets/error_container_widget.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:provider/provider.dart';
+import '../../core/services/ad_service.dart' show AdsService;
 import '../../core/utils/enums.dart';
 import '../../data/models/team.dart';
 import '../../data/models/exercise_template.dart';
@@ -66,6 +69,12 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   @override
   void initState() {
     super.initState();
+    // Load banner only after AdsService is fully initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        AdsService.instance.loadBannerAd(context);
+      }
+    });
     _tabController = TabController(length: 4, vsync: this);
     _loadCurrentAssignments();
   }
@@ -102,6 +111,33 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         title: widget.team.name,
         action: _buildSaveButton(),
       ),
+
+      // ✅ خلي البانر هنا بدل الـ Column
+      bottomNavigationBar: SafeArea(
+        minimum: EdgeInsets.only(
+          bottom: SizeApp.s8,
+          left: SizeApp.s8,
+          right: SizeApp.s8,
+        ),
+        child:ListenableBuilder(
+          listenable: AdsService.instance,
+          builder: (context, _) {
+            // Wait for initialization
+            if (!AdsService.instance.isInitialized) {
+              return SizedBox(height: AdSize.banner.height.toDouble());
+            }
+
+            // Premium user - no ads
+            if (AdsService.instance.isPremium) {
+              return const SizedBox.shrink();
+            }
+
+            // Non-premium - show banner
+            return const BannerAdWidget();
+          },
+        ),
+      ),
+
       body: Column(
         children: [
           // Header Section
@@ -183,7 +219,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
           // Tab Bar
           _buildTabBar(),
 
-          // Selected Count Banner
+          // Selected Count Banner (لو عندك بار صغير بيعرض عدد العناصر)
           _buildSelectedCountBanner(),
 
           // Content
@@ -201,6 +237,7 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
         ],
       ),
     );
+
   }
 
   Widget _buildSaveButton() {
@@ -242,37 +279,43 @@ class _ManageAssignmentsScreenState extends State<ManageAssignmentsScreen>
   Widget _buildTabBar() {
     final theme = Theme.of(context);
 
-    return Container(
-      color: theme.cardColor,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: theme.primaryColor,
-        unselectedLabelColor: theme.textTheme.bodySmall?.color,
-        indicatorColor: theme.primaryColor,
-        indicatorWeight: 3,
-        labelStyle: TextStyle(
-          fontSize: 13.sp,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: TextStyle(
-          fontSize: 13.sp,
-          fontWeight: FontWeight.w500,
-        ),
-        tabs: _tabs.map((tab) {
-          return Tab(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(tab.icon, size: 16.sp),
-                SizedBox(width: SizeApp.s4),
-                Text(tab.title),
-              ],
-            ),
-          );
-        }).toList(),
+    return TabBar(
+      controller: _tabController,
+      isScrollable: true, // ✅ مهم لمنع الزحمة والـ overflow
+      labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      labelColor: theme.primaryColor,
+      unselectedLabelColor: theme.textTheme.bodySmall?.color,
+      indicatorColor: theme.primaryColor,
+      indicatorWeight: 3,
+      labelStyle: TextStyle(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w600,
       ),
+      unselectedLabelStyle: TextStyle(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w500,
+      ),
+      tabs: _tabs.map((tab) {
+        return Tab(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(tab.icon, size: 16.sp),
+              SizedBox(width: SizeApp.s4),
+              Flexible(
+                child: Text(
+                  tab.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis, // ✅ يمنع الـ overflow
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
+
 
   Widget _buildSelectedCountBanner() {
     final l10n = AppLocalizations.of(context);

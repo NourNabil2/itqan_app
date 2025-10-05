@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
@@ -499,11 +501,28 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
 
     return exercises.map<Widget>((exercise) {
       return InkWell(
-        onTap: () => ExerciseDetailSheet.show(
-          context,
-          exercise,
-          teamId: widget.team.id,
-        ),
+        onTap: () async {
+          HapticFeedback.lightImpact();
+
+          Future<void> openSheet() async {
+            if (!context.mounted) return;
+             ExerciseDetailSheet.show(
+              context,
+              exercise,
+              teamId: widget.team.id,
+            );
+          }
+
+          // جرّب تعرض الإعلان البيني (العام) أولًا
+          final shown = await AdsService.instance.showInterstitial(
+            onDismissed: openSheet,
+          );
+
+          // لو الإعلان مش جاهز/فشل → افتح الـ sheet فورًا
+          if (!shown) {
+            await openSheet();
+          }
+        },
         borderRadius: BorderRadius.circular(SizeApp.radiusSmall),
         child: Container(
           margin: EdgeInsets.only(bottom: SizeApp.s8),
@@ -648,12 +667,31 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
     }
   }
 
-  void _navigateToManageAssignments() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ManageAssignmentsScreen(team: widget.team),
-      ),
-    ).then((_) => _loadTeamData());
+
+  void _navigateToManageAssignments() async {
+    HapticFeedback.lightImpact();
+
+    void proceed() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ManageAssignmentsScreen(team: widget.team),
+        ),
+      ).then((_) => _loadTeamData());
+    }
+
+    final shown = await AdsService.instance.showInterstitial(
+      onDismissed: () {
+        if (!mounted) return;
+        proceed();
+      },
+    );
+
+    // لو الإعلان مش جاهز/فشل — كمل طبيعي
+    if (!shown) {
+      if (!mounted) return;
+      proceed();
+    }
   }
+
 }

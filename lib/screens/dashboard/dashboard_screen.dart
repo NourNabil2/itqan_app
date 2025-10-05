@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/theme/text_theme.dart';
 import 'package:itqan_gym/screens/settings/screens/settings_screen.dart';
@@ -11,7 +12,6 @@ import '../../screens/library/library_screen.dart';
 import '../../screens/member/member_library_screen.dart';
 import '../member/add_member_screen/add_member_screen.dart';
 import 'add_team_screen.dart';
-
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -28,14 +28,16 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   final _icons = const [
     Icons.people_alt_outlined, // Members
-    Icons.groups_outlined,     // Teams
-    Icons.folder_outlined,     // Library
-    Icons.settings_outlined,   // Settings
+    Icons.groups_outlined, // Teams
+    Icons.folder_outlined, // Library
+    Icons.settings_outlined, // Settings
   ];
 
   @override
   void initState() {
     super.initState();
+    AdsService.instance.preloadInterstitial();
+    AdsService.instance.preloadInterstitialTeamCard();
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -75,7 +77,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           child: _buildBody(_index),
         ),
       ),
-
       floatingActionButton: SpeedDial(
         icon: Icons.add,
         activeIcon: Icons.close,
@@ -92,47 +93,73 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: [
           // Add member
           SpeedDialChild(
-            label: l10n.addMemberToLibrary,
-            labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
-            labelBackgroundColor: ColorsManager.secondaryColor,
-            child: const Icon(
-              Icons.person_add,
-              color: ColorsManager.backgroundSurface,
-            ),
-            backgroundColor: ColorsManager.secondaryColor,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AddGlobalMemberScreen(),
-                ),
-              );
-            },
-          ),
+              label: l10n.addMemberToLibrary,
+              labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
+              labelBackgroundColor: ColorsManager.secondaryColor,
+              child: const Icon(
+                Icons.person_add,
+                color: ColorsManager.backgroundSurface,
+              ),
+              backgroundColor: ColorsManager.secondaryColor,
+              onTap: () async {
+                HapticFeedback.lightImpact();
+
+                Future<void> go() async {
+                  if (!context.mounted) return;
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AddGlobalMemberScreen(),
+                    ),
+                  );
+                }
+
+                // جرّب تعرض الإعلان البيني أولاً
+                final shown = await AdsService.instance.showInterstitial(
+                  onDismissed: go, // بعد إغلاق الإعلان انتقل للشاشة
+                );
+
+                // لو الإعلان مش جاهز / فشل → كمل طبيعي
+                if (!shown) {
+                  await go();
+                }
+              }),
           // Add team
           SpeedDialChild(
-            label: l10n.addTeam,
-            labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
-            labelBackgroundColor: ColorsManager.secondLightColor,
-            child: const Icon(
-              Icons.group_add,
-              color: ColorsManager.backgroundSurface,
-            ),
-            backgroundColor: ColorsManager.secondLightColor,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CreateTeamFlow(),
-                ),
-              );
-            },
-          ),
+              label: l10n.addTeam,
+              labelStyle: AppTextTheme.darkTextTheme.bodyMedium,
+              labelBackgroundColor: ColorsManager.secondLightColor,
+              child: const Icon(
+                Icons.group_add,
+                color: ColorsManager.backgroundSurface,
+              ),
+              backgroundColor: ColorsManager.secondLightColor,
+              onTap: () async {
+                HapticFeedback.lightImpact();
+
+                Future<void> go() async {
+                  if (!context.mounted) return;
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CreateTeamFlow(),
+                    ),
+                  );
+                }
+
+                // جرّب تعرض الإعلان أولاً
+                final shown = await AdsService.instance.showInterstitial(
+                  onDismissed: go, // بعد إغلاق الإعلان
+                );
+
+                // لو الإعلان مش جاهز/فشل → كمل تنقّل عادي
+                if (!shown) {
+                  await go();
+                }
+              }),
         ],
       ),
-
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
       bottomNavigationBar: AnimatedBottomNavigationBar(
         icons: _icons,
         activeIndex: _index,
@@ -163,5 +190,4 @@ class _DashboardScreenState extends State<DashboardScreen>
         return const SizedBox.shrink();
     }
   }
-
 }

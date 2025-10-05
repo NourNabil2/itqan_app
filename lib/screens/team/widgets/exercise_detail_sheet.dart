@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/utils/extension.dart';
@@ -1167,7 +1169,24 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
               Expanded(
                 flex: 3,
                 child: OutlinedButton.icon(
-                  onPressed: () => _showAssignmentSheet(context),
+                  onPressed: () async {
+                    HapticFeedback.lightImpact();
+
+                    Future<void> openSheet() async {
+                      if (!context.mounted) return;
+                      await _showAssignmentSheet(context);
+                    }
+
+                    // جرّب الإعلان البيني (العام) أولًا
+                    final shown = await AdsService.instance.showTeamCardInterstitial(
+                      onDismissed: openSheet,
+                    );
+
+                    // لو الإعلان مش جاهز/فشل → افتح الـ sheet مباشرة
+                    if (!shown) {
+                      await openSheet();
+                    }
+                  },
                   icon: Icon(Icons.person_add_rounded, size: 20.sp),
                   label: Text(
                     l10n.assignToMembers,

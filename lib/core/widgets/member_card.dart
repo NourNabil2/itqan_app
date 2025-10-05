@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/theme/colors.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
@@ -132,19 +133,43 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: GestureDetector(
-            onTap: () {
+            onTap: () async {
               HapticFeedback.lightImpact();
-              if (widget.onTap != null) {
-                widget.onTap!();
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MemberDetailScreen(member: widget.member),
-                  ),
-                );
+
+              // حاول عرض الإعلان البيني أولاً
+              final shown = await AdsService.instance.showInterstitial(
+                onDismissed: () {
+                  // بعد ما يتقفل الإعلان، نفذ الإجراء الأصلي
+                  if (widget.onTap != null) {
+                    widget.onTap!();
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            MemberDetailScreen(member: widget.member),
+                      ),
+                    );
+                  }
+                },
+              );
+
+              // لو الإعلان مش جاهز أو ما اتعرضش
+              if (!shown) {
+                if (widget.onTap != null) {
+                  widget.onTap!();
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          MemberDetailScreen(member: widget.member),
+                    ),
+                  );
+                }
               }
             },
+
             onTapDown: _handleTapDown,
             onTapUp: _handleTapUp,
             onTapCancel: _handleTapCancel,

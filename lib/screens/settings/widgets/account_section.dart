@@ -1,3 +1,4 @@
+// lib/screens/settings/widgets/account_section.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,6 +8,7 @@ import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/screens/settings/screens/login_screen.dart';
 import 'package:itqan_gym/screens/settings/screens/payment_status_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'setting_card/settings_card.dart';
 import 'setting_card/settings_tile.dart';
 
@@ -20,8 +22,8 @@ class AccountSection extends StatelessWidget {
     required this.isPremium,
   });
 
-  @override
-// lib/screens/settings/widgets/account_section.dart
+  static const String kSupportEmail = 'nour60g@gmail.com';
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -38,19 +40,18 @@ class AccountSection extends StatelessWidget {
             onTap: () => _handleLogin(context),
           )
         else ...[
-          // SettingsTile(
-          //   icon: Icons.person,
-          //   title: l10n.profileTitle,
-          //   subtitle: l10n.profileDescription,
-          //   onTap: () => _handleProfile(context),
-          // ),
-
-
           SettingsTile(
             icon: Icons.receipt_long,
             title: l10n.paymentStatus,
             subtitle: l10n.viewPaymentRequests,
             onTap: () => _handlePaymentStatus(context),
+          ),
+
+          SettingsTile(
+            icon: Icons.support_agent_outlined,
+            title: l10n.support,
+            subtitle: l10n.contactSupportForHelp,
+            onTap: () => _handleSupport(context),
           ),
 
           SettingsTile(
@@ -65,7 +66,16 @@ class AccountSection extends StatelessWidget {
     );
   }
 
-// إضافة الـ method
+  void _handleLogin(BuildContext context) {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(returnToPremium: false),
+      ),
+    );
+  }
+
   void _handlePaymentStatus(BuildContext context) {
     HapticFeedback.lightImpact();
     Navigator.push(
@@ -76,19 +86,42 @@ class AccountSection extends StatelessWidget {
     );
   }
 
-// في account_section.dart - تحديث الـ handles
-  void _handleLogin(BuildContext context) {
+  void _handleSupport(BuildContext context) async {
     HapticFeedback.lightImpact();
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen(returnToPremium: false,)),
-    );
-  }
+    final l10n = AppLocalizations.of(context);
 
-  void _handleProfile(BuildContext context) {
-    HapticFeedback.lightImpact();
-    // Navigate to profile screen
-    // Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen()));
+    final uri = Uri(
+      scheme: 'mailto',
+      path: kSupportEmail,
+      query: 'subject=${Uri.encodeComponent(l10n.supportRequestSubject)}'
+          '&body=${Uri.encodeComponent(l10n.supportRequestBody)}',
+    );
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.error),
+              backgroundColor: ColorsManager.errorFill,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.error),
+            backgroundColor: ColorsManager.errorFill,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _handleLogout(BuildContext context) {
@@ -121,13 +154,10 @@ class AccountSection extends StatelessWidget {
             ),
             child: Text(l10n.cancel),
           ),
-          // في account_section.dart
           TextButton(
             onPressed: () {
               final auth = context.read<AuthProvider>();
-
               auth.signOut();
-
               Navigator.pop(dialogContext);
             },
             style: TextButton.styleFrom(

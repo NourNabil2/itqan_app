@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart' show AdWidget, AdSize;
+import 'package:itqan_gym/core/services/ad_service.dart';
 import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/core/widgets/ads_widgets/banner_ad_widget.dart';
 import 'package:itqan_gym/core/widgets/app_text_feild.dart';
 import 'package:itqan_gym/core/widgets/loading_widget.dart';
 import 'package:itqan_gym/data/database/db_helper.dart';
@@ -28,6 +31,12 @@ class _TeamMembersManagerState extends State<TeamMembersManager> with SingleTick
   @override
   void initState() {
     super.initState();
+    // Load banner only after AdsService is fully initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        AdsService.instance.loadBannerAd(context);
+      }
+    });
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -172,6 +181,23 @@ class _TeamMembersManagerState extends State<TeamMembersManager> with SingleTick
   Widget _buildMembersList(List<Member> members, ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
     return Column(
       children: [
+        ListenableBuilder(
+          listenable: AdsService.instance,
+          builder: (context, _) {
+            // Wait for initialization
+            if (!AdsService.instance.isInitialized) {
+              return SizedBox(height: AdSize.banner.height.toDouble());
+            }
+
+            // Premium user - no ads
+            if (AdsService.instance.isPremium) {
+              return const SizedBox.shrink();
+            }
+
+            // Non-premium - show banner
+            return const BannerAdWidget();
+          },
+        ),
         // Add Members Button
         Padding(
           padding: EdgeInsets.all(SizeApp.padding),
