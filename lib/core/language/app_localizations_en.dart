@@ -350,7 +350,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentInstructions => 'Payment Instructions';
 
   @override
-  String get paymentInstructionsDetails => 'Transfer the required amount to the number below using Vodafone Cash or InstaPay, then upload a screenshot of the payment proof.';
+  String get paymentInstructionsDetails =>
+      'To complete your subscription, please contact us via email or WhatsApp to receive the transfer details and confirmation instructions.';
 
   @override
   String get phoneNumber => 'Phone Number';
@@ -386,7 +387,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentUnderReview => 'Your request is under review, your subscription will be activated once approved.';
 
   @override
-  String get paymentStatus => 'Payment Status';
+  String get paymentStatus => 'Subscribe Status';
 
   @override
   String get noPaymentRequests => 'No payment requests';
@@ -404,7 +405,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentMethod => 'Payment Method';
 
   @override
-  String get viewPaymentRequests => 'View payment requests status';
+  String get viewPaymentRequests => 'View Subscribes requests status';
 
   @override
   String get backupDate => 'Backup date';
@@ -1531,4 +1532,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorDeletingMember => 'Error deleting member';
+
+  @override String get contactOnWhatsApp => 'Subscribe via WhatsApp';
+  @override String get contactByEmail => 'Subscribe via Email';
+  @override String get pricePerMonth => 'Monthly subscription price';
+
+  @override String get step1 => '1) Transfer the amount via InstaPay.';
+  @override String get step2 => '2) After the transfer, contact us via WhatsApp or email to send the confirmation details.';
+  @override String get step3 => '3) Your subscription will be activated within 24 hours after verification.';
+
+  @override String get whatsappPrefilledMessage =>
+      'Hi, I would like to subscribe to the premium version. I have made the transfer and will send the confirmation details.';
+  @override String get emailSubject => 'Premium Subscription Request';
+  @override String get emailBody =>
+      'Hi, I would like to subscribe to the premium version. I will attach the transfer details in this email.';
+  @override String get payOutsideNote => 'Note: The payment and verification process takes place outside the app.';
+
+  @override String get subscriptionInstructions => 'Subscription Instructions';
+  @override String get premiumSubscription => 'Premium Subscription';
+  @override String get selectedPlan => 'Selected Plan';
+  @override String get howToSubscribe => 'How to Subscribe';
+  @override String get contactUsForDetails => 'Contact us to get payment details';
+  @override String get makePaymentExternally => 'Make payment via agreed method';
+  @override String get sendPaymentConfirmation => 'Send payment confirmation via WhatsApp or Email';
+  @override String get activationWithin24Hours => 'Your subscription will be activated within 24 hours';
+  @override String get contactInformation => 'Contact Information';
+  @override String get contactViaWhatsApp => 'Contact via WhatsApp';
+  @override String get submitViaEmail => 'Submit Request via Email';
+  @override String get paymentProcessedExternally => 'Note: Payment and confirmation are processed outside the app. We will contact you to complete the process.';
+  @override String get whatsappMessage => 'Hello, I want to subscribe to the premium version';
+  @override String get plan => 'Plan';
+  @override String get awaitingPaymentDetails => 'Awaiting payment details';
+  @override String get cannotOpenWhatsApp => 'Cannot open WhatsApp';
+  @override String get errorOpeningWhatsApp => 'Error opening WhatsApp';
+  @override String get mustBeLoggedIn => 'You must be logged in first';
+  @override String get errorSubmittingRequest => 'Error submitting request';
+  @override String get subscriptionRequestSubject => 'Premium Subscription Request';
+  @override String get emailBodyIntro => 'Hello, I want to subscribe to the premium version with the following details:';
+  @override String get emailBodyInstructions => 'I will send payment proof in this email after completing the transaction.';
+  @override String get requestSubmitted => 'Request Submitted';
+  @override String get requestSubmittedMessage => 'Your request has been submitted successfully. We will contact you soon to complete the subscription process.';
+  @override String get understood => 'Understood';
+  @override String get viewSubscriptionInstructions => 'View Subscription Instructions';
+
+
 }

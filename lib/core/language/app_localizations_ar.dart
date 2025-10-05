@@ -417,11 +417,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get egp => 'جنيه';
 
-  @override
-  String get paymentInstructions => 'تعليمات الدفع';
 
   @override
-  String get paymentInstructionsDetails => 'قم بتحويل المبلغ المطلوب إلى الرقم أدناه باستخدام فودافون كاش أو إنستا باي، ثم قم بإرفاق صورة إثبات الدفع.';
+  String get paymentInstructionsDetails =>
+      'لإتمام الاشتراك، يُرجى التواصل معنا عبر البريد الإلكتروني أو واتساب للحصول على تفاصيل التحويل وإرشادات التأكيد.';
 
   @override
   String get phoneNumber => 'رقم الهاتف';
@@ -457,7 +456,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get paymentUnderReview => 'طلبك قيد المراجعة، سيتم تفعيل اشتراكك بعد الموافقة.';
 
   @override
-  String get paymentStatus => 'حالة الدفع';
+  String get paymentStatus => 'حالة الاشتراك';
 
   @override
   String get noPaymentRequests => 'لا توجد طلبات دفع';
@@ -1349,7 +1348,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notFound => 'غير موجود';
 
   @override
-  String get viewPaymentRequests => 'عرض حالة طلبات الدفع';
+  String get viewPaymentRequests => 'عرض حالة طلبات الاشتراكات';
 
   @override
   String get performanceChart => 'مخطط الأداء';
@@ -1518,4 +1517,49 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get errorDeletingMember => 'حدث خطأ في حذف العضو';
 
+  @override String get contactOnWhatsApp => 'اشترك الآن عبر واتساب';
+  @override String get contactByEmail => 'اشترك عبر البريد الإلكتروني';
+  @override String get pricePerMonth => 'سعر الاشتراك الشهري';
+
+  @override String get paymentInstructions => 'طريقة الاشتراك';
+  @override String get step1 => '1) قم بتحويل المبلغ عبر إنستا باي.';
+  @override String get step2 => '2) بعد التحويل، تواصل معنا عبر واتساب أو البريد الإلكتروني لإرسال تفاصيل التأكيد.';
+  @override String get step3 => '3) سيتم تفعيل اشتراكك خلال 24 ساعة بعد التأكيد.';
+
+  @override String get whatsappPrefilledMessage =>
+      'مرحبًا، أريد الاشتراك في النسخة المميزة. لقد قمت بالتحويل وسأرسل تفاصيل التأكيد.';
+  @override String get emailSubject => 'طلب اشتراك النسخة المميزة';
+  @override String get emailBody =>
+      'مرحبًا، أريد الاشتراك في النسخة المميزة. سأرفق تفاصيل التحويل في هذا البريد.';
+  @override String get payOutsideNote => 'ملاحظة: عملية الدفع والتأكيد تتم خارج التطبيق.';
+
+
+
+  // في app_localizations_ar.dart
+  @override String get subscriptionInstructions => 'تعليمات الاشتراك';
+  @override String get premiumSubscription => 'الاشتراك المميز';
+  @override String get selectedPlan => 'الخطة المختارة';
+  @override String get howToSubscribe => 'كيفية الاشتراك';
+  @override String get contactUsForDetails => 'تواصل معنا للحصول على تفاصيل الدفع';
+  @override String get makePaymentExternally => 'قم بإجراء الدفع عبر الطريقة المتفق عليها';
+  @override String get sendPaymentConfirmation => 'أرسل تأكيد الدفع عبر واتساب أو الإيميل';
+  @override String get activationWithin24Hours => 'سيتم تفعيل اشتراكك خلال 24 ساعة';
+  @override String get contactInformation => 'معلومات التواصل';
+  @override String get contactViaWhatsApp => 'تواصل عبر واتساب';
+  @override String get submitViaEmail => 'إرسال طلب عبر البريد الإلكتروني';
+  @override String get paymentProcessedExternally => 'ملاحظة: عملية الدفع والتأكيد تتم خارج التطبيق. سنتواصل معك لإكمال العملية.';
+  @override String get whatsappMessage => 'مرحباً، أريد الاشتراك في النسخة المميزة';
+  @override String get plan => 'الخطة';
+  @override String get awaitingPaymentDetails => 'في انتظار تفاصيل الدفع';
+  @override String get cannotOpenWhatsApp => 'لا يمكن فتح واتساب';
+  @override String get errorOpeningWhatsApp => 'حدث خطأ أثناء فتح واتساب';
+  @override String get mustBeLoggedIn => 'يجب تسجيل الدخول أولاً';
+  @override String get errorSubmittingRequest => 'حدث خطأ أثناء إرسال الطلب';
+  @override String get subscriptionRequestSubject => 'طلب اشتراك في النسخة المميزة';
+  @override String get emailBodyIntro => 'مرحباً، أريد الاشتراك في النسخة المميزة بالتفاصيل التالية:';
+  @override String get emailBodyInstructions => 'سأقوم بإرسال إثبات الدفع في هذا البريد بعد إتمام العملية.';
+  @override String get requestSubmitted => 'تم إرسال الطلب';
+  @override String get requestSubmittedMessage => 'تم إرسال طلبك بنجاح. سنتواصل معك قريباً لإكمال عملية الاشتراك.';
+  @override String get understood => 'فهمت';
+  @override String get viewSubscriptionInstructions => 'عرض تعليمات الاشتراك';
 }

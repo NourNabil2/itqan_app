@@ -1,4 +1,4 @@
-// lib/services/payment_service.dart
+// lib/core/services/payment_service.dart
 import 'dart:io';
 import 'package:itqan_gym/data/models/payment/payment_request.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,48 +7,41 @@ class PaymentService {
   final SupabaseClient _supabase = Supabase.instance.client;
   static const String paymentProofBucket = 'payment-proofs';
 
-  // Submit payment request
+  /// Submit payment request (without proof image)
+  /// Used when user contacts via email - proof will be sent externally
   Future<PaymentRequest> submitPaymentRequest({
     required String subscriptionType,
     required double amount,
-    required String paymentMethod,
-    required File proofImage,
+    required String paymentMethod, // 'instapay' | 'vodafone_cash'
     String? transactionReference,
+    String? note, // هيتم تخزينها في admin_notes (اختياري)
   }) async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw Exception('User not logged in');
-      }
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not logged in');
 
-      // Upload payment proof
-      final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final proofUrl = await _uploadPaymentProof(proofImage, fileName);
-
-      // Create payment request
-      final request = {
-        'user_id': userId,
-        'subscription_type': subscriptionType,
-        'amount': amount,
-        'payment_method': paymentMethod,
-        'payment_proof_url': proofUrl,
+    final payload = {
+      'user_id': userId,
+      'subscription_type': subscriptionType,
+      'amount': amount,
+      'payment_method': paymentMethod,           // لازم تكون قيمة مسموح بها
+      'payment_proof_url': '',                   // بدل null عشان NOT NULL
+      if (transactionReference?.isNotEmpty == true)
         'transaction_reference': transactionReference,
-        'status': 'pending',
-      };
+      if (note?.isNotEmpty == true)
+        'admin_notes': note,                     // العمود الموجود فعليًا
+      'status': 'pending',
+    };
 
-      final response = await _supabase
-          .from('payment_requests')
-          .insert(request)
-          .select()
-          .single();
+    final row = await _supabase
+        .from('payment_requests')
+        .insert(payload)
+        .select()
+        .single();
 
-      return PaymentRequest.fromJson(response);
-    } catch (e) {
-      throw Exception('Failed to submit payment request: ${e.toString()}');
-    }
+    return PaymentRequest.fromJson(row);
   }
 
-  // Upload payment proof image
+  /// Upload payment proof image
   Future<String> _uploadPaymentProof(File image, String fileName) async {
     try {
       final bytes = await image.readAsBytes();
@@ -57,7 +50,6 @@ class PaymentService {
           .from(paymentProofBucket)
           .uploadBinary(fileName, bytes);
 
-      // Get public URL
       final url = _supabase.storage
           .from(paymentProofBucket)
           .getPublicUrl(fileName);
@@ -68,7 +60,7 @@ class PaymentService {
     }
   }
 
-  // Get user's payment requests
+  /// Get user's payment requests
   Future<List<PaymentRequest>> getUserPaymentRequests() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -90,7 +82,7 @@ class PaymentService {
     }
   }
 
-  // Check if user has pending request
+  /// Check if user has pending request
   Future<PaymentRequest?> getPendingRequest() async {
     try {
       final userId = _supabase.auth.currentUser?.id;

@@ -3,13 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
-import 'package:itqan_gym/core/theme/colors.dart';
-import 'package:itqan_gym/core/utils/app_size.dart';
+import 'package:itqan_gym/screens/settings/widgets/payment/external_subscribe_page.dart';
+import 'package:provider/provider.dart';
 import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/screens/settings/screens/login_screen.dart';
-import 'package:provider/provider.dart';
-
-import '../screens/payment_screen.dart';
 
 class PremiumDialog extends StatefulWidget {
   const PremiumDialog({super.key});
@@ -45,7 +42,6 @@ class _PremiumDialogState extends State<PremiumDialog> {
       child: SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            // أكبر شوية علشان المحتوى الطويل
             maxWidth: 520.w,
             maxHeight: size.height * 0.9,
           ),
@@ -57,199 +53,11 @@ class _PremiumDialogState extends State<PremiumDialog> {
               child: Column(
                 children: [
                   // Header
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: _headerGradient),
-                    ),
-                    child: Stack(
-                      children: [
-                        Align(
-                          alignment: Alignment.center,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.workspace_premium, size: 48.sp, color: Colors.white),
-                              SizedBox(height: 8.h),
-                              Text(
-                                l10n.upgradeToAccess,
-                                style: TextStyle(
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: IconButton(
-                            icon: Icon(Icons.close_rounded, color: Colors.white, size: 22.sp),
-                            onPressed: () => Navigator.pop(context),
-                            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildHeader(theme, l10n),
 
-                  // Content (scrollable)
+                  // Content
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isWide = constraints.maxWidth >= 420; // Grid لو في مساحة
-                        return SingleChildScrollView(
-                          padding: EdgeInsets.all(20.w),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Plans
-                              if (isWide)
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _PlanCard(
-                                        title: l10n.monthlyPlan,
-                                        price: 99.97,
-                                        period: l10n.perMonth,
-                                        value: 'monthly',
-                                        isSelected: _selectedPlan == 'monthly',
-                                        accent: _accent,
-                                        onTap: () => setState(() => _selectedPlan = 'monthly'),
-                                      ),
-                                    ),
-                                    SizedBox(width: 12.w),
-                                    Expanded(
-                                      child: _PlanCard(
-                                        title: l10n.lifetimePlan,
-                                        price: 599.97,
-                                        period: l10n.oneTime,
-                                        value: 'lifetime',
-                                        isSelected: _selectedPlan == 'lifetime',
-                                        accent: _accent,
-                                        badgeText: l10n.bestValue,
-                                        onTap: () => setState(() => _selectedPlan = 'lifetime'),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              else ...[
-                                _PlanCard(
-                                  title: l10n.monthlyPlan,
-                                  price: 99.97,
-                                  period: l10n.perMonth,
-                                  value: 'monthly',
-                                  isSelected: _selectedPlan == 'monthly',
-                                  accent: _accent,
-                                  onTap: () => setState(() => _selectedPlan = 'monthly'),
-                                ),
-                                SizedBox(height: 12.h),
-                                _PlanCard(
-                                  title: l10n.lifetimePlan,
-                                  price: 599.97,
-                                  period: l10n.oneTime,
-                                  value: 'lifetime',
-                                  isSelected: _selectedPlan == 'lifetime',
-                                  accent: _accent,
-                                  badgeText: l10n.bestValue,
-                                  onTap: () => setState(() => _selectedPlan = 'lifetime'),
-                                ),
-                              ],
-
-                              SizedBox(height: 20.h),
-
-                              // Features (بدون قص نص — Wrap متعدد الأسطر)
-                              Container(
-                                padding: EdgeInsets.all(14.w),
-                                decoration: BoxDecoration(
-                                  color: theme.cardColor,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      l10n.whatsIncluded,
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14.sp,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10.h),
-
-                                    // هنا العرض كله بدون ellipsis
-                                    _FeatureRow(text: l10n.removeAds),
-                                    _FeatureRow(text: l10n.cloudBackup),
-                                    _FeatureRow(text: l10n.syncDevices),
-                                    _FeatureRow(text: l10n.premiumSupport),
-
-                                    // مثال: لو عندك مميزات كتير، استخدم Wrap:
-                                    // Wrap(
-                                    //   spacing: 8.w,
-                                    //   runSpacing: 8.h,
-                                    //   children: [
-                                    //     _FeatureChip(text: l10n.removeAds),
-                                    //     _FeatureChip(text: l10n.cloudBackup),
-                                    //     _FeatureChip(text: l10n.syncDevices),
-                                    //     _FeatureChip(text: l10n.premiumSupport),
-                                    //   ],
-                                    // ),
-                                  ],
-                                ),
-                              ),
-
-                              SizedBox(height: 16.h),
-
-                              // CTA
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _isNavigating ? null : _onSubscribePressed,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _accent,
-                                    foregroundColor: Colors.white,
-                                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12.r),
-                                    ),
-                                  ),
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    child: _isNavigating
-                                        ? SizedBox(
-                                      key: const ValueKey('loading'),
-                                      width: 18.w,
-                                      height: 18.w,
-                                      child: const CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                        : Text(
-                                      key: const ValueKey('text'),
-                                      l10n.continueToPayment,
-                                      style: TextStyle(
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 8.h),
-
-                              Center(
-                                child: TextButton(
-                                  onPressed: _isNavigating ? null : () => Navigator.pop(context),
-                                  child: Text(l10n.maybeLater, style: TextStyle(fontSize: 13.sp)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                    child: _buildContent(theme, l10n),
                   ),
                 ],
               ),
@@ -260,39 +68,244 @@ class _PremiumDialogState extends State<PremiumDialog> {
     );
   }
 
-  Future<void> _onSubscribePressed() async {
+  Widget _buildHeader(ThemeData theme, AppLocalizations l10n) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: _headerGradient),
+      ),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.workspace_premium, size: 48.sp, color: Colors.white),
+                SizedBox(height: 8.h),
+                Text(
+                  l10n.upgradeToAccess,
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              icon: Icon(Icons.close_rounded, color: Colors.white, size: 22.sp),
+              onPressed: () => Navigator.pop(context),
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(ThemeData theme, AppLocalizations l10n) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 420;
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Plans
+              if (isWide)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PlanCard(
+                        title: l10n.monthlyPlan,
+                        price: 99.97,
+                        period: l10n.perMonth,
+                        value: 'monthly',
+                        isSelected: _selectedPlan == 'monthly',
+                        accent: _accent,
+                        onTap: () => setState(() => _selectedPlan = 'monthly'),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: _PlanCard(
+                        title: l10n.lifetimePlan,
+                        price: 599.97,
+                        period: l10n.oneTime,
+                        value: 'lifetime',
+                        isSelected: _selectedPlan == 'lifetime',
+                        accent: _accent,
+                        badgeText: l10n.bestValue,
+                        onTap: () => setState(() => _selectedPlan = 'lifetime'),
+                      ),
+                    ),
+                  ],
+                )
+              else ...[
+                _PlanCard(
+                  title: l10n.monthlyPlan,
+                  price: 99.97,
+                  period: l10n.perMonth,
+                  value: 'monthly',
+                  isSelected: _selectedPlan == 'monthly',
+                  accent: _accent,
+                  onTap: () => setState(() => _selectedPlan = 'monthly'),
+                ),
+                SizedBox(height: 12.h),
+                _PlanCard(
+                  title: l10n.lifetimePlan,
+                  price: 599.97,
+                  period: l10n.oneTime,
+                  value: 'lifetime',
+                  isSelected: _selectedPlan == 'lifetime',
+                  accent: _accent,
+                  badgeText: l10n.bestValue,
+                  onTap: () => setState(() => _selectedPlan = 'lifetime'),
+                ),
+              ],
+
+              SizedBox(height: 20.h),
+
+              // Features
+              _buildFeatures(theme, l10n),
+
+              SizedBox(height: 16.h),
+
+              // CTA: View Subscription Instructions
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isNavigating ? null : _onViewInstructions,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accent,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: _isNavigating
+                        ? SizedBox(
+                      key: const ValueKey('loading'),
+                      width: 18.w,
+                      height: 18.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                        : Text(
+                      key: const ValueKey('text'),
+                      l10n.paymentInstructions,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 8.h),
+
+              Center(
+                child: TextButton(
+                  onPressed: _isNavigating ? null : () => Navigator.pop(context),
+                  child: Text(
+                    l10n.maybeLater,
+                    style: TextStyle(fontSize: 13.sp),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFeatures(ThemeData theme, AppLocalizations l10n) {
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.whatsIncluded,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 14.sp,
+            ),
+          ),
+          SizedBox(height: 10.h),
+          _FeatureRow(text: l10n.removeAds),
+          _FeatureRow(text: l10n.cloudBackup),
+          _FeatureRow(text: l10n.syncDevices),
+          _FeatureRow(text: l10n.premiumSupport),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onViewInstructions() async {
     HapticFeedback.lightImpact();
     setState(() => _isNavigating = true);
+
     try {
-      await _handleSubscribe();
+      // Check if user is logged in
+      final auth = context.read<AuthProvider>();
+      if (!auth.isLoggedIn) {
+        // Close dialog and navigate to login
+        if (mounted) Navigator.pop(context);
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(returnToPremium: true),
+          ),
+        );
+
+        // Check again after login
+        if (!mounted) return;
+        final authAfter = context.read<AuthProvider>();
+        if (!authAfter.isLoggedIn) return; // User didn't complete login
+      }
+
+      // Navigate to external subscribe page
+      if (!mounted) return;
+      Navigator.pop(context); // Close dialog
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ExternalSubscribePage(
+            selectedPlan: _selectedPlan,
+            amount: _selectedPlan == 'monthly' ? 99.97 : 599.97,
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isNavigating = false);
     }
   }
-
-  Future<void> _handleSubscribe() async {
-    final auth = context.read<AuthProvider>();
-    if (!auth.isLoggedIn) {
-      Navigator.pop(context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen(returnToPremium: true)),
-      );
-      return;
-    }
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PaymentScreen(
-          subscriptionType: _selectedPlan,
-          amount: _selectedPlan == 'monthly' ? 99.97 : 599.97,
-        ),
-      ),
-    );
-  }
 }
 
+// Feature Row Widget
 class _FeatureRow extends StatelessWidget {
   final String text;
   const _FeatureRow({required this.text});
@@ -311,9 +324,7 @@ class _FeatureRow extends StatelessWidget {
             child: Text(
               text,
               style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.sp),
-              softWrap: true,          // ✅ يسمح بلف النص
-              overflow: TextOverflow.visible, // ✅ لا تستخدم ellipsis
-              // maxLines: null,        // (اختياري) لتأكيد عدم تحديد عدد أسطر
+              softWrap: true,
             ),
           ),
         ],
@@ -322,8 +333,7 @@ class _FeatureRow extends StatelessWidget {
   }
 }
 
-/// Plan Card widget
-/// Plan Card widget (no text clipping, responsive)
+// Plan Card Widget
 class _PlanCard extends StatelessWidget {
   final String title;
   final double price;
@@ -357,9 +367,7 @@ class _PlanCard extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
           padding: EdgeInsets.all(14.w),
-          margin: EdgeInsets.only(bottom: 6.h),
           decoration: BoxDecoration(
             color: isSelected ? accent.withOpacity(0.08) : theme.cardColor,
             borderRadius: BorderRadius.circular(12.r),
@@ -403,25 +411,22 @@ class _PlanCard extends StatelessWidget {
 
               SizedBox(width: 10.w),
 
-              // Info (multi-line, no ellipsis)
+              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title + optional badge
                     Wrap(
                       spacing: 6.w,
                       runSpacing: 6.h,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        // العنوان بدون قص
                         Text(
                           title,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 13.sp,
                           ),
-                          softWrap: true,
                         ),
                         if (badgeText != null)
                           Container(
@@ -430,7 +435,7 @@ class _PlanCard extends StatelessWidget {
                               vertical: 2.h,
                             ),
                             decoration: BoxDecoration(
-                              color: ColorsManager.successFill,
+                              color: Colors.green,
                               borderRadius: BorderRadius.circular(4.r),
                             ),
                             child: Text(
@@ -444,14 +449,10 @@ class _PlanCard extends StatelessWidget {
                           ),
                       ],
                     ),
-
                     SizedBox(height: 6.h),
-
-                    // الفترة بدون قص
                     Text(
                       period,
                       style: theme.textTheme.bodySmall?.copyWith(fontSize: 11.sp),
-                      softWrap: true,
                     ),
                   ],
                 ),
@@ -459,13 +460,9 @@ class _PlanCard extends StatelessWidget {
 
               SizedBox(width: 10.w),
 
-              // Price (doesn't push text; shrinks if tight)
+              // Price
               ConstrainedBox(
-                constraints: BoxConstraints(
-                  // مساحة معقولة تمنع تكسير الـ Row
-                  minWidth: 72.w,
-                  maxWidth: 110.w,
-                ),
+                constraints: BoxConstraints(minWidth: 72.w, maxWidth: 110.w),
                 child: FittedBox(
                   alignment: Alignment.centerRight,
                   fit: BoxFit.scaleDown,
@@ -487,4 +484,3 @@ class _PlanCard extends StatelessWidget {
     );
   }
 }
-
