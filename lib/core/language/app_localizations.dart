@@ -63,7 +63,6 @@ abstract class AppLocalizations {
   String get monthlyPlan;
   String get lifetimePlan;
   String get perMonth;
-  String get oneTime;
   String get bestValue;
   String get whatsIncluded;
   String get continueToPayment;
@@ -534,6 +533,7 @@ abstract class AppLocalizations {
   String get premiumSubscription;
   String get selectedPlan;
   String get howToSubscribe;
+  String get perYear;
   String get contactUsForDetails;
   String get makePaymentExternally;
   String get sendPaymentConfirmation;

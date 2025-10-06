@@ -257,13 +257,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthlyPlan => 'Monthly Plan';
 
   @override
-  String get lifetimePlan => 'Lifetime Plan';
+  String get lifetimePlan => 'Yearly Plan';
 
   @override
   String get perMonth => 'Per month';
 
   @override
-  String get oneTime => 'One-time';
+  String get perYear => 'Per Year';
 
   @override
   String get bestValue => 'Best Value';

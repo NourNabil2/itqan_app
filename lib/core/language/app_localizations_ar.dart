@@ -101,13 +101,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get monthlyPlan => 'الاشتراك الشهري';
 
   @override
-  String get lifetimePlan => 'اشتراك مدى الحياة';
+  String get lifetimePlan => 'اشتراك السنوي';
 
   @override
   String get perMonth => 'شهرياً';
 
   @override
-  String get oneTime => 'دفعة واحدة';
+  String get perYear => 'سنوياً';
 
   @override
   String get bestValue => 'أفضل قيمة';
