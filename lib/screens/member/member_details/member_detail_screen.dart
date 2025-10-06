@@ -1,4 +1,5 @@
-// ============= MemberDetailScreen المحدث - Integration =============
+// lib/screens/member/member_details/member_details_screen.dart
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/assets/assets_manager.dart';
@@ -10,6 +11,7 @@ import 'package:itqan_gym/core/widgets/empty_state_widget.dart';
 import 'package:itqan_gym/data/models/member/member.dart';
 import 'package:itqan_gym/data/models/member/member_notes.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
+import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/screens/member/member_details/taps/member_exercises_tab.dart';
 import 'package:itqan_gym/screens/member/member_details/taps/notes_tap.dart';
 import 'package:itqan_gym/screens/member/member_details/widgets/member_header_widget.dart';
@@ -17,6 +19,7 @@ import 'package:itqan_gym/screens/member/member_notes_actions.dart';
 import 'package:provider/provider.dart';
 
 import 'taps/member_progress_tab.dart';
+import 'widgets/progress/performance_chart.dart';
 
 class MemberDetailScreen extends StatefulWidget {
   final Member member;
@@ -39,25 +42,9 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
   String? _error;
   late Member _currentMember;
 
-  // Mock data - استبدله ببيانات حقيقية
-  final List<Map<String, dynamic>> _exerciseProgress = [
-    {
-      'name': 'التوازن على العارضة',
-      'progress': 85.0,
-      'status': 'مكتمل',
-      'lastUpdated': DateTime.now().subtract(const Duration(days: 2)),
-      'color': ColorsManager.successFill,
-      'icon': Icons.check_circle_rounded,
-    },
-    {
-      'name': 'تمارين الأرضي',
-      'progress': 65.0,
-      'status': 'قيد التقدم',
-      'lastUpdated': DateTime.now().subtract(const Duration(days: 1)),
-      'color': ColorsManager.primaryColor,
-      'icon': Icons.schedule_rounded,
-    },
-  ];
+  // Data for sharing
+  Map<String, dynamic> _statistics = {};
+  List<AssignedSkill> _assignedSkills = [];
 
   @override
   void initState() {
@@ -70,6 +57,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
   void _initializeScreen() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMemberData();
+      _loadProgressData();
       _initializeNotesProvider();
     });
   }
@@ -114,6 +102,72 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
         setState(() => _isLoading = false);
       }
     }
+  }
+
+// وأضف المتغيرات دي في الـ State:
+  List<FlSpot> _chartData = [];
+  double _chartMaxY = 100;
+
+// وفي _loadProgressData:
+  Future<void> _loadProgressData() async {
+    if (!mounted) return;
+
+    try {
+      final provider = context.read<ExerciseAssignmentProvider>();
+
+      final results = await Future.wait([
+        provider.loadMemberSkills(widget.member.id),
+        provider.getMemberStatistics(widget.member.id),
+      ]);
+
+      if (mounted) {
+        final skills = results[0] as List<AssignedSkill>;
+
+        // Calculate chart data
+        _chartData = _calculateChartData(skills);
+        _chartMaxY = _calculateMaxY(_chartData);
+
+        setState(() {
+          _assignedSkills = skills;
+          _statistics = results[1] as Map<String, dynamic>;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading progress data: $e');
+    }
+  }
+
+// أضف الدوال دي:
+  List<FlSpot> _calculateChartData(List<AssignedSkill> skills) {
+    if (skills.isEmpty) return [];
+
+    final now = DateTime.now();
+    final weeklyProgress = <int, List<double>>{};
+
+    for (var skill in skills) {
+      final weekDiff = now.difference(skill.assignedAt).inDays ~/ 7;
+      if (weekDiff >= 0 && weekDiff < 6) {
+        weeklyProgress.putIfAbsent(weekDiff, () => []).add(skill.progress);
+      }
+    }
+
+    final spots = <FlSpot>[];
+    for (int week = 0; week < 6; week++) {
+      if (weeklyProgress.containsKey(week)) {
+        final avg = weeklyProgress[week]!.reduce((a, b) => a + b) /
+            weeklyProgress[week]!.length;
+        spots.add(FlSpot(week.toDouble(), avg));
+      }
+    }
+
+    spots.sort((a, b) => a.x.compareTo(b.x));
+    return spots;
+  }
+
+  double _calculateMaxY(List<FlSpot> data) {
+    if (data.isEmpty) return 100;
+    final maxValue = data.map((e) => e.y).reduce((a, b) => a > b ? a : b);
+    return ((maxValue / 20).ceil() * 20).toDouble().clamp(20, 100);
   }
 
   @override
@@ -171,7 +225,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
   Widget _buildContent() {
     return Column(
       children: [
-        // Header with Overall Progress
+        // Header
         RepaintBoundary(
           child: MemberHeaderWidget(
             member: _currentMember,
@@ -230,17 +284,13 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
     return TabBarView(
       controller: _tabController,
       children: [
-        // Progress Tab - محدث
-        MemberProgressTab(
-          member: _currentMember,
-        ),
+        // Progress Tab
+        MemberProgressTab(member: _currentMember),
 
         // Skills/Exercises Tab
-        MemberSkillsTab(
-          member: _currentMember,
-        ),
+        MemberSkillsTab(member: _currentMember),
 
-        // Notes Tab - محدث
+        // Notes Tab
         MemberNotesTab(
           member: _currentMember,
           onEditGeneralNotes: _editGeneralNotes,
@@ -293,15 +343,26 @@ class _MemberDetailScreenState extends State<MemberDetailScreen>
     MemberProfileActions.editMember(
       context: context,
       member: _currentMember,
-      onSuccess: _loadMemberData,
+      onSuccess: () {
+        _loadMemberData();
+        _loadProgressData();
+      },
     );
   }
+
+// استبدل _showMemberOptions بالكود ده:
 
   void _showMemberOptions() {
     MemberProfileActions.showMemberOptions(
       context: context,
       member: _currentMember,
       teamId: widget.teamId,
+      chartData: _chartData,
+      chartMaxY: _chartMaxY,
+      statistics: _statistics,
+      skills: _assignedSkills,
     );
   }
+
+
 }

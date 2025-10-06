@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
@@ -9,10 +10,13 @@ import 'package:itqan_gym/data/models/member/member_notes.dart';
 import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/providers/member_provider.dart';
 import 'package:itqan_gym/screens/member/edit_member/edit_member_screen.dart';
+import 'package:itqan_gym/screens/member/member_details/widgets/member_report_generator.dart';
 import 'package:itqan_gym/screens/member/member_notes/member_notes_screen.dart';
 import 'package:itqan_gym/screens/settings/widgets/premium_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+
+import '../../providers/exercise_assignment_provider.dart';
 
 class MemberNotesActions {
   static void editGeneralNotes({
@@ -318,10 +322,16 @@ class MemberProfileActions {
     });
   }
 
+// عدّل التوقيع
+// في MemberProfileActions class
   static void showMemberOptions({
     required BuildContext context,
     required Member member,
     String? teamId,
+    List<FlSpot>? chartData,
+    double? chartMaxY,
+    Map<String, dynamic>? statistics,
+    List<AssignedSkill>? skills,
   }) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
@@ -352,20 +362,31 @@ class MemberProfileActions {
               ),
             ),
             SizedBox(height: SizeApp.s20),
-            // Share option - Show to all but lock for non-premium
+
+            // Share option
             _buildOptionTile(
               context: context,
               icon: isPremium ? Icons.share_rounded : Icons.lock_rounded,
               title: isPremium ? l10n.shareProfile : '${l10n.shareProfile} (Premium)',
               color: isPremium ? ColorsManager.primaryColor : ColorsManager.defaultTextSecondary,
               onTap: isPremium
-                  ? () => _shareMember(context, member)
+                  ? () {
+                Navigator.pop(context);
+                _shareMember(
+                  context,
+                  member,
+                  chartData: chartData ?? [],
+                  chartMaxY: chartMaxY ?? 100,
+                  statistics: statistics,
+                  skills: skills,
+                );
+              }
                   : () {
                 Navigator.pop(context);
-                // Show premium dialog
                 PremiumDialog.show(context);
               },
             ),
+
             if (teamId != null)
               _buildOptionTile(
                 context: context,
@@ -374,6 +395,7 @@ class MemberProfileActions {
                 color: ColorsManager.warningFill,
                 onTap: () => _showRemoveFromTeamDialog(context, member, teamId),
               ),
+
             _buildOptionTile(
               context: context,
               icon: Icons.delete_rounded,
@@ -387,6 +409,27 @@ class MemberProfileActions {
     );
   }
 
+  static Future<void> _shareMember(
+      BuildContext context,
+      Member member, {
+        List<FlSpot>? chartData,
+        double? chartMaxY,
+        Map<String, dynamic>? statistics,
+        List<AssignedSkill>? skills,
+      }) async {
+    if (chartData != null && statistics != null && skills != null) {
+      await MemberReportGenerator.generateAndShareReport(
+        context: context,
+        member: member,
+        chartData: chartData,
+        chartMaxY: chartMaxY ?? 100,
+        statistics: statistics,
+        skills: skills,
+      );
+    } else {
+      // Fallback...
+    }
+  }
   static Widget _buildOptionTile({
     required BuildContext context,
     required IconData icon,
@@ -415,17 +458,11 @@ class MemberProfileActions {
         ),
       ),
       onTap: () {
-        Navigator.pop(context);
         onTap();
       },
     );
   }
 
-  static Future<void> _shareMember(BuildContext context, Member member) async {
-    final l10n = AppLocalizations.of(context);
-    final text = '${member.name} • ${l10n.age}: ${member.age} • ${l10n.level}: ${member.level} , ${member.notes} ';
-    await Share.share(text, subject: '${l10n.shareProfile}: ${member.name}');
-  }
 
   static void _showRemoveFromTeamDialog(BuildContext context, Member member, String teamId) {
     final l10n = AppLocalizations.of(context);

@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/language/app_localizations.dart';
@@ -15,9 +16,11 @@ import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:itqan_gym/screens/member/member_details/widgets/progress/skills_progress_section.dart';
 import 'package:itqan_gym/screens/member/member_details/widgets/progress/performance_chart.dart';
 import 'package:itqan_gym/screens/member/member_details/widgets/progress/statistics_section.dart';
+import 'package:itqan_gym/screens/member/member_notes_actions.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/widgets/premium_lock_widget.dart';
+import '../widgets/member_report_generator.dart';
 
 class MemberProgressTab extends StatefulWidget {
   final Member member;
@@ -33,6 +36,8 @@ class MemberProgressTab extends StatefulWidget {
 
 class _MemberProgressTabState extends State<MemberProgressTab>
     with AutomaticKeepAliveClientMixin {
+  GlobalKey _chartKey = GlobalKey();
+  double? _improvement;
   List<AssignedSkill> _assignedSkills = [];
   Map<String, dynamic> _statistics = {};
   bool _isLoading = true;
@@ -47,6 +52,7 @@ class _MemberProgressTabState extends State<MemberProgressTab>
     _loadProgressData();
   }
 
+// وخليها كده:
   Future<void> _loadProgressData() async {
     if (!mounted) return;
 
@@ -71,14 +77,16 @@ class _MemberProgressTabState extends State<MemberProgressTab>
         });
       }
     } catch (e) {
+      debugPrint('Error loading progress data: $e');
       if (mounted) {
         setState(() {
-          _error = 'حدث خطأ في تحميل البيانات: ${e.toString()}';
+          _error = e.toString();
           _isLoading = false;
         });
       }
     }
   }
+
 
   void _navigateToTab(int index) {
     final tabController = DefaultTabController.of(context);
@@ -170,6 +178,7 @@ class _MemberProgressTabState extends State<MemberProgressTab>
   }
 
 
+
   Widget _buildChartSection() {
     final l10n = AppLocalizations.of(context);
 
@@ -192,11 +201,17 @@ class _MemberProgressTabState extends State<MemberProgressTab>
         ),
         SizedBox(height: SizeApp.s16),
         RepaintBoundary(
-          child: PerformanceChart(member: widget.member),
+          child: PerformanceChart(member: widget.member,
+              onImprovementCalculated: (improvement) {
+                setState(() => _improvement = improvement);
+              },),
         ),
       ],
     );
   }
+
+
+
 
   Widget _buildSkillsSection() {
     final l10n = AppLocalizations.of(context);

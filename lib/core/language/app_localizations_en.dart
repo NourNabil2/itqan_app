@@ -1542,14 +1542,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorDeletingMember => 'Error deleting member';
 
-  @override String get contactOnWhatsApp => 'Subscribe via WhatsApp';
   @override String get contactByEmail => 'Subscribe via Email';
   @override String get pricePerMonth => 'Monthly subscription price';
-
-  @override String get step1 => '1) Transfer the amount via InstaPay.';
-  @override String get step2 => '2) After the transfer, contact us via WhatsApp or email to send the confirmation details.';
-  @override String get step3 => '3) Your subscription will be activated within 24 hours after verification.';
-
   @override String get whatsappPrefilledMessage =>
       'Hi, I would like to subscribe to the premium version. I have made the transfer and will send the confirmation details.';
   @override String get emailSubject => 'Premium Subscription Request';
@@ -1595,4 +1589,18 @@ I need help with:
 If you want to delete your account, please write "I want to delete my account" in the message.
 
 Thank you.''';
+
+  @override String get generatingReport => 'Generating report...';
+  @override String get memberReport => 'Member Report';
+  @override String get progressReport => 'Progress Report';
+  @override String get errorGeneratingReport => 'Error generating report';
+  @override String get memberProgressReport => 'Member Progress Report';
+  @override String get memberSince => 'Member since';
+  @override String get years => 'years';
+  @override String get totalSkills => 'Total Skills';
+  @override String get averageProgress => 'Average Progress';
+  @override String get topSkills => 'Top Skills';
+  @override String get notes => 'Notes';
+  @override String get professionalGymnasticsManagement => 'Professional Gymnastics Management';
+
 }

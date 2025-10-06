@@ -227,47 +227,44 @@ class _MemberCardState extends State<MemberCard> with SingleTickerProviderStateM
   Widget _buildAvatar(bool isSmallScreen) {
     final hasPhoto = widget.member.photoPath != null;
 
-    return Hero(
-      tag: 'member_avatar_${widget.member.id}',
-      child: Container(
-        width: isSmallScreen ? 60.w : 70.w,
-        height: isSmallScreen ? 60.h : 70.h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(SizeApp.radiusMed),
-          gradient: !hasPhoto ? LinearGradient(
-            colors: [
-              ColorsManager.secondaryColor.withOpacity(0.3),
-              ColorsManager.secondaryColor.withOpacity(0.1),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ) : null,
-          image: hasPhoto
-              ? DecorationImage(
-            image: FileImage(File(widget.member.photoPath!)),
-            fit: BoxFit.cover,
-          )
-              : null,
-          border: Border.all(
-            color: ColorsManager.secondaryColor.withOpacity(0.2),
-            width: 2,
-          ),
-        ),
-        child: !hasPhoto
-            ? Center(
-          child: Text(
-            widget.member.name.isNotEmpty
-                ? widget.member.name[0].toUpperCase()
-                : '?',
-            style: TextStyle(
-              fontSize: isSmallScreen ? 24.sp : 28.sp,
-              fontWeight: FontWeight.w700,
-              color: ColorsManager.secondaryColor,
-            ),
-          ),
+    return Container(
+      width: isSmallScreen ? 60.w : 70.w,
+      height: isSmallScreen ? 60.h : 70.h,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(SizeApp.radiusMed),
+        gradient: !hasPhoto ? LinearGradient(
+          colors: [
+            ColorsManager.secondaryColor.withOpacity(0.3),
+            ColorsManager.secondaryColor.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ) : null,
+        image: hasPhoto
+            ? DecorationImage(
+          image: FileImage(File(widget.member.photoPath!)),
+          fit: BoxFit.cover,
         )
             : null,
+        border: Border.all(
+          color: ColorsManager.secondaryColor.withOpacity(0.2),
+          width: 2,
+        ),
       ),
+      child: !hasPhoto
+          ? Center(
+        child: Text(
+          widget.member.name.isNotEmpty
+              ? widget.member.name[0].toUpperCase()
+              : '?',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 24.sp : 28.sp,
+            fontWeight: FontWeight.w700,
+            color: ColorsManager.secondaryColor,
+          ),
+        ),
+      )
+          : null,
     );
   }
 

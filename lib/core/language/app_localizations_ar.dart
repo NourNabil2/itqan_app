@@ -1524,14 +1524,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get errorDeletingMember => 'حدث خطأ في حذف العضو';
 
-  @override String get contactOnWhatsApp => 'اشترك الآن عبر واتساب';
   @override String get contactByEmail => 'اشترك عبر البريد الإلكتروني';
   @override String get pricePerMonth => 'سعر الاشتراك الشهري';
 
   @override String get paymentInstructions => 'طريقة الاشتراك';
-  @override String get step1 => '1) قم بتحويل المبلغ عبر إنستا باي.';
-  @override String get step2 => '2) بعد التحويل، تواصل معنا عبر واتساب أو البريد الإلكتروني لإرسال تفاصيل التأكيد.';
-  @override String get step3 => '3) سيتم تفعيل اشتراكك خلال 24 ساعة بعد التأكيد.';
 
   @override String get whatsappPrefilledMessage =>
       'مرحبًا، أريد الاشتراك في النسخة المميزة. لقد قمت بالتحويل وسأرسل تفاصيل التأكيد.';
@@ -1549,7 +1545,7 @@ class AppLocalizationsAr extends AppLocalizations {
   @override String get howToSubscribe => 'كيفية الاشتراك';
   @override String get contactUsForDetails => 'تواصل معنا للحصول على تفاصيل الدفع';
   @override String get makePaymentExternally => 'قم بإجراء الدفع عبر الطريقة المتفق عليها';
-  @override String get sendPaymentConfirmation => 'أرسل تأكيد الدفع عبر واتساب أو الإيميل';
+  @override String get sendPaymentConfirmation => 'أرسل تأكيد الدفع عبر الإيميل';
   @override String get activationWithin24Hours => 'سيتم تفعيل اشتراكك خلال 24 ساعة';
   @override String get contactInformation => 'معلومات التواصل';
   @override String get contactViaWhatsApp => 'تواصل عبر واتساب';
@@ -1581,4 +1577,19 @@ I need help with:
 If you want to delete your account, please write "I want to delete my account" in the message.
 
 Thank you.''';
+
+  @override String get generatingReport => 'جاري إنشاء التقرير...';
+  @override String get memberReport => 'تقرير العضو';
+  @override String get progressReport => 'تقرير التقدم';
+  @override String get errorGeneratingReport => 'خطأ في إنشاء التقرير';
+  @override String get memberProgressReport => 'تقرير تقدم العضو';
+  @override String get memberSince => 'عضو منذ';
+  @override String get years => 'سنة';
+  @override String get totalSkills => 'إجمالي المهارات';
+  @override String get averageProgress => 'متوسط التقدم';
+  @override String get topSkills => 'أفضل المهارات';
+  @override String get notes => 'ملاحظات';
+  @override String get professionalGymnasticsManagement => 'إدارة احترافية للجمباز';
+
+
 }
