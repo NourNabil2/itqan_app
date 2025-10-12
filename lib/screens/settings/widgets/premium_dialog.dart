@@ -154,8 +154,8 @@ class _PremiumDialogState extends State<PremiumDialog> {
               else ...[
                 _PlanCard(
                   title: l10n.monthlyPlan,
-                  price: 59.99,
-                  oldPrice: 99.97,
+                  price: 30.00,
+                  oldPrice: 60.00,
                   period: l10n.perMonth,
                   value: 'monthly',
                   isSelected: _selectedPlan == 'monthly',
@@ -299,7 +299,7 @@ class _PremiumDialogState extends State<PremiumDialog> {
         MaterialPageRoute(
           builder: (_) => ExternalSubscribePage(
             selectedPlan: _selectedPlan,
-            amount: _selectedPlan == 'monthly' ? 59.99 : 249.99,
+            amount: _selectedPlan == 'monthly' ? 30 : 249.99,
           ),
         ),
       );
