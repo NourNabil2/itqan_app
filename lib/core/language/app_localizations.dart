@@ -252,6 +252,7 @@ abstract class AppLocalizations {
 
   // ============= Team Detail Screen =============
   String get content;
+  String get attendance;
   String get loadingData;
   String get noContentAssigned;
   String get startAssigningContent;

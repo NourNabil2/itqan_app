@@ -563,6 +563,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUpdatingNote => 'Error updating note';
 
   @override
+  String get attendance => 'Attendance';
+
+  @override
   String get errorAddingNote => 'Error adding note';
 
   @override

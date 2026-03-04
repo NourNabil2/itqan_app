@@ -628,3 +628,4 @@ class _TeamCardState extends State<TeamCard> with SingleTickerProviderStateMixin
     return ColorsManager.errorFill;
   }
 }
+

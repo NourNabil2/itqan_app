@@ -33,5 +33,9 @@ class LibraryTab {
       title: 'المهارات',
       icon: Icons.star_rounded,
     ),
+    LibraryTab(
+      title: 'المهارات المرجعيه',
+      icon: Icons.star_rate_outlined,
+    ),
   ];
 }

@@ -10,6 +10,7 @@ import 'package:itqan_gym/core/utils/enums.dart';
 import 'package:itqan_gym/core/widgets/custom_app_bar.dart';
 import 'package:itqan_gym/core/widgets/section_header.dart';
 import 'package:itqan_gym/screens/team/manage_assignments_screen.dart';
+import 'package:itqan_gym/screens/team/team_detailes/training_calendar_screen.dart';
 import 'package:itqan_gym/screens/team/widgets/exercise_detail_sheet.dart'
     hide getApparatusColor, getApparatusIcon;
 import 'package:itqan_gym/screens/team/widgets/skill_detail_sheet.dart';
@@ -34,7 +35,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadTeamData();
   }
 
@@ -109,6 +110,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
                     ),
                   ),
                 ),
+                Tab(
+                  child: Center(
+                    child: Text(
+                      l10n.attendance,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -120,6 +132,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
               children: [
                 _buildMembersTab(),
                 _buildContentTab(),
+                TrainingCalendarScreen(team: widget.team),
               ],
             ),
           ),
@@ -695,3 +708,5 @@ class _TeamDetailScreenState extends State<TeamDetailScreen>
   }
 
 }
+
+

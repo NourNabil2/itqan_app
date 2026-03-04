@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // إضافة هذا السطر
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:itqan_gym/core/services/ad_service.dart';
+import 'package:itqan_gym/providers/attendance_provider.dart';
 import 'package:itqan_gym/providers/auth_provider.dart';
 import 'package:itqan_gym/providers/exercise_assignment_provider.dart';
 import 'package:media_kit/media_kit.dart';
@@ -63,6 +64,7 @@ class GymnasticsApp extends StatelessWidget {
             ChangeNotifierProvider(create: (_) => MemberProvider()),
             ChangeNotifierProvider(create: (_) => ExerciseLibraryProvider()),
             ChangeNotifierProvider(create: (_) => SkillLibraryProvider()),
+            ChangeNotifierProvider(create: (_) => AttendanceProvider()),
             ChangeNotifierProvider(create: (_) => MemberLibraryProvider()),
             ChangeNotifierProvider(create: (_) => MemberNotesProvider()),
             ChangeNotifierProvider<ExerciseAssignmentProvider>(

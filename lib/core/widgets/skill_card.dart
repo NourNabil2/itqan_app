@@ -1,3 +1,4 @@
+// lib/core/widgets/skill_card.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,11 +8,13 @@ import 'package:itqan_gym/data/models/skill_template.dart';
 class SkillCard extends StatelessWidget {
   final SkillTemplate skill;
   final VoidCallback? onTap;
+  final bool showSystemBadge; // ✅ إظهار علامة المهارة الجاهزة
 
   const SkillCard({
     super.key,
     required this.skill,
     this.onTap,
+    this.showSystemBadge = true, // ✅
   });
 
   @override
@@ -26,11 +29,15 @@ class SkillCard extends StatelessWidget {
         color: Colors.transparent,
         child: Ink(
           decoration: BoxDecoration(
-            color: theme.cardColor,
+            color: skill.isSystem
+                ? colorScheme.surfaceContainerHighest.withOpacity(0.5) // ✅ لون مميز للجاهزة
+                : theme.cardColor,
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
-              color: theme.dividerColor.withOpacity(0.35),
-              width: 1,
+              color: skill.isSystem
+                  ? apparatusColor.withOpacity(0.5) // ✅ حدود أقوى للجاهزة
+                  : theme.dividerColor.withOpacity(0.35),
+              width: skill.isSystem ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
@@ -48,43 +55,64 @@ class SkillCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Thumbnail / Fallback Icon
+                  // Thumbnail مع دعم الروابط البعيدة
                   _ThumbBox(
                     thumbnailPath: skill.thumbnailPath,
+                    isNetworkUrl: skill.isSystem, // ✅
                     fallbackIcon: getApparatusIcon(skill.apparatus),
                     accent: apparatusColor,
                   ),
 
                   SizedBox(width: 12.w),
 
-                  // Title + Badge + Assigned count
+                  // المحتوى
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // ✅ شارة المهارة الجاهزة
+                        if (skill.isSystem && showSystemBadge) ...[
+                          _SystemBadge(),
+                          SizedBox(height: 4.h),
+                        ],
+
                         // Title
                         Text(
                           skill.skillName,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
+                            color: skill.isSystem
+                                ? colorScheme.primary
+                                : colorScheme.onSurface,
                           ),
                         ),
 
                         SizedBox(height: 6.h),
 
-                        // Apparatus badge
-                        _Badge(
-                          text: skill.apparatus.getLocalizedName(context),
-                          color: apparatusColor,
+                        // Apparatus badge + Difficulty
+                        Wrap(
+                          spacing: 6.w,
+                          children: [
+                            _Badge(
+                              text: skill.apparatus.getLocalizedName(context),
+                              color: apparatusColor,
+                            ),
+                            if (skill.difficultyLevel != null) ...[
+                              _Badge(
+                                text: _getDifficultyText(skill.difficultyLevel!),
+                                color: _getDifficultyColor(skill.difficultyLevel!),
+                              ),
+                            ],
+                          ],
                         ),
 
-                        // Assigned info
-                        if (skill.assignedTeamsCount > 0) ...[
+                        // Assigned info (للمحلية فقط)
+                        if (!skill.isSystem && skill.assignedTeamsCount > 0) ...[
                           SizedBox(height: 6.h),
                           Text(
-                            'معيَّن إلى ${skill.assignedTeamsCount} فريق',
+                            'معيّن إلى ${skill.assignedTeamsCount} فريق',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.labelSmall?.copyWith(
@@ -93,11 +121,41 @@ class SkillCard extends StatelessWidget {
                             ),
                           ),
                         ],
+
+                        // ✅ وصف مختصر للمهارة الجاهزة
+                        if (skill.isSystem && skill.description != null) ...[
+                          SizedBox(height: 6.h),
+                          Text(
+                            skill.description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
 
-                  // Media counter (if any)
+                  // ✅ أيقونة الفيديو للمهارات الجاهزة
+                  if (skill.isSystem && skill.videoUrl != null) ...[
+                    SizedBox(width: 8.w),
+                    Container(
+                      padding: EdgeInsets.all(8.w),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.play_circle_fill_rounded,
+                        color: Colors.red,
+                        size: 24.sp,
+                      ),
+                    ),
+                  ],
+
+                  // Media counter
                   if (skill.mediaGallery.isNotEmpty) ...[
                     SizedBox(width: 8.w),
                     _MediaChip(count: skill.mediaGallery.length),
@@ -110,25 +168,85 @@ class SkillCard extends StatelessWidget {
       ),
     );
   }
+
+  String _getDifficultyText(String level) {
+    switch (level) {
+      case 'beginner':
+        return 'مبتدئ';
+      case 'intermediate':
+        return 'متوسط';
+      case 'advanced':
+        return 'متقدم';
+      default:
+        return level;
+    }
+  }
+
+  Color _getDifficultyColor(String level) {
+    switch (level) {
+      case 'beginner':
+        return Colors.green;
+      case 'intermediate':
+        return Colors.orange;
+      case 'advanced':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
 }
 
-/// صورة مصغّرة مع Fallback أيقونة — بدون IO متزامن داخل build
+// ✅ شارة المهارة الجاهزة
+class _SystemBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4.r),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.verified_rounded,
+            size: 12.sp,
+            color: Colors.blue,
+          ),
+          SizedBox(width: 4.w),
+          Text(
+            'مهارة مرجعية',
+            style: TextStyle(
+              fontSize: 10.sp,
+              color: Colors.blue,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ThumbBox extends StatelessWidget {
   final String? thumbnailPath;
+  final bool isNetworkUrl; // ✅
   final IconData fallbackIcon;
   final Color accent;
 
   const _ThumbBox({
     required this.thumbnailPath,
+    this.isNetworkUrl = false, // ✅
     required this.fallbackIcon,
     required this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
-    final size = 60.w; // مربع متناسق
+    final size = 60.w;
     final radius = 10.r;
-
     final hasPath = (thumbnailPath ?? '').trim().isNotEmpty;
 
     return ClipRRect(
@@ -145,12 +263,32 @@ class _ThumbBox extends StatelessWidget {
           borderRadius: BorderRadius.circular(radius),
         ),
         child: hasPath
-            ? Image.file(
+            ? isNetworkUrl
+            ? Image.network( // ✅ للروابط البعيدة
+          thumbnailPath!,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.low,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
+                    : null,
+                strokeWidth: 2,
+              ),
+            );
+          },
+          errorBuilder: (_, __, ___) =>
+              _FallbackIcon(icon: fallbackIcon, color: accent),
+        )
+            : Image.file( // للملفات المحلية
           File(thumbnailPath!),
           fit: BoxFit.cover,
-          // أقل تكلفة جودة/ذاكرة للثَمبنيل
           filterQuality: FilterQuality.low,
-          errorBuilder: (_, __, ___) => _FallbackIcon(icon: fallbackIcon, color: accent),
+          errorBuilder: (_, __, ___) =>
+              _FallbackIcon(icon: fallbackIcon, color: accent),
         )
             : _FallbackIcon(icon: fallbackIcon, color: accent),
       ),

@@ -194,6 +194,7 @@ class TeamProvider extends ChangeNotifier {
     }
   }
 
+
   // إحصائيات الفريق
   int get totalMembers => _teamMembers.length;
   int get totalExercises => _teamExercises.length;

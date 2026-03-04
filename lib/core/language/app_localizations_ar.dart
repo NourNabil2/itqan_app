@@ -1293,6 +1293,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get horizontalBar => 'العقلة';
 
   @override
+  String get attendance => 'الحضور';
+
+  @override
   String get unevenBars => 'المتوازي المختلف';
 
   @override

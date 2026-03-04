@@ -18,6 +18,7 @@ import 'package:itqan_gym/providers/skill_library_provider.dart';
 import 'package:itqan_gym/screens/library/add_exercise_screen.dart';
 import 'package:itqan_gym/screens/library/add_skill_screen.dart';
 import 'package:itqan_gym/screens/library/library_tab.dart';
+import 'package:itqan_gym/screens/library/system_skills_screen.dart';
 import 'package:itqan_gym/screens/member/member_details/widgets/exercises/exercise_card.dart';
 import 'package:provider/provider.dart';
 
@@ -126,6 +127,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 _buildExerciseList(ExerciseType.stretching),
                 _buildExerciseList(ExerciseType.conditioning),
                 _buildSkillsList(),
+                const SystemSkillsScreen(),
               ],
             ),
           ),

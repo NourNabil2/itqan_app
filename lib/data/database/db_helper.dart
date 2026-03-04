@@ -3,6 +3,8 @@ import 'package:itqan_gym/data/models/member/member_notes.dart';
 import 'package:itqan_gym/data/models/skill_template.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../models/attendance.dart';
+import '../models/session.dart';
 import '../models/team.dart';
 import '../models/member/member.dart';
 import '../models/exercise.dart';
@@ -32,7 +34,36 @@ class DatabaseHelper {
     );
   }
 
+
   Future _createDB(Database db, int version) async {
+
+     await db.execute('''
+   CREATE TABLE IF NOT EXISTS sessions (
+     id         TEXT PRIMARY KEY,
+     team_id    TEXT NOT NULL,
+     date       TEXT NOT NULL,          -- 'yyyy-MM-dd'
+     status     TEXT NOT NULL DEFAULT 'scheduled',
+     notes      TEXT,
+     created_at TEXT NOT NULL,
+     UNIQUE(team_id, date),
+     FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE CASCADE
+   )
+ ''');
+
+ await db.execute('''
+   CREATE TABLE IF NOT EXISTS attendance (
+     id          TEXT PRIMARY KEY,
+     session_id  TEXT NOT NULL,
+     member_id   TEXT NOT NULL,
+     status      TEXT NOT NULL DEFAULT 'absent',   -- present/absent/excused
+     note        TEXT,
+     recorded_at TEXT NOT NULL,
+     UNIQUE(session_id, member_id),
+     FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE,
+     FOREIGN KEY (member_id)  REFERENCES members  (id) ON DELETE CASCADE
+   )
+ ''');
+
     // Teams
     await db.execute('''
     CREATE TABLE IF NOT EXISTS teams (
@@ -1030,6 +1061,7 @@ class DatabaseHelper {
     };
   }
 
+
   // إعادة تعيين الداتابيس في حالة المشاكل
   Future<void> resetDatabase() async {
     final dbPath = await getDatabasesPath();
@@ -1044,4 +1076,317 @@ class DatabaseHelper {
     final db = await database;
     db.close();
   }
+}
+
+
+
+extension CalendarDbMethods on DatabaseHelper {
+
+  // ─── توليد جلسات شهر كامل ──────────────────────────────────
+  /// يأخذ قائمة أيام الأسبوع المختارة (1=الإثنين، 7=الأحد بحسب Dart)
+  /// ويولّد جلسات لكل الأشهر في نطاق [startDate, endDate]
+  /// يتجاهل اليوم إذا كان مسجلاً مسبقاً (UNIQUE constraint)
+  Future<int> generateSessionsForRange({
+    required String teamId,
+    required List<int> weekdays,       // [1,3] = إثنين + أربعاء
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final db = await database;
+    int insertedCount = 0;
+
+    // loop يومي من startDate → endDate
+    DateTime cursor = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day);
+
+    final batch = db.batch();
+
+    while (!cursor.isAfter(end)) {
+      if (weekdays.contains(cursor.weekday)) {
+        final session = Session.create(teamId: teamId, date: cursor);
+        batch.insert(
+          'sessions',
+          session.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.ignore, // تجاهل المكرر
+        );
+        insertedCount++;
+      }
+      cursor = cursor.add(const Duration(days: 1));
+    }
+
+    await batch.commit(noResult: true);
+    return insertedCount;
+  }
+
+  // ─── توليد جلسات شهر واحد ──────────────────────────────────
+  Future<int> generateSessionsForMonth({
+    required String teamId,
+    required List<int> weekdays,
+    required int year,
+    required int month,
+  }) async {
+    final start = DateTime(year, month, 1);
+    final end = DateTime(year, month + 1, 0); // آخر يوم في الشهر
+    return generateSessionsForRange(
+      teamId: teamId,
+      weekdays: weekdays,
+      startDate: start,
+      endDate: end,
+    );
+  }
+
+  // ─── جلب كل جلسات فريق في شهر ─────────────────────────────
+  Future<List<Session>> getSessionsForMonth({
+    required String teamId,
+    required int year,
+    required int month,
+  }) async {
+    final db = await database;
+    final startStr =
+        '$year-${month.toString().padLeft(2, '0')}-01';
+    final endStr =
+        '$year-${month.toString().padLeft(2, '0')}-${_lastDayOfMonth(year, month).toString().padLeft(2, '0')}';
+
+    final maps = await db.query(
+      'sessions',
+      where: 'team_id = ? AND date >= ? AND date <= ?',
+      whereArgs: [teamId, startStr, endStr],
+      orderBy: 'date ASC',
+    );
+    return maps.map(Session.fromMap).toList();
+  }
+
+  // ─── جلب جلسة بالتاريخ ─────────────────────────────────────
+  Future<Session?> getSessionByDate({
+    required String teamId,
+    required DateTime date,
+  }) async {
+    final db = await database;
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+    final maps = await db.query(
+      'sessions',
+      where: 'team_id = ? AND date = ?',
+      whereArgs: [teamId, dateStr],
+      limit: 1,
+    );
+    return maps.isEmpty ? null : Session.fromMap(maps.first);
+  }
+
+  // ─── إضافة جلسة واحدة يدوياً ───────────────────────────────
+  Future<String> createSession(Session session) async {
+    final db = await database;
+    await db.insert(
+      'sessions',
+      session.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+    return session.id;
+  }
+
+  // ─── تحديث حالة جلسة (إلغاء / تأجيل) ──────────────────────
+  Future<void> updateSessionStatus({
+    required String sessionId,
+    required SessionStatus status,
+    String? notes,
+  }) async {
+    final db = await database;
+    await db.update(
+      'sessions',
+      {
+        'status': status.value,
+        if (notes != null) 'notes': notes,
+      },
+      where: 'id = ?',
+      whereArgs: [sessionId],
+    );
+  }
+
+  // ─── حذف جلسة ──────────────────────────────────────────────
+  Future<void> deleteSession(String sessionId) async {
+    final db = await database;
+    await db.delete('sessions', where: 'id = ?', whereArgs: [sessionId]);
+  }
+
+  // ─── حذف جلسات فريق في شهر ──────────────────────────────────
+  Future<void> deleteSessionsForMonth({
+    required String teamId,
+    required int year,
+    required int month,
+  }) async {
+    final db = await database;
+    final startStr =
+        '$year-${month.toString().padLeft(2, '0')}-01';
+    final endStr =
+        '$year-${month.toString().padLeft(2, '0')}-${_lastDayOfMonth(year, month).toString().padLeft(2, '0')}';
+
+    await db.delete(
+      'sessions',
+      where: 'team_id = ? AND date >= ? AND date <= ? AND status = ?',
+      whereArgs: [teamId, startStr, endStr, SessionStatus.scheduled.value],
+    );
+  }
+
+  // ─── جلب أيام الجلسات كـ Set<DateTime> للتقويم ─────────────
+  Future<Set<DateTime>> getSessionDatesForMonth({
+    required String teamId,
+    required int year,
+    required int month,
+  }) async {
+    final sessions = await getSessionsForMonth(
+      teamId: teamId,
+      year: year,
+      month: month,
+    );
+    return sessions
+        .where((s) => s.isScheduled)
+        .map((s) => DateTime.parse(s.date))
+        .toSet();
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  ATTENDANCE
+  // ════════════════════════════════════════════════════════════
+
+  // ─── حفظ / تحديث حضور عضو واحد ──────────────────────────────
+  Future<void> saveAttendance({
+    required String sessionId,
+    required String memberId,
+    required AttendanceStatus status,
+    String? note,
+  }) async {
+    final db = await database;
+    final record = Attendance.create(
+      sessionId: sessionId,
+      memberId: memberId,
+      status: status,
+      note: note,
+    );
+
+    await db.insert(
+      'attendance',
+      record.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace, // تحديث إذا موجود
+    );
+  }
+
+  // ─── حفظ حضور كامل جلسة دفعة واحدة ─────────────────────────
+  Future<void> saveSessionAttendanceBatch({
+    required String sessionId,
+    required Map<String, AttendanceStatus> statusByMemberId,
+  }) async {
+    final db = await database;
+    final batch = db.batch();
+
+    for (final entry in statusByMemberId.entries) {
+      final record = Attendance.create(
+        sessionId: sessionId,
+        memberId: entry.key,
+        status: entry.value,
+      );
+      batch.insert(
+        'attendance',
+        record.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+
+  // ─── جلب حضور جلسة ───────────────────────────────────────────
+  Future<List<Attendance>> getSessionAttendance(String sessionId) async {
+    final db = await database;
+    final maps = await db.query(
+      'attendance',
+      where: 'session_id = ?',
+      whereArgs: [sessionId],
+    );
+    return maps.map(Attendance.fromMap).toList();
+  }
+
+  // ─── جلب حضور عضو في شهر محدد ──────────────────────────────
+  Future<List<Attendance>> getMemberAttendanceForMonth({
+    required String memberId,
+    required String teamId,
+    required int year,
+    required int month,
+  }) async {
+    final db = await database;
+    final startStr =
+        '$year-${month.toString().padLeft(2, '0')}-01';
+    final endStr =
+        '$year-${month.toString().padLeft(2, '0')}-${_lastDayOfMonth(year, month).toString().padLeft(2, '0')}';
+
+    final maps = await db.rawQuery('''
+      SELECT a.*
+      FROM attendance a
+      JOIN sessions s ON s.id = a.session_id
+      WHERE a.member_id = ?
+        AND s.team_id   = ?
+        AND s.date      >= ?
+        AND s.date      <= ?
+        AND s.status    = 'scheduled'
+      ORDER BY s.date ASC
+    ''', [memberId, teamId, startStr, endStr]);
+
+    return maps.map(Attendance.fromMap).toList();
+  }
+
+  // ─── تقرير حضور كل أعضاء فريق في شهر ──────────────────────
+  Future<List<MemberMonthlyReport>> getTeamMonthlyReport({
+    required String teamId,
+    required int year,
+    required int month,
+  }) async {
+    final db = await database;
+    final startStr =
+        '$year-${month.toString().padLeft(2, '0')}-01';
+    final endStr =
+        '$year-${month.toString().padLeft(2, '0')}-${_lastDayOfMonth(year, month).toString().padLeft(2, '0')}';
+
+    final maps = await db.rawQuery('''
+      SELECT
+        m.id                                              AS member_id,
+        m.name                                            AS member_name,
+        COUNT(s.id)                                       AS total_sessions,
+        SUM(CASE WHEN a.status = 'present'  THEN 1 ELSE 0 END) AS present_count,
+        SUM(CASE WHEN a.status = 'absent'   THEN 1 ELSE 0 END) AS absent_count,
+        SUM(CASE WHEN a.status = 'excused'  THEN 1 ELSE 0 END) AS excused_count
+      FROM team_member tm
+      JOIN members  m  ON m.id  = tm.member_id
+      JOIN sessions s  ON s.team_id = tm.team_id
+                       AND s.date >= ?
+                       AND s.date <= ?
+                       AND s.status = 'scheduled'
+      LEFT JOIN attendance a ON a.session_id = s.id
+                             AND a.member_id  = m.id
+      WHERE tm.team_id = ?
+      GROUP BY m.id, m.name
+      ORDER BY m.name ASC
+    ''', [startStr, endStr, teamId]);
+
+    return maps.map(MemberMonthlyReport.fromMap).toList();
+  }
+
+  // ─── نسبة حضور عضو واحد في شهر ─────────────────────────────
+  Future<double> getMemberAttendancePercentage({
+    required String memberId,
+    required String teamId,
+    required int year,
+    required int month,
+  }) async {
+    final reports = await getTeamMonthlyReport(
+      teamId: teamId,
+      year: year,
+      month: month,
+    );
+    final report = reports.where((r) => r.memberId == memberId).firstOrNull;
+    return report?.attendancePercentage ?? 0.0;
+  }
+
+  // ─── helper ──────────────────────────────────────────────────
+  int _lastDayOfMonth(int year, int month) =>
+      DateTime(year, month + 1, 0).day;
 }
